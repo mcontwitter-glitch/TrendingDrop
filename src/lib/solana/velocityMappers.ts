@@ -2,15 +2,16 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import type { CurveToken, HolderPositionView, VelocityMode } from '../../types'
 import { getMetadataByPubkey } from './metadata'
 import { modeFromScores, settleHolderRewards, velocityParams } from './velocityMath'
+import { coverForTicker, hashCover } from '../tokenCovers'
 
 const EMOJIS = ['🎰', '🤖', '🐈‍⬛', '🌴', '💀', '🧠', '🚀', '🐸', '👻', '🔥', '⚡', '🐋', '🐕', '👀']
 const GRADIENTS = [
-  'from-red-500/40 via-rose-400/20 to-orange-500/30',
-  'from-violet-600/40 via-fuchsia-500/20 to-purple-900/40',
+  'from-cyan-500/40 via-teal-400/20 to-blue-900/40',
+  'from-sky-500/40 via-cyan-400/20 to-indigo-900/40',
   'from-amber-400/40 via-orange-500/25 to-yellow-300/20',
   'from-emerald-500/35 via-teal-500/20 to-cyan-600/30',
-  'from-blue-500/40 via-indigo-500/25 to-violet-600/30',
-  'from-pink-500/35 via-rose-500/20 to-red-600/30',
+  'from-blue-500/40 via-cyan-500/25 to-teal-700/30',
+  'from-teal-500/35 via-cyan-500/20 to-slate-800/40',
 ]
 
 function hashPick(seed: string, list: string[]): string {
@@ -101,6 +102,7 @@ export function mapVelocityTokenToCurve(
     ticker: meta?.ticker ?? pubkey.slice(0, 4).toUpperCase(),
     blurb: meta?.blurb ?? meta?.description?.slice(0, 120) ?? 'Graduated velocity curve token.',
     emoji: hashPick(seed, EMOJIS),
+    imageUrl: meta?.ticker ? coverForTicker(meta.ticker) : hashCover(seed),
     gradient: hashPick(seed + 'g', GRADIENTS),
     creator: truncateAddress(account.creator.toBase58()),
     creatorPubkey: account.creator.toBase58(),

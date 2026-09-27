@@ -7,6 +7,8 @@ export interface Story {
   blurb: string
   description: string
   emoji: string
+  /** Optional cyberpunk cover image (card header). */
+  imageUrl?: string
   gradient: string
   solStaked: number
   stakerCount: number
@@ -59,6 +61,8 @@ export interface CurveToken {
   ticker: string
   blurb: string
   emoji: string
+  /** Optional cyberpunk cover image (card header). */
+  imageUrl?: string
   gradient: string
   creator: string
   creatorPubkey: string
@@ -130,9 +134,11 @@ export interface MergeProposalView {
   absorberTicker: string
   absorberTitle: string
   absorberEmoji: string
+  absorberImageUrl?: string
   targetTicker: string
   targetTitle: string
   targetEmoji: string
+  targetImageUrl?: string
   proposer: string
   proposedAt: number
   votingEnds: number
@@ -163,5 +169,6 @@ export interface LoreAssetView {
   ticker: string
   title: string
   emoji: string
+  imageUrl?: string
   onChain: boolean
 }

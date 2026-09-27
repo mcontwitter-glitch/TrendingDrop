@@ -16,15 +16,19 @@ export function KingBanner({ story }: KingBannerProps) {
   return (
     <Link
       to={`/story/${story.id}`}
-      className="king-highlight group relative mb-6 block overflow-hidden rounded-2xl border border-bcc-green/25 bg-bcc-elevated transition hover:border-bcc-green/40"
+      className="king-highlight bcc-card group relative mb-6 block overflow-hidden rounded-2xl transition hover:border-bcc-cyan/50"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${story.gradient} opacity-50`} />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(239,68,68,0.08),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(34,211,238,0.12),transparent_55%)]" />
 
       <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-6">
         <div className="flex items-start gap-4 sm:items-center">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/40 text-4xl backdrop-blur sm:h-20 sm:w-20 sm:text-5xl">
-            {story.emoji}
+          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 text-4xl backdrop-blur sm:h-20 sm:w-20 sm:text-5xl">
+            {story.imageUrl ? (
+              <img src={story.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              story.emoji
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -93,7 +97,7 @@ function Stat({
         {icon}
         {label}
       </div>
-      <div className={`font-display text-sm font-bold ${valueClassName}`}>{value}</div>
+      <div className={`font-stat text-sm ${valueClassName}`}>{value}</div>
     </div>
   )
 }

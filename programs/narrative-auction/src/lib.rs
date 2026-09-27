@@ -1,4 +1,4 @@
-//! # NarrativeAuction — Phase 1 of Bonding Curve Casino
+//! # NarrativeAuction — Phase 1 of TrendingDrop
 //!
 //! Story Markets where users stake SOL on narratives before tokens exist.
 //! Top narratives graduate to VelocityCurve; competitive losers forfeit and

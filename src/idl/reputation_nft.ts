@@ -10,7 +10,7 @@ export type ReputationNft = {
     "name": "reputationNft",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Bonding Curve Casino — Reputation / Lore NFTs (Phase 4)"
+    "description": "TrendingDrop — Reputation / Lore NFTs (Phase 4)"
   },
   "instructions": [
     {

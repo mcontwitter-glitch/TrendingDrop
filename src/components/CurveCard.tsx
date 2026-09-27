@@ -10,7 +10,7 @@ interface CurveCardProps {
 export function CurveCard({ curve, index = 0 }: CurveCardProps) {
   const modeBadge =
     curve.mode === 'steepen'
-      ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+      ? 'bg-bcc-cyan/15 text-bcc-cyan border-bcc-cyan/30'
       : curve.mode === 'flatten'
         ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
         : 'bg-bcc-elevated text-bcc-muted border-bcc-border'
@@ -18,14 +18,23 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
   return (
     <Link
       to={`/trade/${curve.pubkey}`}
-      className="fade-up group flex flex-col overflow-hidden rounded-2xl border border-bcc-border bg-bcc-surface transition hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-900/10"
+      className="fade-up bcc-card group flex flex-col overflow-hidden rounded-2xl transition"
       style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       <div
-        className={`relative flex h-28 items-center justify-center bg-gradient-to-br ${curve.gradient}`}
+        className={`relative flex h-28 items-center justify-center overflow-hidden bg-gradient-to-br ${curve.gradient}`}
       >
-        <span className="text-5xl drop-shadow-lg">{curve.emoji}</span>
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+        {curve.imageUrl ? (
+          <img
+            src={curve.imageUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <span className="relative text-5xl drop-shadow-lg">{curve.emoji}</span>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-black/10" />
+        <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
           <span className="rounded-full border border-bcc-green/25 bg-bcc-green/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-bcc-green backdrop-blur">
             Live
           </span>
@@ -35,13 +44,13 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
             {curve.mode}
           </span>
         </div>
-        <span className="absolute right-3 top-3 rounded-full border border-white/10 bg-black/50 px-2 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
+        <span className="absolute right-3 top-3 z-10 rounded-full border border-white/10 bg-black/50 px-2 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
           ${curve.ticker}
         </span>
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-base font-bold leading-tight group-hover:text-purple-300">
+        <h3 className="font-display text-base font-bold leading-tight group-hover:brightness-110">
           {curve.title}
         </h3>
         <p className="mt-1 line-clamp-2 text-xs text-bcc-muted">{curve.blurb}</p>
@@ -57,7 +66,7 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
           <span>
             A {curve.attentionScore} · V {curve.priceVelocity}
           </span>
-          <span className="font-semibold text-purple-400 group-hover:underline">Trade →</span>
+          <span className="font-semibold text-bcc-cyan group-hover:underline">Trade →</span>
         </div>
       </div>
     </Link>

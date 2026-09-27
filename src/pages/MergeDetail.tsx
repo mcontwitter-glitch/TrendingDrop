@@ -36,7 +36,7 @@ export function MergeDetail() {
       <div className="mx-auto max-w-lg px-4 py-24 text-center">
         <h1 className="font-display text-xl font-bold">Proposal not found</h1>
         <p className="mt-2 text-sm text-bcc-muted">{error ?? 'Unknown proposal id'}</p>
-        <Link to="/merge" className="mt-6 inline-block text-sm font-semibold text-purple-400">
+        <Link to="/merge" className="mt-6 inline-block text-sm font-semibold text-bcc-cyan">
           ← Back to merge
         </Link>
       </div>
@@ -137,13 +137,29 @@ export function MergeDetail() {
         {error && <span className="text-bcc-muted">{error}</span>}
       </div>
 
-      <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-6">
-        <div className="mb-4 flex items-center gap-3 text-3xl">
-          <span>{proposal.absorberEmoji}</span>
-          <GitMerge className="h-5 w-5 text-purple-400" />
-          <span>{proposal.targetEmoji}</span>
+      <div className="bcc-card rounded-2xl p-6">
+        <div className="mb-4 flex items-center gap-3">
+          {proposal.absorberImageUrl ? (
+            <img
+              src={proposal.absorberImageUrl}
+              alt=""
+              className="h-14 w-14 rounded-xl object-cover ring-1 ring-white/10"
+            />
+          ) : (
+            <span className="text-3xl">{proposal.absorberEmoji}</span>
+          )}
+          <GitMerge className="h-5 w-5 text-bcc-cyan" />
+          {proposal.targetImageUrl ? (
+            <img
+              src={proposal.targetImageUrl}
+              alt=""
+              className="h-14 w-14 rounded-xl object-cover ring-1 ring-white/10"
+            />
+          ) : (
+            <span className="text-3xl">{proposal.targetEmoji}</span>
+          )}
         </div>
-        <h1 className="font-display text-2xl font-bold">
+        <h1 className="font-display text-2xl font-bold !text-bcc-gold">
           ${proposal.absorberTicker} absorbs ${proposal.targetTicker}
         </h1>
         <p className="mt-2 text-sm text-bcc-muted">
@@ -159,7 +175,7 @@ export function MergeDetail() {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-bcc-bg">
             <div
-              className="h-full rounded-full bg-purple-500 transition-all"
+              className="h-full rounded-full bg-bcc-cyan transition-all"
               style={{ width: `${yesPct}%` }}
             />
           </div>
@@ -181,13 +197,13 @@ export function MergeDetail() {
           <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
             <div className="rounded-xl border border-bcc-border/60 bg-bcc-bg px-3 py-2">
               <div className="text-bcc-muted">5% fee</div>
-              <div className="font-display font-bold">
+              <div className="font-stat">
                 {formatLamportsAsSol(proposal.feeLamports)} SOL
               </div>
             </div>
             <div className="rounded-xl border border-bcc-border/60 bg-bcc-bg px-3 py-2">
               <div className="text-bcc-muted">90% liquidity</div>
-              <div className="font-display font-bold">
+              <div className="font-stat">
                 {formatLamportsAsSol(proposal.liquidityLamports)} SOL
               </div>
             </div>
@@ -195,7 +211,7 @@ export function MergeDetail() {
         )}
 
         {votingOpen && (
-          <div className="mt-6 rounded-xl border border-purple-500/25 bg-purple-500/5 p-4">
+          <div className="mt-6 rounded-xl border border-bcc-cyan/25 bg-bcc-cyan/5 p-4">
             <label className="mb-1.5 block text-xs font-medium text-bcc-muted">
               Vote weight (holder balance units)
             </label>
@@ -204,14 +220,14 @@ export function MergeDetail() {
               min={1}
               value={voteAmount}
               onChange={(e) => setVoteAmount(e.target.value)}
-              className="mb-3 w-full rounded-xl border border-bcc-border bg-bcc-bg px-3 py-2.5 text-sm text-bcc-text outline-none focus:border-purple-500/50"
+              className="mb-3 w-full rounded-xl border border-bcc-border bg-bcc-bg px-3 py-2.5 text-sm text-bcc-text outline-none focus:border-bcc-cyan/50"
             />
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => void handleVote(true)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 py-2.5 text-sm font-bold text-white transition hover:bg-purple-500 disabled:opacity-40"
+                className="bcc-glow-btn inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-bold disabled:opacity-40"
               >
                 <ThumbsUp className="h-4 w-4" />
                 {submitting ? '…' : 'Vote yes'}
@@ -220,7 +236,7 @@ export function MergeDetail() {
                 type="button"
                 disabled={submitting}
                 onClick={() => void handleVote(false)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-bcc-border bg-bcc-elevated py-2.5 text-sm font-bold text-bcc-text transition hover:border-zinc-500 disabled:opacity-40"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-bcc-border bg-bcc-elevated py-2.5 text-sm font-bold text-bcc-text transition hover:border-bcc-cyan/40 disabled:opacity-40"
               >
                 <ThumbsDown className="h-4 w-4" />
                 Vote no

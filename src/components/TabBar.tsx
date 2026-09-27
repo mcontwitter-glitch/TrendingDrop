@@ -17,7 +17,7 @@ const tabs: { id: BoardTab; label: string }[] = [
 
 export function TabBar({ active, onChange, counts }: TabBarProps) {
   return (
-    <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-bcc-border bg-bcc-surface p-1">
+    <div className="mb-5 bcc-card flex gap-1 overflow-x-auto rounded-xl p-1">
       {tabs.map((tab) => {
         const isActive = active === tab.id
         return (

@@ -7,19 +7,25 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+  /* Personal-use Wesayso breaks / watermarks digit glyphs — keep 0-9 on Inter */
+  unicode-range: U+0000-002F, U+003A-10FFFF;
 }
 
 
 @theme {
-  --color-bcc-bg: #09090b;
-  --color-bcc-surface: #18181b;
-  --color-bcc-elevated: #27272a;
-  --color-bcc-border: #3f3f46;
-  --color-bcc-muted: #a1a1aa;
-  --color-bcc-text: #fafafa;
-  --color-bcc-green: #ef4444;
-  --color-bcc-green-dim: #dc2626;
-  --color-bcc-green-glow: #ef444426;
+  --color-bcc-bg: #030a16;
+  --color-bcc-surface: #0a1528;
+  --color-bcc-elevated: #0f1f38;
+  --color-bcc-border: #1a3a55;
+  --color-bcc-muted: #7a9bb0;
+  --color-bcc-text: #f0f7ff;
+  /* Remapped primary accent: neon cyan (keeps bcc-green class names) */
+  --color-bcc-green: #22d3ee;
+  --color-bcc-green-dim: #06b6d4;
+  --color-bcc-green-glow: #22d3ee26;
+  --color-bcc-cyan: #22d3ee;
+  --color-bcc-gold: #fbbf24;
+  --color-bcc-gold-dim: #f59e0b;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Wesayso", "Inter", ui-sans-serif, sans-serif;
 }
@@ -46,12 +52,14 @@ body {
 }
 
 .app-bg {
-  background-color: #09090b;
+  background-color: #030a16;
   background-image:
-    radial-gradient(ellipse 70% 40% at 50% -15%, rgba(239, 68, 68, 0.08), transparent),
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 100% 100%, 48px 48px, 48px 48px;
+    radial-gradient(ellipse 80% 45% at 50% -10%, rgba(34, 211, 238, 0.12), transparent 55%),
+    linear-gradient(rgba(34, 211, 238, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.035) 1px, transparent 1px),
+    linear-gradient(to top, rgba(34, 211, 238, 0.08) 0%, transparent 42%);
+  background-size: 100% 100%, 48px 48px, 48px 48px, 100% 100%;
+  background-position: center top, center bottom, center bottom, center bottom;
 }
 
 @keyframes ticker-scroll {
@@ -83,11 +91,12 @@ body {
 }
 
 .king-highlight {
-  box-shadow: 0 1px 0 0 rgba(239, 68, 68, 0.18), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.2), 0 8px 32px -8px rgba(34, 211, 238, 0.25), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
 .progress-fill {
-  background: #ef4444;
+  background: linear-gradient(90deg, #06b6d4, #22d3ee);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.45);
 }
 
 ::-webkit-scrollbar {
@@ -95,29 +104,74 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: #030a16;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #1a3a55;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #ef4444;
+  background: #22d3ee;
 }
 
 ::selection {
-  background: rgba(239, 68, 68, 0.3);
+  background: rgba(34, 211, 238, 0.35);
   color: #fff;
 }
 
 
-/* Display / branding: Wesayso */
+/* Display / branding: Wesayso — cyan neon */
 .font-display {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.15;
-  color: var(--color-bcc-green);
+  color: var(--color-bcc-cyan);
+}
+
+
+/* Numeric / amounts: Inter only (Wesayso digits are broken) */
+.font-stat {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+input[type="number"],
+input[type="text"].font-stat,
+input.amount-input {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-bcc-text);
+}
+
+/* Glass card shell */
+.bcc-card {
+  background: rgba(10, 21, 40, 0.72);
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 1rem;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.06), 0 0 24px -6px rgba(34, 211, 238, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.bcc-card:hover {
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.1), 0 0 32px -4px rgba(34, 211, 238, 0.28);
+}
+
+/* Connect Wallet / primary CTA glow */
+.bcc-glow-btn {
+  background: linear-gradient(135deg, #22d3ee 0%, #0891b2 55%, #0e7490 100%);
+  color: #fff;
+  border: 1px solid rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.45), 0 0 4px rgba(34, 211, 238, 0.3);
+  transition: box-shadow 0.2s ease, filter 0.2s ease, background 0.2s ease;
+}
+.bcc-glow-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.6), 0 0 8px rgba(34, 211, 238, 0.4);
 }
 
 /* Wallet adapter modal sits above app chrome */

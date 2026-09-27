@@ -42,7 +42,7 @@ export function TradeDesk() {
         </p>
         <Link
           to="/trade"
-          className="mt-6 inline-block text-sm font-semibold text-purple-400 hover:underline"
+          className="mt-6 inline-block text-sm font-semibold text-bcc-cyan hover:underline"
         >
           ← Back to trade
         </Link>
@@ -84,12 +84,21 @@ export function TradeDesk() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
-          <div className="overflow-hidden rounded-2xl border border-bcc-border bg-bcc-surface">
+          <div className="overflow-hidden bcc-card rounded-2xl">
             <div
-              className={`relative flex h-40 items-center justify-center bg-gradient-to-br ${curve.gradient} sm:h-48`}
+              className={`relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br ${curve.gradient} sm:h-48`}
             >
-              <span className="text-7xl drop-shadow-xl sm:text-8xl">{curve.emoji}</span>
-              <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+              {curve.imageUrl ? (
+                <img
+                  src={curve.imageUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <span className="relative text-7xl drop-shadow-xl sm:text-8xl">{curve.emoji}</span>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+              <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
                 <span className="rounded-full border border-bcc-green/25 bg-bcc-green/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-bcc-green backdrop-blur">
                   Live
                 </span>
@@ -112,7 +121,7 @@ export function TradeDesk() {
               {curve.storyId && (
                 <Link
                   to={`/story/${curve.storyId}`}
-                  className="mt-3 inline-block text-xs font-semibold text-purple-400 hover:underline"
+                  className="mt-3 inline-block text-xs font-semibold text-bcc-cyan hover:underline"
                 >
                   View origin story →
                 </Link>
@@ -127,7 +136,7 @@ export function TradeDesk() {
               value={formatPriceLamports(curve.currentPriceLamports)}
             />
             <Metric
-              icon={<Droplets className="h-4 w-4 text-purple-400" />}
+              icon={<Droplets className="h-4 w-4 text-bcc-cyan" />}
               label="SOL reserve"
               value={`${formatSol(curve.solReserveSol)} SOL`}
             />
@@ -145,7 +154,7 @@ export function TradeDesk() {
 
           <VelocityChart curve={curve} />
 
-          <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-5 text-sm">
+          <div className="bcc-card rounded-2xl p-5 text-sm">
             <h2 className="mb-3 font-display text-lg font-bold">Curve stats</h2>
             <dl className="grid gap-2 sm:grid-cols-2">
               <Row label="Base price" value={`${curve.basePriceLamports} lamports`} />
@@ -209,12 +218,12 @@ function Metric({
   value: string
 }) {
   return (
-    <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-4">
+    <div className="bcc-card rounded-2xl p-4">
       <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-bcc-muted">
         {icon}
         {label}
       </div>
-      <div className="truncate font-display text-base font-bold text-bcc-text sm:text-lg">
+      <div className="truncate font-stat text-base text-bcc-text sm:text-lg">
         {value}
       </div>
     </div>

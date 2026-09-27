@@ -5,7 +5,7 @@
 
 ## Goal
 
-Mirror selected Bonding Curve Casino **read state** onto EVM L2s (Base, Arbitrum)
+Mirror selected TrendingDrop **read state** onto EVM L2s (Base, Arbitrum)
 so Ethereum wallets can browse narrative velocity / stakes without holding SOL,
 while **writes** (stake, graduate, buy/sell, merge) stay on Solana until a later
 phase adds inbound message handling.

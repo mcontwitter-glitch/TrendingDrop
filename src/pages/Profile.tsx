@@ -78,7 +78,7 @@ export function Profile() {
             ReputationNFT accuracy tiers — collateral for future launch allocations.
           </p>
         </div>
-        <Shield className="h-8 w-8 shrink-0 text-purple-400" />
+        <Shield className="h-8 w-8 shrink-0 text-bcc-cyan" />
       </div>
 
       {!connected && (
@@ -112,7 +112,7 @@ export function Profile() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-6">
+          <div className="bcc-card rounded-2xl p-6">
             <div className="flex flex-wrap items-center gap-3">
               <TierBadge tier={profile.tier} accuracyBps={profile.accuracyScoreBps} size="md" />
               <span className="font-mono text-xs text-bcc-muted">
@@ -135,7 +135,7 @@ export function Profile() {
 
             <div className="mt-6">
               <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-bcc-muted">
-                <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+                <Sparkles className="h-3.5 w-3.5 text-bcc-cyan" />
                 Traits
               </div>
               {profile.traits.length === 0 ? (
@@ -145,7 +145,7 @@ export function Profile() {
                   {profile.traits.map((t) => (
                     <span
                       key={t}
-                      className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 text-xs font-semibold text-purple-200"
+                      className="rounded-full border border-bcc-cyan/30 bg-bcc-cyan/10 px-2.5 py-1 text-xs font-semibold text-bcc-cyan"
                     >
                       {TRAIT_LABELS[t] ?? t}
                     </span>
@@ -159,7 +159,7 @@ export function Profile() {
                 type="button"
                 disabled={submitting || !program}
                 onClick={() => void handleInit()}
-                className="mt-6 w-full rounded-xl bg-purple-600 py-3 text-sm font-bold text-white transition hover:bg-purple-500 disabled:opacity-40"
+                className="bcc-glow-btn mt-6 w-full rounded-xl py-3 text-sm font-bold disabled:opacity-40"
               >
                 {submitting
                   ? 'Confirm in wallet…'
@@ -174,7 +174,7 @@ export function Profile() {
                 type="button"
                 disabled={submitting || !program}
                 onClick={() => void handleMintNft()}
-                className="mt-4 w-full rounded-xl border border-purple-500/40 bg-purple-500/10 py-3 text-sm font-bold text-purple-100 transition hover:bg-purple-500/20 disabled:opacity-40"
+                className="mt-4 w-full rounded-xl border border-bcc-cyan/40 bg-bcc-cyan/10 py-3 text-sm font-bold text-cyan-50 transition hover:bg-bcc-cyan/20 disabled:opacity-40"
               >
                 {submitting ? 'Confirm in wallet…' : 'Mint Metaplex reputation NFT'}
               </button>
@@ -209,7 +209,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-bcc-border/60 bg-bcc-bg px-3 py-3">
       <div className="text-[10px] uppercase tracking-wide text-bcc-muted">{label}</div>
-      <div className="mt-0.5 font-display text-sm font-bold text-bcc-text">{value}</div>
+      <div className="mt-0.5 font-stat text-sm text-bcc-text">{value}</div>
     </div>
   )
 }

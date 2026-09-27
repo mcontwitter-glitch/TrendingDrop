@@ -116,7 +116,7 @@ export const TIER_COLORS: Record<ReputationTierName, string> = {
   Silver: 'border-zinc-400/40 bg-zinc-500/20 text-zinc-200',
   Gold: 'border-yellow-400/40 bg-yellow-500/15 text-yellow-200',
   Diamond: 'border-cyan-400/40 bg-cyan-500/15 text-cyan-200',
-  Mythic: 'border-purple-400/50 bg-purple-500/20 text-purple-200',
+  Mythic: 'border-bcc-cyan/50 bg-bcc-cyan/20 text-bcc-cyan',
 }
 
 export function accuracyPct(bps: number): string {

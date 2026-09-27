@@ -73,7 +73,7 @@ async function sleep(ms) {
 }
 
 async function main() {
-  console.log('=== Bonding Curve Casino localnet smoke ===')
+  console.log('=== TrendingDrop localnet smoke ===')
   console.log('RPC:', RPC)
   const connection = new Connection(RPC, 'confirmed')
   const version = await connection.getVersion()

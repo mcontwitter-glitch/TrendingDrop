@@ -1,6 +1,6 @@
-# Bonding Curve Casino — Story Markets
+# TrendingDrop — Story Markets
 
-Phase 1 frontend demo for **Bonding Curve Casino**: a Solana launchpad where meme coin launches start as **prediction markets on narratives**. Creators submit stories; users stake SOL; top narratives graduate to tokenization later.
+Phase 1 frontend demo for **TrendingDrop**: a Solana launchpad where meme coin launches start as **prediction markets on narratives**. Creators submit stories; users stake SOL; top narratives graduate to tokenization later.
 
 This UI is **mock-data only** — no Solana wallet wiring yet. On-chain Anchor programs now live in-repo (see below).
 

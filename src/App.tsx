@@ -32,13 +32,13 @@ export default function App() {
           </Routes>
         </main>
         <footer className="border-t border-bcc-border py-8 text-center text-xs text-bcc-muted">
-          <p className="font-display font-semibold text-bcc-text/80">Bonding Curve Casino</p>
+          <p className="font-display font-semibold">TrendingDrop</p>
           <p className="mt-1">
             Story Markets · VelocityCurve · LoreMerge · Reputation · On-chain when connected · mock
             fallback · Not financial advice
           </p>
           <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-bcc-border/80 bg-bcc-surface/60 px-2.5 py-0.5 text-[10px] uppercase tracking-wider">
-            <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-bcc-cyan shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
             {cluster}
             <span className="text-bcc-muted/70 normal-case tracking-normal">
               {RPC_URL.replace(/^https?:\/\//, '')}

@@ -65,7 +65,7 @@ export function startGeyserScaffold(): GeyserHandle | null {
   //   const stream = await client.subscribe()
   //   stream.write({
   //     accounts: {
-  //       casino: {
+  //       trendingdrop: {
   //         account: [],
   //         owner: [
   //           config.programs.narrativeAuction.toBase58(),

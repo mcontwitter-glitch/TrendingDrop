@@ -1,4 +1,4 @@
-# Bonding Curve Casino — Indexer
+# TrendingDrop — Indexer
 
 Node/TypeScript service that indexes **NarrativeAuction**, **VelocityCurve**, **LoreMerge**, and **ReputationNFT** program accounts for the Story Markets frontend.
 

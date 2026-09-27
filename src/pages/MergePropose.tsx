@@ -111,7 +111,7 @@ export function MergePropose() {
 
       <form
         onSubmit={(e) => void handleSubmit(e)}
-        className="space-y-4 rounded-2xl border border-bcc-border bg-bcc-surface p-5 sm:p-6"
+        className="space-y-4 bcc-card rounded-2xl p-5 sm:p-6"
       >
         <Field label="Absorber (strong)">
           <select
@@ -148,7 +148,7 @@ export function MergePropose() {
         <button
           type="submit"
           disabled={submitting}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3.5 text-sm font-bold text-white transition hover:bg-purple-500 disabled:opacity-40"
+          className="bcc-glow-btn flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold disabled:opacity-40"
         >
           <GitMerge className="h-4 w-4" />
           {submitting

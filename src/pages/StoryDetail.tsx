@@ -58,10 +58,19 @@ export function StoryDetail() {
         <div className="space-y-5 lg:col-span-3">
           <div className="overflow-hidden rounded-2xl border border-bcc-border bg-bcc-surface">
             <div
-              className={`relative flex h-48 items-center justify-center bg-gradient-to-br ${story.gradient} sm:h-56`}
+              className={`relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br ${story.gradient} sm:h-56`}
             >
-              <span className="text-7xl drop-shadow-xl sm:text-8xl">{story.emoji}</span>
-              <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+              {story.imageUrl ? (
+                <img
+                  src={story.imageUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <span className="relative text-7xl drop-shadow-xl sm:text-8xl">{story.emoji}</span>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+              <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
                 <StatusPill status={story.status} />
                 <span className="rounded-full border border-white/10 bg-black/50 px-2.5 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
                   ${story.ticker}
@@ -199,14 +208,14 @@ export function StoryDetail() {
                   return tradeId ? (
                     <Link
                       to={`/trade/${tradeId}`}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 font-display text-sm font-bold text-white transition hover:bg-purple-500"
+                      className="bcc-glow-btn inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 font-display text-sm font-bold"
                     >
                       Trade on curve
                     </Link>
                   ) : (
                     <Link
                       to="/trade"
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/40 bg-purple-500/10 py-3 text-sm font-bold text-purple-200 transition hover:bg-purple-500/20"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-bcc-cyan/40 bg-bcc-cyan/10 py-3 text-sm font-bold text-bcc-cyan transition hover:bg-bcc-cyan/20"
                     >
                       Browse trade desk
                     </Link>
@@ -231,7 +240,7 @@ export function StoryDetail() {
 
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
-    active: 'bg-bcc-green/15 text-bcc-green border-bcc-green/25',
+    active: 'bg-bcc-gold/15 text-bcc-gold border-bcc-gold/40',
     graduating: 'bg-amber-400/15 text-amber-300 border-amber-400/30',
     graduated: 'bg-cyan-400/15 text-cyan-300 border-cyan-400/30',
     failed: 'bg-red-400/10 text-red-300 border-red-400/25',
@@ -255,12 +264,12 @@ function Metric({
   value: string
 }) {
   return (
-    <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-4">
+    <div className="bcc-card rounded-2xl p-4">
       <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-bcc-muted">
         {icon}
         {label}
       </div>
-      <div className="font-display text-base font-bold text-bcc-text sm:text-lg">{value}</div>
+      <div className="font-stat text-base text-bcc-text sm:text-lg">{value}</div>
     </div>
   )
 }

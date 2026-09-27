@@ -14,7 +14,8 @@ export const stories: Story[] = [
     description:
       'Imagine a pantheon of agent personalities living on Solana — they trade memes, tip creators, and compete for narrative dominance. King of the Agents is the lore layer before the token: stake if you believe agent culture eats social feeds alive. Graduates into a bonding-curve launch with agent-themed utility later.',
     emoji: '🤖',
-    gradient: 'from-red-500/40 via-rose-400/20 to-orange-500/30',
+    imageUrl: '/tokens/kota.png',
+    gradient: 'from-cyan-500/40 via-teal-400/20 to-blue-900/40',
     solStaked: 52.4,
     stakerCount: 187,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -32,7 +33,8 @@ export const stories: Story[] = [
     description:
       'They say the first Void Cat appeared when a JPEG got rugged so hard it punched a hole in memespace. Now the litter multiplies whenever someone says "wen." Stake on the lore that absorbs every cat coin ever launched.',
     emoji: '🐈‍⬛',
-    gradient: 'from-violet-600/40 via-fuchsia-500/20 to-purple-900/40',
+    imageUrl: '/tokens/void.png',
+    gradient: 'from-sky-500/40 via-cyan-400/20 to-indigo-900/40',
     solStaked: 41.2,
     stakerCount: 143,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -50,6 +52,7 @@ export const stories: Story[] = [
     description:
       'A perennial narrative auction for eternal vibes: beach, speed, and absurdly cheap fees. If this graduates, the token becomes the official merch of never-ending summer — sunsets, boardwalks, and 400ms block times.',
     emoji: '🌴',
+    imageUrl: '/tokens/ssf.png',
     gradient: 'from-amber-400/40 via-orange-500/25 to-yellow-300/20',
     solStaked: 38.7,
     stakerCount: 211,
@@ -67,7 +70,8 @@ export const stories: Story[] = [
     description:
       'Not financial advice — a story about resilience. Every chart that went to zero becomes lore. Stake if you think the culture of surviving rugs is hotter than any green candle.',
     emoji: '💀',
-    gradient: 'from-red-500/35 via-rose-600/20 to-zinc-700/40',
+    imageUrl: '/tokens/rbb.png',
+    gradient: 'from-cyan-500/35 via-teal-600/20 to-slate-800/40',
     solStaked: 29.1,
     stakerCount: 98,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -85,7 +89,8 @@ export const stories: Story[] = [
     description:
       'A DAO of frogs in hoodies who never dox. They vote on stories, roast submissions, and crown seasonal kings. Phase 1 is the auction for the council mythos itself.',
     emoji: '🐸',
-    gradient: 'from-red-500/40 via-rose-300/25 to-orange-600/30',
+    imageUrl: '/tokens/council.png',
+    gradient: 'from-sky-500/40 via-cyan-300/25 to-teal-700/30',
     solStaked: 61.8,
     stakerCount: 256,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -103,7 +108,8 @@ export const stories: Story[] = [
     description:
       'Mechanical primate energy. When Solana culms, the ape ticks louder. Narrative fuel for a token that celebrates reliability theater and banana-shaped charts.',
     emoji: '🦧',
-    gradient: 'from-yellow-600/35 via-amber-700/25 to-stone-600/30',
+    imageUrl: '/tokens/tick.png',
+    gradient: 'from-amber-500/35 via-yellow-600/25 to-cyan-900/30',
     solStaked: 18.4,
     stakerCount: 67,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -120,6 +126,7 @@ export const stories: Story[] = [
     description:
       'A spooky market myth: phantom depth, haunted order books, candles that scream. Stake if you believe the scariest stories make the best memes.',
     emoji: '👻',
+    imageUrl: '/tokens/ghost.png',
     gradient: 'from-slate-400/30 via-indigo-500/25 to-blue-900/40',
     solStaked: 12.6,
     stakerCount: 44,
@@ -137,7 +144,8 @@ export const stories: Story[] = [
     description:
       'Retro fortune-telling for degens. The prophet predicted three pumps and one existential crisis. This auction decides if the lore graduates into a tradable relic.',
     emoji: '🕹️',
-    gradient: 'from-pink-500/35 via-rose-400/20 to-orange-500/25',
+    imageUrl: '/tokens/pxph.png',
+    gradient: 'from-teal-500/35 via-cyan-400/20 to-amber-500/25',
     solStaked: 24.9,
     stakerCount: 89,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -155,6 +163,7 @@ export const stories: Story[] = [
     description:
       'Late-night bowl energy. Steam rises in hex neon. If this story graduates, expect a bonding curve flavored like midnight hunger and chrome chopsticks.',
     emoji: '🍜',
+    imageUrl: '/tokens/noodle.png',
     gradient: 'from-cyan-400/35 via-sky-500/20 to-blue-600/30',
     solStaked: 9.3,
     stakerCount: 31,
@@ -172,7 +181,8 @@ export const stories: Story[] = [
     description:
       'Graduated narrative. Degen Dog already won the auction and moved to tokenization. This page is historical lore for the pack that believed early.',
     emoji: '🐕',
-    gradient: 'from-rose-400/40 via-red-500/25 to-red-800/30',
+    imageUrl: '/tokens/ddog.png',
+    gradient: 'from-cyan-400/40 via-sky-500/25 to-blue-900/30',
     solStaked: 72.0,
     stakerCount: 312,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -191,7 +201,8 @@ export const stories: Story[] = [
     description:
       'A graduated classic. The narrative auction filled, the story became a token, and the lasers never turned off.',
     emoji: '👀',
-    gradient: 'from-red-400/40 via-orange-500/30 to-yellow-400/20',
+    imageUrl: '/tokens/laser.png',
+    gradient: 'from-amber-400/40 via-yellow-500/30 to-cyan-600/20',
     solStaked: 80.5,
     stakerCount: 401,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -209,7 +220,8 @@ export const stories: Story[] = [
     description:
       'Failed to hit the graduation threshold before the auction clock ran out. A reminder that not every story deserves a bonding curve — yet.',
     emoji: '🤫',
-    gradient: 'from-zinc-600/40 via-neutral-700/30 to-stone-800/40',
+    imageUrl: '/tokens/shhh.png',
+    gradient: 'from-slate-600/40 via-cyan-900/30 to-slate-900/40',
     solStaked: 4.2,
     stakerCount: 12,
     graduationThreshold: GRADUATION_DEFAULT,
@@ -226,7 +238,8 @@ export const stories: Story[] = [
     description:
       'Auction expired under threshold. Charming lore, thin conviction. Maybe next season.',
     emoji: '🦙',
-    gradient: 'from-stone-500/35 via-amber-800/20 to-zinc-700/35',
+    imageUrl: '/tokens/slow.png',
+    gradient: 'from-slate-500/35 via-amber-700/20 to-cyan-900/35',
     solStaked: 7.8,
     stakerCount: 22,
     graduationThreshold: GRADUATION_DEFAULT,

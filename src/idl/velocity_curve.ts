@@ -10,7 +10,7 @@ export type VelocityCurve = {
     "name": "velocityCurve",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Bonding Curve Casino — Phase 2 Velocity Bonding Curve"
+    "description": "TrendingDrop — Phase 2 Velocity Bonding Curve"
   },
   "instructions": [
     {

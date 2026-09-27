@@ -1,4 +1,4 @@
-# Bonding Curve Casino — On-Chain Architecture
+# TrendingDrop — On-Chain Architecture
 
 Founder overview of the Solana / Anchor programs that back the Story Markets UI.
 

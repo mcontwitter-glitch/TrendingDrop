@@ -1,6 +1,7 @@
 {
-  "name": "bonding-curve-casino",
+  "name": "trendingdrop",
   "private": true,
+  "description": "TrendingDrop — Story Markets on Solana",
   "version": "0.0.0",
   "type": "module",
   "scripts": {

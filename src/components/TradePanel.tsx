@@ -120,7 +120,7 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
         : 'Sell tax 5–15% by velocity'
 
   return (
-    <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-5">
+    <div className="bcc-card rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-display text-lg font-bold">Trade desk</h3>
         <span className="text-[10px] uppercase tracking-wider text-bcc-muted">
@@ -142,8 +142,8 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
             className={`rounded-lg py-2 text-sm font-bold capitalize transition ${
               tab === t
                 ? t === 'buy'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-bcc-green text-white'
+                  ? 'bg-bcc-cyan text-bcc-bg'
+                  : 'bg-bcc-gold text-bcc-bg'
                 : 'text-bcc-muted hover:text-bcc-text'
             }`}
           >
@@ -174,7 +174,7 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
           step={tab === 'buy' ? '0.01' : '1'}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="w-full rounded-xl border border-bcc-border bg-bcc-bg px-4 py-3 pr-16 font-display text-lg font-semibold text-bcc-text outline-none transition focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/25"
+          className="w-full rounded-xl border border-bcc-border bg-bcc-bg amount-input px-4 py-3 pr-16 text-lg font-semibold text-bcc-text outline-none transition focus:border-bcc-cyan/60 focus:ring-1 focus:ring-bcc-cyan/25"
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-bcc-muted">
           {tab === 'buy' ? 'SOL' : curve.ticker}
@@ -190,8 +190,8 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
                 onClick={() => setAmount(String(q))}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                   num === q
-                    ? 'border-purple-500/50 bg-purple-500/10 text-purple-300'
-                    : 'border-bcc-border bg-bcc-elevated text-bcc-muted hover:border-zinc-500 hover:text-bcc-text'
+                    ? 'border-bcc-cyan/50 bg-bcc-cyan/10 text-bcc-cyan'
+                    : 'border-bcc-border bg-bcc-elevated text-bcc-muted hover:border-bcc-cyan/40 hover:text-bcc-text'
                 }`}
               >
                 {q} SOL
@@ -204,7 +204,7 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
                 onClick={() =>
                   setAmount(String(Math.max(0, Math.floor((holderBalance * p) / 100))))
                 }
-                className="rounded-lg border border-bcc-border bg-bcc-elevated px-3 py-1.5 text-xs font-semibold text-bcc-muted transition hover:border-zinc-500 hover:text-bcc-text"
+                className="rounded-lg border border-bcc-border bg-bcc-elevated px-3 py-1.5 text-xs font-semibold text-bcc-muted transition hover:border-bcc-cyan/40 hover:text-bcc-text"
               >
                 {p}%
               </button>
@@ -212,12 +212,12 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
       </div>
 
       <div className="mb-4 flex items-center gap-2 rounded-xl border border-bcc-border/60 bg-bcc-bg px-3 py-2.5 text-sm">
-        <ArrowDownUp className="h-4 w-4 shrink-0 text-purple-400" />
+        <ArrowDownUp className="h-4 w-4 shrink-0 text-bcc-cyan" />
         <div className="min-w-0 flex-1">
           <div className="text-[10px] uppercase tracking-wide text-bcc-muted">
             Estimated {tab === 'buy' ? 'tokens out' : 'SOL out'} · estimate
           </div>
-          <div className="truncate font-display font-bold text-bcc-text">
+          <div className="truncate font-stat text-bcc-text">
             {tab === 'buy' && buyQuote
               ? `${formatTokenAmount(buyQuote.tokensOut)} $${curve.ticker}`
               : tab === 'sell' && sellQuote
@@ -245,14 +245,13 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
         type="button"
         disabled={submitting || num <= 0}
         onClick={() => void handleSubmit()}
-        style={{ color: '#fff' }}
-        className={`flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold tracking-wide text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${
+        className={`flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40 ${
           tab === 'buy'
-            ? 'bg-purple-600 hover:bg-purple-500'
-            : 'bg-bcc-green hover:bg-bcc-green-dim'
+            ? 'bcc-glow-btn text-white'
+            : 'bg-bcc-gold text-bcc-bg hover:bg-bcc-gold-dim'
         }`}
       >
-        <Zap className="h-4 w-4 text-white" style={{ color: '#fff' }} />
+        <Zap className="h-4 w-4" />
         {!connected
           ? 'Connect Wallet'
           : submitting

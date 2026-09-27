@@ -63,7 +63,7 @@ export function Board() {
               <button
                 type="button"
                 onClick={() => void refresh()}
-                className="inline-flex items-center gap-1 rounded-full border border-bcc-border px-2 py-0.5 text-bcc-muted transition hover:border-zinc-500 hover:text-bcc-text"
+                className="inline-flex items-center gap-1 rounded-full border border-bcc-border px-2 py-0.5 text-bcc-muted transition hover:border-bcc-cyan/40 hover:text-bcc-text"
               >
                 <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -72,7 +72,7 @@ export function Board() {
           </div>
           <Link
             to="/create"
-            className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-purple-500"
+            className="bcc-glow-btn inline-flex items-center justify-center gap-2 self-start rounded-xl px-4 py-2.5 text-sm font-bold"
           >
             <Plus className="h-4 w-4" />
             Launch a story

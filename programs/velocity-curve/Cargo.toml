@@ -1,7 +1,7 @@
 [package]
 name = "velocity-curve"
 version = "0.1.0"
-description = "Bonding Curve Casino — Phase 2 Velocity Bonding Curve"
+description = "TrendingDrop — Phase 2 Velocity Bonding Curve"
 edition = "2021"
 
 [lib]

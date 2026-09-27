@@ -129,7 +129,7 @@ export function CreateStory() {
 
       <form
         onSubmit={(e) => void handleSubmit(e)}
-        className="space-y-5 rounded-2xl border border-bcc-border bg-bcc-surface p-5 sm:p-7"
+        className="space-y-5 bcc-card rounded-2xl p-5 sm:p-7"
       >
         <Field label="Title" required>
           <input
@@ -144,7 +144,7 @@ export function CreateStory() {
 
         <Field label="Ticker / short label" required hint="3–10 chars, memetic">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-semibold text-bcc-muted">
+            <span className="pointer-events-none absolute left-3 top-1/2 w-4 -translate-y-1/2 text-center font-semibold text-bcc-muted">
               $
             </span>
             <input
@@ -154,7 +154,7 @@ export function CreateStory() {
                 setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))
               }
               placeholder="VOID"
-              className="field-input pl-7 uppercase"
+              className="field-input field-input-ticker uppercase"
             />
           </div>
         </Field>
@@ -224,7 +224,7 @@ export function CreateStory() {
                 className={`flex-1 rounded-xl border py-3 text-sm font-semibold transition ${
                   duration === d
                     ? 'border-bcc-green/50 bg-bcc-green/10 text-bcc-green'
-                    : 'border-bcc-border bg-bcc-bg text-bcc-muted hover:border-zinc-500'
+                    : 'border-bcc-border bg-bcc-bg text-bcc-muted hover:border-bcc-cyan/40'
                 }`}
               >
                 {d} hours
@@ -235,13 +235,13 @@ export function CreateStory() {
 
         <div className="flex items-center justify-between rounded-xl border border-bcc-border bg-bcc-bg px-4 py-3 text-sm">
           <span className="text-bcc-muted">Minimum stake to participate</span>
-          <span className="font-display font-bold text-bcc-green">0.01 SOL</span>
+          <span className="font-stat text-bcc-green">0.01 SOL</span>
         </div>
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-bcc-green py-3.5 font-display text-sm font-bold text-white transition hover:bg-bcc-green-dim disabled:opacity-50"
+          className="bcc-glow-btn w-full rounded-xl py-3.5 font-display text-sm font-bold disabled:opacity-50"
         >
           {submitting
             ? 'Submitting on-chain…'
@@ -255,20 +255,23 @@ export function CreateStory() {
         .field-input {
           width: 100%;
           border-radius: 0.75rem;
-          border: 1px solid #3f3f46;
-          background: #09090b;
+          border: 1px solid #1a3a55;
+          background: #030a16;
           padding: 0.75rem 1rem;
-          color: #fafafa;
+          color: #f0f7ff;
           font-size: 0.875rem;
           outline: none;
           transition: border-color 0.15s, box-shadow 0.15s;
         }
         .field-input:focus {
-          border-color: #ef444499;
-          box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+          border-color: #22d3ee99;
+          box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
         }
         .field-input::placeholder {
-          color: #71717a;
+          color: #7a9bb0;
+        }
+        .field-input-ticker {
+          padding-left: 2.25rem;
         }
       `}</style>
     </div>

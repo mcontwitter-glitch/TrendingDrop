@@ -1,6 +1,6 @@
 # Devnet deploy checklist
 
-Document-only guide for deploying Bonding Curve Casino programs to **Solana Devnet**.
+Document-only guide for deploying TrendingDrop programs to **Solana Devnet**.
 Do **not** treat this as an automated CI step — public RPC airdrops are unreliable from
 shared boxes. Prefer a funded keypair + a stable RPC (Helius / Triton / QuickNode) when
 you actually deploy.

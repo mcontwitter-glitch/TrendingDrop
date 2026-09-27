@@ -5,7 +5,7 @@ interface ProgressBarProps {
   threshold: number
   showLabel?: boolean
   size?: 'sm' | 'md'
-  /** accent = platform red (King of the Hill); green = card graduation bars */
+  /** accent = cyan (King of the Hill); green = softer cyan graduation bars */
   tone?: 'accent' | 'green'
 }
 
@@ -18,8 +18,8 @@ export function ProgressBar({
 }: ProgressBarProps) {
   const pct = fundedPct(staked, threshold)
   const h = size === 'md' ? 'h-2.5' : 'h-1.5'
-  const fillClass = tone === 'green' ? 'bg-emerald-500' : 'progress-fill'
-  const labelClass = tone === 'green' ? 'text-emerald-400' : 'text-bcc-green'
+  const fillClass = tone === 'green' ? 'bg-bcc-cyan' : 'progress-fill'
+  const labelClass = tone === 'green' ? 'text-bcc-cyan' : 'text-bcc-green'
 
   return (
     <div className="w-full">

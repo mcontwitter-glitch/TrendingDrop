@@ -10,7 +10,7 @@ export type NarrativeAuction = {
     "name": "narrativeAuction",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Bonding Curve Casino — Phase 1 Narrative Auction"
+    "description": "TrendingDrop — Phase 1 Narrative Auction"
   },
   "instructions": [
     {

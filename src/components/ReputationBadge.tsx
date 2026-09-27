@@ -11,11 +11,11 @@ export function ReputationBadge() {
   return (
     <Link
       to="/profile"
-      className="hidden items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2 py-1 transition hover:border-purple-400/50 hover:bg-purple-500/20 sm:inline-flex"
+      className="hidden items-center gap-1.5 rounded-lg border border-bcc-cyan/30 bg-bcc-cyan/10 px-2 py-1 transition hover:border-bcc-cyan/50 hover:bg-bcc-cyan/20 sm:inline-flex"
       title={`Reputation · ${source === 'chain' ? 'on-chain' : 'mock'}`}
     >
       <TierBadge tier={profile.tier} size="sm" />
-      <span className="text-[10px] font-semibold text-purple-200">
+      <span className="text-[10px] font-semibold text-bcc-cyan">
         {accuracyPct(profile.accuracyScoreBps)}
       </span>
     </Link>

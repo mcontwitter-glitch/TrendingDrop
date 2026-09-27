@@ -30,8 +30,7 @@ export function Trade() {
             Trade
           </h1>
           <p className="mt-1 max-w-xl text-sm text-bcc-muted">
-            Pump.fun-style desk for graduated VelocityCurve tokens — buy/sell SOL↔tokens with
-            attention-weighted curves.
+            VelocityCurve tokens — buy/sell SOL↔tokens with attention-weighted curves.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
             <span
@@ -47,14 +46,14 @@ export function Trade() {
             <button
               type="button"
               onClick={() => void refresh()}
-              className="inline-flex items-center gap-1 rounded-full border border-bcc-border px-2 py-0.5 text-bcc-muted transition hover:border-zinc-500 hover:text-bcc-text"
+              className="inline-flex items-center gap-1 rounded-full border border-bcc-border px-2 py-0.5 text-bcc-muted transition hover:border-bcc-cyan/40 hover:text-bcc-text"
             >
               <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
         </div>
-        <div className="inline-flex items-center gap-2 self-start rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-semibold text-purple-200">
+        <div className="inline-flex items-center gap-2 self-start rounded-xl border border-bcc-cyan/30 bg-bcc-cyan/10 px-3 py-2 text-xs font-semibold text-bcc-cyan">
           <TrendingUp className="h-4 w-4" />
           Phase 2 · VelocityCurve
         </div>
@@ -66,7 +65,7 @@ export function Trade() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search curves…"
-          className="w-full rounded-xl border border-bcc-border bg-bcc-surface py-2.5 pl-9 pr-3 text-sm text-bcc-text outline-none transition placeholder:text-bcc-muted focus:border-purple-500/50"
+          className="w-full rounded-xl border border-bcc-border bg-bcc-surface py-2.5 pl-9 pr-3 text-sm text-bcc-text outline-none transition placeholder:text-bcc-muted focus:border-bcc-cyan/50"
         />
       </div>
 
@@ -81,7 +80,7 @@ export function Trade() {
           <p className="font-medium text-bcc-text">No curves found</p>
           <p className="mt-1 text-sm text-bcc-muted">
             Graduate a story market to spawn a VelocityToken, or browse{' '}
-            <Link to="/" className="text-purple-400 hover:underline">
+            <Link to="/" className="text-bcc-cyan hover:underline">
               the board
             </Link>
             .

@@ -1,6 +1,6 @@
 # Wesayso font — commercial license checklist
 
-The Bonding Curve Casino UI uses **Wesayso** (Billy Argel) as the display / branding typeface.
+The TrendingDrop UI uses **Wesayso** (Billy Argel) as the display / branding typeface.
 
 ## Current status
 
@@ -29,7 +29,7 @@ Referenced from `src/index.css` (`@font-face "Wesayso"` → `--font-display`).
 
 ## Pre-launch checklist
 
-- [ ] **Purchase** a commercial / webfont license covering website use for Bonding Curve Casino
+- [ ] **Purchase** a commercial / webfont license covering website use for TrendingDrop
 - [ ] **Keep the receipt** (PDF + order ID) in company records (not necessarily in git)
 - [ ] **Confirm webfont embedding is allowed** under the purchased license (WOFF2 in `public/fonts/`)
 - [ ] **Update this doc** with:

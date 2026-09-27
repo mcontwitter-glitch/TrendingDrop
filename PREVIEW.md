@@ -1,4 +1,4 @@
-# Preview — Bonding Curve Casino Story Markets
+# Preview — TrendingDrop Story Markets
 
 ## How to run
 
@@ -43,5 +43,5 @@ npm run preview
 ## Visual notes
 
 - Dark bg `#0a0a0a`, neon green `#39ff14`, pump.fun–inspired layout (not a logo/copy clone)
-- Branding: **Bonding Curve Casino** / **Story Markets**
+- Branding: **TrendingDrop** / **Story Markets**
 - Mobile-first card grid, hover lifts, staggered fade-in, king banner glow

@@ -7,7 +7,7 @@ function truncate(addr: string) {
 }
 
 /**
- * Purple connect control matching Launch / Connect look.
+ * Cyan glow connect control matching cyberpunk primary CTA.
  * Opens the wallet-adapter modal; shows truncated address when connected.
  */
 export function WalletButton() {
@@ -26,7 +26,7 @@ export function WalletButton() {
     <button
       type="button"
       onClick={() => setVisible(true)}
-      className="wallet-connect-btn inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-purple-500 sm:px-3 sm:text-sm"
+      className="wallet-connect-btn bcc-glow-btn inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white sm:px-3 sm:text-sm"
     >
       <Wallet className="h-3.5 w-3.5" />
       <span>{label}</span>

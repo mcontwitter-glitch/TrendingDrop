@@ -1,6 +1,7 @@
 import { PublicKey } from '@solana/web3.js'
 import type { LoreAssetView, MergeProposalStatus, MergeProposalView } from '../../types'
 import { mockCurves } from '../../data/mockCurves'
+import { coverForTicker, hashCover } from '../tokenCovers'
 
 export interface OnChainMergeProposal {
   absorber: PublicKey
@@ -40,10 +41,22 @@ function num(v: { toNumber(): number } | number | bigint | undefined): number {
   return v.toNumber()
 }
 
-function curveMeta(pubkey: string): { ticker: string; title: string; emoji: string } {
+function curveMeta(pubkey: string): {
+  ticker: string
+  title: string
+  emoji: string
+  imageUrl: string
+} {
   const c = mockCurves.find((x) => x.pubkey === pubkey || x.id === pubkey)
-  if (c) return { ticker: c.ticker, title: c.title, emoji: c.emoji }
-  return { ticker: pubkey.slice(0, 4).toUpperCase(), title: 'Curve', emoji: '📜' }
+  if (c)
+    return {
+      ticker: c.ticker,
+      title: c.title,
+      emoji: c.emoji,
+      imageUrl: c.imageUrl ?? coverForTicker(c.ticker),
+    }
+  const ticker = pubkey.slice(0, 4).toUpperCase()
+  return { ticker, title: 'Curve', emoji: '📜', imageUrl: hashCover(pubkey) }
 }
 
 export function deriveMergeStatus(
@@ -81,9 +94,11 @@ export function mapMergeProposal(
     absorberTicker: abs.ticker,
     absorberTitle: abs.title,
     absorberEmoji: abs.emoji,
+    absorberImageUrl: abs.imageUrl,
     targetTicker: tgt.ticker,
     targetTitle: tgt.title,
     targetEmoji: tgt.emoji,
+    targetImageUrl: tgt.imageUrl,
     proposer: a.proposer.toBase58(),
     proposedAt: num(a.proposedAt) * 1000,
     votingEnds: votingEnds * 1000,
@@ -130,6 +145,7 @@ export function mapLoreAsset(pubkey: string, a: OnChainLoreAsset): LoreAssetView
     ticker: meta.ticker,
     title: meta.title,
     emoji: meta.emoji,
+    imageUrl: meta.imageUrl,
     onChain: true,
   }
 }

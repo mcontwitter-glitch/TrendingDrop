@@ -10,7 +10,7 @@ export type LoreMerge = {
     "name": "loreMerge",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Bonding Curve Casino — Phase 3 Lore Merge"
+    "description": "TrendingDrop — Phase 3 Lore Merge"
   },
   "instructions": [
     {

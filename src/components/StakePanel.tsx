@@ -79,7 +79,7 @@ export function StakePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-5">
+    <div className="bcc-card rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-display text-lg font-bold">Stake on this story</h3>
         <span className="text-[10px] uppercase tracking-wider text-bcc-muted">
@@ -111,7 +111,7 @@ export function StakePanel({
           step="0.01"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="w-full rounded-xl border border-bcc-border bg-bcc-bg px-4 py-3 pr-14 font-display text-lg font-semibold text-bcc-text outline-none transition focus:border-bcc-green/60 focus:ring-1 focus:ring-bcc-green/25"
+          className="w-full rounded-xl border border-bcc-border bg-bcc-bg amount-input px-4 py-3 pr-14 text-lg font-semibold text-bcc-text outline-none transition focus:border-bcc-green/60 focus:ring-1 focus:ring-bcc-green/25"
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-bcc-muted">
           SOL
@@ -127,7 +127,7 @@ export function StakePanel({
             className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
               num === q
                 ? 'border-bcc-green/50 bg-bcc-green/10 text-bcc-green'
-                : 'border-bcc-border bg-bcc-elevated text-bcc-muted hover:border-zinc-500 hover:text-bcc-text'
+                : 'border-bcc-border bg-bcc-elevated text-bcc-muted hover:border-bcc-cyan/40 hover:text-bcc-text'
             }`}
           >
             {q} SOL
@@ -139,7 +139,7 @@ export function StakePanel({
         type="button"
         disabled={!valid || submitting}
         onClick={() => void handleStake()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-bcc-green py-3.5 font-display text-sm font-bold text-white transition hover:bg-bcc-green-dim disabled:cursor-not-allowed disabled:opacity-40"
+        className="bcc-glow-btn flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-display text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Zap className="h-4 w-4" />
         {submitting

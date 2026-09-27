@@ -56,17 +56,17 @@ function DualBars({ attention, velocity }: { attention: number; velocity: number
         label="Attention"
         value={attention}
         pct={aPct}
-        barClass="bg-purple-500"
-        labelClass="text-purple-300"
-        valueClass="text-purple-200"
+        barClass="bg-bcc-cyan"
+        labelClass="text-bcc-cyan"
+        valueClass="text-cyan-100"
       />
       <BarRow
         label="Price velocity"
         value={velocity}
         pct={vPct}
-        barClass="bg-bcc-green"
-        labelClass="text-bcc-green"
-        valueClass="text-red-200"
+        barClass="bg-bcc-gold"
+        labelClass="text-bcc-gold"
+        valueClass="text-amber-100"
       />
     </div>
   )
@@ -121,18 +121,18 @@ export function VelocityChart({ curve }: VelocityChartProps) {
 
   const modeClass =
     curve.mode === 'steepen'
-      ? 'border-purple-500/40 bg-purple-500/10 text-purple-300'
+      ? 'border-bcc-cyan/40 bg-bcc-cyan/10 text-bcc-cyan'
       : curve.mode === 'flatten'
         ? 'border-amber-400/35 bg-amber-400/10 text-amber-200'
         : 'border-bcc-border bg-bcc-elevated text-bcc-muted'
 
   return (
-    <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-5">
+    <div className="bcc-card rounded-2xl p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold">
-          <span style={{ color: '#c084fc' }}>Attention</span>
-          <span style={{ color: '#a1a1aa' }}> vs </span>
-          <span style={{ color: '#ef4444' }}>velocity</span>
+          <span style={{ color: '#22d3ee' }}>Attention</span>
+          <span style={{ color: '#7a9bb0' }}> vs </span>
+          <span style={{ color: '#fbbf24' }}>velocity</span>
         </h2>
         <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${modeClass}`}>
           {modeLabel}
@@ -140,8 +140,8 @@ export function VelocityChart({ curve }: VelocityChartProps) {
       </div>
 
       <div className="mb-5 flex flex-col gap-4 sm:flex-row">
-        <Sparkline values={attentionHist} color="#a855f7" label="Attention score" />
-        <Sparkline values={velocityHist} color="#ef4444" label="Price velocity" />
+        <Sparkline values={attentionHist} color="#22d3ee" label="Attention score" />
+        <Sparkline values={velocityHist} color="#fbbf24" label="Price velocity" />
       </div>
 
       <DualBars attention={curve.attentionScore} velocity={curve.priceVelocity} />

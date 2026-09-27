@@ -94,7 +94,7 @@ function ToastBanner() {
             ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-100'
             : t.kind === 'error'
               ? 'border-red-400/40 bg-red-500/15 text-red-100'
-              : 'border-purple-400/30 bg-purple-500/15 text-purple-100'
+              : 'border-bcc-cyan/30 bg-bcc-cyan/15 text-cyan-100'
         const Icon =
           t.kind === 'success' ? CheckCircle2 : t.kind === 'error' ? AlertCircle : Info
         return (

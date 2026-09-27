@@ -61,10 +61,10 @@ export function HolderPanel({ curve, holder, onClaimed }: HolderPanelProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-bcc-border bg-bcc-surface p-5">
+    <div className="bcc-card rounded-2xl p-5">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-display text-lg font-bold">Holder rewards</h3>
-        <Gift className="h-4 w-4 text-purple-400" />
+        <Gift className="h-4 w-4 text-bcc-cyan" />
       </div>
       <p className="mb-4 text-xs text-bcc-muted">
         50% of sell tax accrues to holders pro-rata. Claim anytime.
@@ -85,17 +85,17 @@ export function HolderPanel({ curve, holder, onClaimed }: HolderPanelProps) {
       <div className="mb-4 grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-bcc-border/60 bg-bcc-bg px-3 py-3">
           <div className="text-[10px] uppercase tracking-wide text-bcc-muted">Balance</div>
-          <div className="mt-0.5 font-display text-base font-bold text-bcc-text">
+          <div className="mt-0.5 font-stat text-base text-bcc-text">
             {formatTokenAmount(balance)}
           </div>
           <div className="text-[10px] text-bcc-muted">${curve.ticker}</div>
         </div>
-        <div className="rounded-xl border border-purple-500/25 bg-purple-500/10 px-3 py-3">
-          <div className="text-[10px] uppercase tracking-wide text-purple-300/80">Claimable</div>
-          <div className="mt-0.5 font-display text-base font-bold text-purple-200">
+        <div className="rounded-xl border border-bcc-gold/30 bg-bcc-gold/10 px-3 py-3">
+          <div className="text-[10px] uppercase tracking-wide text-bcc-gold/80">Claimable</div>
+          <div className="mt-0.5 font-stat text-base text-bcc-gold">
             {formatLamportsAsSol(claimable)} SOL
           </div>
-          <div className="text-[10px] text-purple-300/70">
+          <div className="text-[10px] text-bcc-gold/70">
             Pool {formatLamportsAsSol(curve.holderRewardsPoolLamports)}
           </div>
         </div>
@@ -105,7 +105,7 @@ export function HolderPanel({ curve, holder, onClaimed }: HolderPanelProps) {
         type="button"
         disabled={submitting || (curve.onChain && claimable <= 0)}
         onClick={() => void handleClaim()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 font-display text-sm font-bold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-40"
+        className="bcc-glow-btn flex w-full items-center justify-center gap-2 rounded-xl py-3 font-display text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
       >
         {submitting ? 'Confirm in wallet…' : 'Claim rewards'}
       </button>
