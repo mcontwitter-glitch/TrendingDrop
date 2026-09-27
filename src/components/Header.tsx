@@ -11,9 +11,13 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-bcc-border/80 bg-bcc-bg/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:h-16 sm:px-6">
         <Link to="/" className="group flex items-center gap-2.5 shrink-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-bcc-cyan/30 bg-bcc-surface text-lg shadow-[0_0_12px_rgba(34,211,238,0.2)] transition group-hover:border-bcc-cyan/60">
-            ✦
-          </div>
+          <img
+            src={`${import.meta.env.BASE_URL}brand/logo.png`}
+            alt="TrendingDrop"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-xl border border-bcc-cyan/30 object-cover shadow-[0_0_12px_rgba(34,211,238,0.25)] transition group-hover:border-bcc-cyan/60 group-hover:shadow-[0_0_16px_rgba(34,211,238,0.4)]"
+          />
           <div className="leading-tight">
             <div className="font-display text-sm font-bold tracking-tight sm:text-base">
               TrendingDrop

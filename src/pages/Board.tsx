@@ -40,6 +40,15 @@ export function Board() {
     <div>
       <LiveTicker />
 
+      <div className="relative overflow-hidden border-b border-bcc-cyan/20">
+        <img
+          src={`${import.meta.env.BASE_URL}brand/banner.png`}
+          alt="TrendingDrop — Story Markets"
+          className="h-28 w-full object-cover object-center sm:h-36 md:h-44"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-bcc-bg via-bcc-bg/40 to-transparent" />
+      </div>
+
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

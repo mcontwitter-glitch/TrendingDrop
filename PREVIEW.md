@@ -45,3 +45,17 @@ npm run preview
 - Dark bg `#0a0a0a`, neon green `#39ff14`, pump.fun–inspired layout (not a logo/copy clone)
 - Branding: **TrendingDrop** / **Story Markets**
 - Mobile-first card grid, hover lifts, staggered fade-in, king banner glow
+
+## GitHub Pages
+
+Live site: **https://mcontwitter-glitch.github.io/TrendingDrop/**
+
+Deployed via `.github/workflows/pages.yml` (Actions → Pages). Vite `base` is `/TrendingDrop/` for the project site.
+
+### Custom domain (later)
+
+1. **Apex**: A records → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+2. **www**: CNAME → `mcontwitter-glitch.github.io`
+3. Repo **Settings → Pages → Custom domain**, then wait for DNS/HTTPS.
+4. When the custom domain is live, change Vite `base` to `/` and add `public/CNAME` with that domain (tell us the domain to wire it).
+

@@ -15,7 +15,7 @@ export default function App() {
   const cluster = clusterLabel(RPC_URL)
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <div className="app-bg min-h-screen">
         <Header />
         <main>
@@ -32,6 +32,13 @@ export default function App() {
           </Routes>
         </main>
         <footer className="border-t border-bcc-border py-8 text-center text-xs text-bcc-muted">
+          <img
+            src={`${import.meta.env.BASE_URL}brand/logo.png`}
+            alt=""
+            width={40}
+            height={40}
+            className="mx-auto mb-2 h-10 w-10 rounded-xl border border-bcc-cyan/25 object-cover shadow-[0_0_12px_rgba(34,211,238,0.2)]"
+          />
           <p className="font-display font-semibold">TrendingDrop</p>
           <p className="mt-1">
             Story Markets · VelocityCurve · LoreMerge · Reputation · On-chain when connected · mock
