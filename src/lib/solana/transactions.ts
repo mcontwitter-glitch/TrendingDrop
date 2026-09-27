@@ -2,7 +2,7 @@ import { BN, type Program } from '@coral-xyz/anchor'
 import { PublicKey, SystemProgram } from '@solana/web3.js'
 import type { NarrativeAuction } from '../../idl/narrative_auction'
 import { CURVE_PROGRAM_ID, LAMPORTS_PER_SOL } from './constants'
-import { findConfigPda, findStakePda, findStoryPda, findVaultPda } from './pdas'
+import { findConfigPda, findStakePda, findStoryPda, findUserStakeIndexPda, findVaultPda } from './pdas'
 import { fetchConfig } from './program'
 import { hashNarrativeContent } from './contentHash'
 import { bytesToHex, saveNarrativeMetadata, type NarrativeMetadata } from './metadata'
@@ -154,6 +154,7 @@ export async function stakeOnNarrative(
 
   const [vaultPda] = findVaultPda(storyPubkey, program.programId)
   const [stakePda] = findStakePda(storyPubkey, staker, program.programId)
+  const [userStakeIndexPda] = findUserStakeIndexPda(staker, program.programId)
 
   try {
     const signature = await program.methods
@@ -163,6 +164,7 @@ export async function stakeOnNarrative(
         story: storyPubkey,
         vault: vaultPda,
         stakePosition: stakePda,
+        userStakeIndex: userStakeIndexPda,
         treasury: config.treasury,
         staker,
         systemProgram: SystemProgram.programId,

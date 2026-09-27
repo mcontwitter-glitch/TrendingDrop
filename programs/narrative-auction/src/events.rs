@@ -88,3 +88,12 @@ pub struct StakeClaimed {
     pub amount: u64,
     pub claimed_total: u64,
 }
+
+#[event]
+pub struct UserStakeIndexUpdated {
+    pub user: Pubkey,
+    pub story: Pubkey,
+    pub active_stakes: u8,
+    /// +1 on open, -1 on close (claim / forfeited resolve).
+    pub delta: i8,
+}

@@ -8,6 +8,7 @@ import { PROGRAM_ID } from './constants'
  * - Story vault:      [b"story-vault", story_pubkey]
  * - StakePosition:    [b"stake", story_pubkey, staker]
  * - RankingBoard:     [b"ranking-board"]
+ * - UserStakeIndex:   [b"user-stakes", user]
  */
 
 export const CONFIG_SEED = Buffer.from('narrative-config')
@@ -15,6 +16,7 @@ export const STORY_SEED = Buffer.from('story')
 export const VAULT_SEED = Buffer.from('story-vault')
 export const STAKE_SEED = Buffer.from('stake')
 export const RANKING_BOARD_SEED = Buffer.from('ranking-board')
+export const USER_STAKES_SEED = Buffer.from('user-stakes')
 
 export function findConfigPda(programId: PublicKey = PROGRAM_ID): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([CONFIG_SEED], programId)
@@ -53,4 +55,11 @@ export function findRankingBoardPda(
   programId: PublicKey = PROGRAM_ID,
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([RANKING_BOARD_SEED], programId)
+}
+
+export function findUserStakeIndexPda(
+  user: PublicKey,
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync([USER_STAKES_SEED, user.toBuffer()], programId)
 }

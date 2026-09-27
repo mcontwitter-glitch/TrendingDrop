@@ -46,4 +46,8 @@ pub enum NarrativeError {
     InvalidContributeAmount,
     #[msg("Curve program id mismatch")]
     InvalidCurveProgram,
+    #[msg("User has reached max_stakes_per_user open story stakes")]
+    MaxStakesExceeded,
+    #[msg("UserStakeIndex user mismatch")]
+    StakeIndexMismatch,
 }

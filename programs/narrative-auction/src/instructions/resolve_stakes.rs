@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::NarrativeError;
-use crate::events::StakesResolved;
-use crate::state::{MarketPhase, NarrativeConfig, StakePosition, StoryMarket};
+use crate::events::{StakesResolved, UserStakeIndexUpdated};
+use crate::state::{MarketPhase, NarrativeConfig, StakePosition, StoryMarket, UserStakeIndex};
 
 #[derive(Accounts)]
 pub struct ResolveStakes<'info> {
@@ -33,6 +33,15 @@ pub struct ResolveStakes<'info> {
         constraint = !stake_position.resolved @ NarrativeError::StakeAlreadyResolved,
     )]
     pub stake_position: Account<'info, StakePosition>,
+
+    /// Required so Forfeited positions can free a UserStakeIndex slot (no claim path).
+    #[account(
+        mut,
+        seeds = [UserStakeIndex::SEED, stake_position.staker.as_ref()],
+        bump = user_stake_index.bump,
+        constraint = user_stake_index.user == stake_position.staker @ NarrativeError::StakeIndexMismatch,
+    )]
+    pub user_stake_index: Account<'info, UserStakeIndex>,
 }
 
 /// Mark a single StakePosition claimable after Graduated / Failed / Forfeited.
@@ -50,6 +59,7 @@ pub struct ResolveStakes<'info> {
 ///
 /// **Forfeited (lost ranking; stakes feed winners):**
 /// - claimable = 0 (SOL already / will be moved via `contribute_losing_pool`)
+/// - Decrements UserStakeIndex (lifecycle ends without claim)
 ///
 /// Full multi-account loops exceed CU limits; crank once per StakePosition.
 pub fn resolve_stakes_handler(ctx: Context<ResolveStakes>) -> Result<()> {
@@ -92,6 +102,20 @@ pub fn resolve_stakes_handler(ctx: Context<ResolveStakes>) -> Result<()> {
 
     position.claimable = claimable;
     position.resolved = true;
+
+    // Forfeited never claims — free the open-stake slot now.
+    if story.phase == MarketPhase::Forfeited {
+        let index = &mut ctx.accounts.user_stake_index;
+        if index.active_stakes > 0 {
+            index.active_stakes = index.active_stakes.saturating_sub(1);
+            emit!(UserStakeIndexUpdated {
+                user: index.user,
+                story: story.key(),
+                active_stakes: index.active_stakes,
+                delta: -1,
+            });
+        }
+    }
 
     let phase_u8 = match story.phase {
         MarketPhase::Draft => 0,

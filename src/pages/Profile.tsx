@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, AlertCircle, Shield, Sparkles } from 'lucide-react'
 import { useProfile } from '../hooks/useProfile'
 import { useReputationProgram } from '../hooks/useReputationProgram'
-import { initializeProfile } from '../lib/solana/reputationTransactions'
+import { initializeProfile, mintReputationNft } from '../lib/solana/reputationTransactions'
 import { TierBadge } from '../components/TierBadge'
 import { useToast } from '../components/Toast'
 import { accuracyPct } from '../lib/solana/reputationMappers'
@@ -39,6 +39,23 @@ export function Profile() {
       await refresh()
     } catch (err) {
       toast.error('Initialize failed', err instanceof Error ? err.message : String(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleMintNft() {
+    if (!program || !publicKey) {
+      toast.info('Connect wallet', 'Mint requires a connected wallet on a deployed cluster')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const { signature, mint } = await mintReputationNft(program, publicKey)
+      toast.success('Reputation NFT minted', `${mint.toBase58().slice(0, 8)}… · ${signature.slice(0, 12)}…`)
+      await refresh()
+    } catch (err) {
+      toast.error('Mint failed', err instanceof Error ? err.message : String(err))
     } finally {
       setSubmitting(false)
     }
@@ -152,10 +169,27 @@ export function Profile() {
               </button>
             )}
 
+            {existsOnChain && !profile.nftMint && (
+              <button
+                type="button"
+                disabled={submitting || !program}
+                onClick={() => void handleMintNft()}
+                className="mt-4 w-full rounded-xl border border-purple-500/40 bg-purple-500/10 py-3 text-sm font-bold text-purple-100 transition hover:bg-purple-500/20 disabled:opacity-40"
+              >
+                {submitting ? 'Confirm in wallet…' : 'Mint Metaplex reputation NFT'}
+              </button>
+            )}
+
+            {profile.nftMint && (
+              <p className="mt-4 break-all font-mono text-[11px] text-bcc-muted">
+                NFT mint: {profile.nftMint}
+              </p>
+            )}
+
             <ul className="mt-5 space-y-1 text-[11px] text-bcc-muted">
               <li>· Bronze 0–20% · Silver 20–40% · Gold 40–60% · Diamond 60–80% · Mythic 80%+</li>
               <li>· Accuracy includes Weighted_Volume_Factor (cap 1.5x)</li>
-              <li>· Metaplex NFT mint deferred — on-chain profile is enough for badges</li>
+              <li>· Metaplex URI: https://bcc.local/reputation/[tier]/[owner].json (replaceable host)</li>
             </ul>
           </div>
         </>

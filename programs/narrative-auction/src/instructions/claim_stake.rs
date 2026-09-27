@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
 use crate::errors::NarrativeError;
-use crate::events::StakeClaimed;
-use crate::state::{MarketPhase, NarrativeConfig, StakePosition, StoryMarket};
+use crate::events::{StakeClaimed, UserStakeIndexUpdated};
+use crate::state::{MarketPhase, NarrativeConfig, StakePosition, StoryMarket, UserStakeIndex};
 
 #[derive(Accounts)]
 pub struct ClaimStake<'info> {
@@ -42,6 +42,15 @@ pub struct ClaimStake<'info> {
     )]
     pub stake_position: Account<'info, StakePosition>,
 
+    /// Decrement open-stake counter when this position closes.
+    #[account(
+        mut,
+        seeds = [UserStakeIndex::SEED, staker.key().as_ref()],
+        bump = user_stake_index.bump,
+        constraint = user_stake_index.user == staker.key() @ NarrativeError::StakeIndexMismatch,
+    )]
+    pub user_stake_index: Account<'info, UserStakeIndex>,
+
     #[account(mut)]
     pub staker: Signer<'info>,
 
@@ -53,6 +62,8 @@ pub struct ClaimStake<'info> {
 /// Vault safety:
 /// - Always leave rent-exempt minimum
 /// - On Graduated stories, also leave `liquidity_reserve` untouched for VelocityCurve
+///
+/// Also decrements `UserStakeIndex.active_stakes` (position lifecycle closed).
 pub fn claim_stake_handler(ctx: Context<ClaimStake>) -> Result<()> {
     let amount = ctx.accounts.stake_position.claimable;
     let story_key = ctx.accounts.story.key();
@@ -97,6 +108,18 @@ pub fn claim_stake_handler(ctx: Context<ClaimStake>) -> Result<()> {
         .claimed_total
         .checked_add(amount)
         .ok_or(NarrativeError::MathOverflow)?;
+
+    // Close the open-stake slot.
+    let index = &mut ctx.accounts.user_stake_index;
+    if index.active_stakes > 0 {
+        index.active_stakes = index.active_stakes.saturating_sub(1);
+        emit!(UserStakeIndexUpdated {
+            user: index.user,
+            story: story_key,
+            active_stakes: index.active_stakes,
+            delta: -1,
+        });
+    }
 
     emit!(StakeClaimed {
         story: story_key,

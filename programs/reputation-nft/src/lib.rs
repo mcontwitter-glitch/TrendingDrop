@@ -20,8 +20,16 @@
 //! - `TraderProfile` = `["profile", owner]`
 //!
 //! ## Metaplex
-//! NFT mint / metadata sync is **deferred**. `TraderProfile.nft_mint` is reserved;
-//! on-chain profile state (tier, accuracy, traits) is enough for Phase 4 UI badges.
+//! Call `mint_reputation_nft` after `initialize_profile` to create a Metaplex
+//! Token Metadata NFT (program id `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
+//! owned by the user. Update authority = profile PDA so `update_profile` can
+//! refresh on-chain name/URI on tier changes.
+//!
+//! Placeholder URI (replaceable off-chain host):
+//! `https://bcc.local/reputation/{tier}/{owner}.json`
+//!
+//! CPI uses raw instruction builders in `metaplex.rs` (no `mpl-token-metadata`
+//! crate — avoids toolchain conflicts with Solana 1.18 / Anchor 0.30).
 //!
 //! Call `update_profile` after NarrativeAuction resolve / LoreMerge execute.
 
@@ -31,6 +39,7 @@ pub mod errors;
 pub mod events;
 pub mod instructions;
 pub mod math;
+pub mod metaplex;
 pub mod state;
 
 use instructions::*;
@@ -48,11 +57,18 @@ pub mod reputation_nft {
     use super::*;
 
     /// Initialize an empty TraderProfile for `owner`.
+    /// NFT mint is a separate step (`mint_reputation_nft`).
     pub fn initialize_profile(ctx: Context<InitializeProfile>) -> Result<()> {
         initialize_profile_handler(ctx)
     }
 
+    /// Mint a Metaplex reputation NFT and store mint on TraderProfile.
+    pub fn mint_reputation_nft(ctx: Context<MintReputationNft>) -> Result<()> {
+        mint_reputation_nft_handler(ctx)
+    }
+
     /// Record a prediction outcome and recompute accuracy / tier.
+    /// Syncs Metaplex metadata when `nft_mint` is set.
     pub fn update_profile(
         ctx: Context<UpdateProfile>,
         was_correct: bool,

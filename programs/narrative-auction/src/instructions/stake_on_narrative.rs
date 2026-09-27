@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
 use crate::errors::NarrativeError;
-use crate::events::NarrativeStaked;
-use crate::state::{MarketPhase, NarrativeConfig, StakePosition, StoryMarket};
+use crate::events::{NarrativeStaked, UserStakeIndexUpdated};
+use crate::state::{MarketPhase, NarrativeConfig, StakePosition, StoryMarket, UserStakeIndex};
 
 #[derive(Accounts)]
 pub struct StakeOnNarrative<'info> {
@@ -39,6 +39,16 @@ pub struct StakeOnNarrative<'info> {
     )]
     pub stake_position: Account<'info, StakePosition>,
 
+    /// Global per-user open-stake counter. Seeds = ["user-stakes", staker].
+    #[account(
+        init_if_needed,
+        payer = staker,
+        space = 8 + UserStakeIndex::INIT_SPACE,
+        seeds = [UserStakeIndex::SEED, staker.key().as_ref()],
+        bump
+    )]
+    pub user_stake_index: Account<'info, UserStakeIndex>,
+
     /// CHECK: Must match config.treasury.
     #[account(
         mut,
@@ -59,6 +69,8 @@ pub struct StakeOnNarrative<'info> {
 /// - Fee `fee_bps` (default 2%) transferred to treasury
 /// - Net amount credited to story.total_staked and vault
 /// - Cannot top-up a position that was already resolved/claimed
+/// - New positions increment UserStakeIndex and reject when
+///   `active_stakes >= max_stakes_per_user`
 pub fn stake_on_narrative_handler(ctx: Context<StakeOnNarrative>, amount: u64) -> Result<()> {
     let config = &ctx.accounts.config;
     let clock = Clock::get()?;
@@ -123,9 +135,26 @@ pub fn stake_on_narrative_handler(ctx: Context<StakeOnNarrative>, amount: u64) -
 
     let story = &mut ctx.accounts.story;
     let position = &mut ctx.accounts.stake_position;
+    let index = &mut ctx.accounts.user_stake_index;
     let is_new = position.amount == 0 && position.staker == Pubkey::default();
 
+    // Init index on first use.
+    if index.user == Pubkey::default() {
+        index.user = ctx.accounts.staker.key();
+        index.active_stakes = 0;
+        index.bump = ctx.bumps.user_stake_index;
+    }
+    require!(
+        index.user == ctx.accounts.staker.key(),
+        NarrativeError::StakeIndexMismatch
+    );
+
     if is_new || position.staker == Pubkey::default() {
+        require!(
+            index.active_stakes < config.max_stakes_per_user,
+            NarrativeError::MaxStakesExceeded
+        );
+
         position.staker = ctx.accounts.staker.key();
         position.story = story_key;
         position.locked_at = clock.unix_timestamp;
@@ -139,6 +168,18 @@ pub fn stake_on_narrative_handler(ctx: Context<StakeOnNarrative>, amount: u64) -
             .unique_stakers
             .checked_add(1)
             .ok_or(NarrativeError::MathOverflow)?;
+
+        index.active_stakes = index
+            .active_stakes
+            .checked_add(1)
+            .ok_or(NarrativeError::MathOverflow)?;
+
+        emit!(UserStakeIndexUpdated {
+            user: index.user,
+            story: story_key,
+            active_stakes: index.active_stakes,
+            delta: 1,
+        });
     }
 
     position.amount = position

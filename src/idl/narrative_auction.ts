@@ -137,6 +137,37 @@ export type NarrativeAuction = {
           }
         },
         {
+          "name": "userStakeIndex",
+          "docs": [
+            "Decrement open-stake counter when this position closes."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  45,
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "staker"
+              }
+            ]
+          }
+        },
+        {
           "name": "staker",
           "writable": true,
           "signer": true,
@@ -932,6 +963,38 @@ export type NarrativeAuction = {
               }
             ]
           }
+        },
+        {
+          "name": "userStakeIndex",
+          "docs": [
+            "Required so Forfeited positions can free a UserStakeIndex slot (no claim path)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  45,
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_position.staker",
+                "account": "stakePosition"
+              }
+            ]
+          }
         }
       ],
       "args": []
@@ -1054,6 +1117,37 @@ export type NarrativeAuction = {
               {
                 "kind": "account",
                 "path": "story"
+              },
+              {
+                "kind": "account",
+                "path": "staker"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userStakeIndex",
+          "docs": [
+            "Global per-user open-stake counter. Seeds = [\"user-stakes\", staker]."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  45,
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  115
+                ]
               },
               {
                 "kind": "account",
@@ -1213,6 +1307,19 @@ export type NarrativeAuction = {
         111,
         98
       ]
+    },
+    {
+      "name": "userStakeIndex",
+      "discriminator": [
+        244,
+        100,
+        80,
+        34,
+        188,
+        158,
+        37,
+        219
+      ]
     }
   ],
   "events": [
@@ -1345,6 +1452,19 @@ export type NarrativeAuction = {
         102,
         36
       ]
+    },
+    {
+      "name": "userStakeIndexUpdated",
+      "discriminator": [
+        251,
+        176,
+        68,
+        6,
+        116,
+        140,
+        218,
+        121
+      ]
     }
   ],
   "errors": [
@@ -1457,6 +1577,16 @@ export type NarrativeAuction = {
       "code": 6021,
       "name": "invalidCurveProgram",
       "msg": "Curve program id mismatch"
+    },
+    {
+      "code": 6022,
+      "name": "maxStakesExceeded",
+      "msg": "User has reached max_stakes_per_user open story stakes"
+    },
+    {
+      "code": 6023,
+      "name": "stakeIndexMismatch",
+      "msg": "UserStakeIndex user mismatch"
     }
   ],
   "types": [
@@ -2018,6 +2148,65 @@ export type NarrativeAuction = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "userStakeIndex",
+      "docs": [
+        "Per-user index of distinct open story stakes.",
+        "Seeds = [b\"user-stakes\", user]",
+        "",
+        "Enforces `NarrativeConfig.max_stakes_per_user` (default 20): counts how many",
+        "distinct stories the user currently has an open StakePosition on. Incremented",
+        "when a new position is opened; decremented on claim (Graduated/Failed) or on",
+        "resolve when Forfeited (claimable = 0, lifecycle ends without claim)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "activeStakes",
+            "docs": [
+              "Distinct stories with an open (not yet closed) stake."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "userStakeIndexUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "activeStakes",
+            "type": "u8"
+          },
+          {
+            "name": "delta",
+            "docs": [
+              "+1 on open, -1 on close (claim / forfeited resolve)."
+            ],
+            "type": "i8"
           }
         ]
       }

@@ -58,7 +58,7 @@ pub struct TraderProfile {
     pub last_updated: i64,
     #[max_len(MAX_TRAITS)]
     pub special_traits: Vec<Trait>,
-    /// Placeholder for future Metaplex mint pubkey (zeros until minted).
+    /// Metaplex NFT mint pubkey (default until `mint_reputation_nft`).
     pub nft_mint: Pubkey,
     pub bump: u8,
 }

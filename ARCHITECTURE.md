@@ -34,9 +34,11 @@ flowchart TB
     NC[NarrativeConfig]
     SM[StoryMarket]
     SP[StakePosition]
+    USI[UserStakeIndex]
     V[(story-vault PDA)]
     NC --> SM
     SM --> SP
+    SP --> USI
     SM --> V
   end
 
@@ -72,6 +74,7 @@ flowchart TB
 | `StoryMarket` | `["story", creator, content_hash]` |
 | Story vault | `["story-vault", story]` |
 | `StakePosition` | `["stake", story, staker]` |
+| `UserStakeIndex` | `["user-stakes", user]` — distinct open story stakes; enforces `max_stakes_per_user` |
 | `RankingBoard` | `["ranking-board"]` |
 
 ### PDA seeds (Phase 2 — VelocityCurve)
@@ -91,6 +94,15 @@ flowchart TB
 | `MergeProposal` | `["merge", absorber, target]` |
 | `LoreAsset` | `["lore", origin_curve]` |
 | `VoteRecord` | `["vote", proposal, voter]` |
+
+### PDA seeds (ReputationNFT)
+
+| Account | Seeds |
+|---------|-------|
+| `TraderProfile` | `["profile", owner]` |
+| Metaplex metadata | `["metadata", metaqbxx…, mint]` (Token Metadata program) |
+
+URI placeholder: `https://bcc.local/reputation/{tier}/{owner}.json` (replaceable off-chain host).
 
 ---
 
@@ -141,11 +153,11 @@ NarrativeAuction::stake_on_narrative
 | **narrative-auction** | ✅ Full | ✅ 10 handlers | ✅ Real: config/update, story init, stake + fee, graduate + ranking board + **CPI invoke** to VelocityCurve (SPL mint) + **seed liquidity transfer** story vault → curve vault, fail/forfeit, contribute 20/80 pool, resolve math, claim |
 | **velocity-curve** | ✅ Full | ✅ 10 handlers | ✅ Dual-curve math, SPL mint/burn buy/sell + 1.5% fee, attention EMA, holder rewards, **oracle 3/5** (tx-signer **or** ed25519 proof), **`settle_merge`** for LoreMerge |
 | **lore-merge** | ✅ Full | ✅ 5 handlers | ✅ propose/vote/execute + lore init; 5% fee; history cap 10; **CPI `settle_merge`** moves vault SOL + sets `is_merged` / `merge_count` |
-| **reputation-nft** | ✅ Typed | ✅ `initialize_profile` + `update_profile` + `add_trait` | ✅ Accuracy × Weighted_Volume_Factor + Bronze→Mythic tiers; events/errors; Metaplex mint TODO |
+| **reputation-nft** | ✅ Typed | ✅ `initialize_profile` + `mint_reputation_nft` + `update_profile` + `add_trait` | ✅ Accuracy × Weighted_Volume_Factor + Bronze→Mythic tiers; Metaplex NFT via raw Token Metadata CPI |
 
 NarrativeAuction critical checks encoded:
 
-- Stake only while `Active` and `now < ends_at`; 2% (`fee_bps`) → treasury, net → vault
+- Stake only while `Active` and `now < ends_at`; 2% (`fee_bps`) → treasury, net → vault; new positions enforce `max_stakes_per_user` via `UserStakeIndex`
 - Graduate requires `ends_at` passed + threshold + `rank ∈ 1..=5` + unique `RankingBoard` slot
 - Below threshold → `fail_story` (reclaim); at/above threshold but not top-ranked → `forfeit_story` + `contribute_losing_pool` (20/80)
 - Resolve marks claimable: winners get principal + pro-rata 20% bonus; failed reclaim; forfeited claimable=0
@@ -215,9 +227,9 @@ Client helpers: `src/lib/solana/{merge*,reputation*}.ts` (PDAs match program see
 5. ~~Implement VelocityCurve math + enable graduate CPI~~ ✅
 6. ~~Oracle network 3/5 multi-sig crank~~ ✅ — ~~ed25519 sysvar proof~~ ✅ (both modes; see §9).
 7. ~~Seed curve vault~~ ✅ — graduate transfers `liquidity_reserve` → curve vault after `initialize_token`.
-8. ~~SPL mint / ATA~~ ✅ — mint on init; buy mints / sell burns; Metaplex metadata still deferred.
+8. ~~SPL mint / ATA~~ ✅ — mint on init; buy mints / sell burns; ~~Metaplex reputation NFT~~ ✅ (raw CPI).
 9. ~~LoreMerge core (propose/vote/execute)~~ ✅ — ~~VelocityCurve settle CPI~~ ✅; SPL burn-mint claim window still deferred.
-10. ~~UI trade + merge + reputation surfaces~~ ✅ — Metaplex NFT mint still deferred.
+10. ~~UI trade + merge + reputation surfaces~~ ✅ — Metaplex mint wired (`mint_reputation_nft`).
 11. **Indexer**: `indexer/` RPC-poll SQLite service + Yellowstone scaffold; set `VITE_INDEXER_URL` / `GEYSER_ENDPOINT` for prod.
 12. **CI**: `.github/workflows/ci.yml` (frontend + cargo check; optional anchor BPF).
 13. **Wesayso commercial license** — see `docs/WESAYSO_LICENSE.md` (blocker before public launch).
@@ -234,13 +246,15 @@ bonding-curve-casino/
   .github/workflows/ci.yml ← frontend + cargo check (+ optional anchor BPF)
   docs/WESAYSO_LICENSE.md  ← commercial font checklist (launch blocker)
   docs/DEVNET.md           ← Devnet deploy checklist (tools-version v1.45)
+  docs/CROSS_CHAIN.md      ← Base/Arbitrum mirror design (later)
+  cross-chain/             ← Solidity stubs + L2 env placeholders
   .env.example             ← Vite cluster / program ID env template
   scripts/localnet-smoke.mjs
   programs/
     narrative-auction/     ← Phase 1 (full scaffold)
     velocity-curve/        ← Phase 2 (dual-curve + oracle 3/5)
     lore-merge/            ← Phase 3 (propose/vote/execute)
-    reputation-nft/        ← Phase 4 profiles (Metaplex deferred)
+    reputation-nft/        ← Phase 4 profiles + Metaplex mint CPI
   indexer/                 ← SQLite RPC-poll indexer (+ Geyser scaffold)
   tests/                   ← TS flow stubs
   src/                     ← Vite React UI (Story / Trade / Merge / Profile)
@@ -265,7 +279,7 @@ bonding-curve-casino/
 - Env templates: root `.env.example` (Vite) + `indexer/.env.example`; Devnet steps in [`docs/DEVNET.md`](./docs/DEVNET.md).
 - **Pending:** real `GEYSER_ENDPOINT` (Yellowstone slot); Wesayso commercial license; optional public Devnet deploy (document-only until funded RPC/airdrop).
 
-**Left for ops:** GitHub remote + push; real Yellowstone endpoint; purchase Wesayso commercial license; Metaplex metadata / absorption burn-mint claim window.
+**Left for ops:** GitHub remote + push; real Yellowstone endpoint; purchase Wesayso commercial license; absorption burn-mint claim window; cross-chain relayer (see §10).
 
 ---
 
@@ -303,3 +317,19 @@ curve_pubkey (32)
 
 - New ix: `settle_merge(fee_lamports, liquidity_lamports)`.
 - LoreMerge `execute_merge` CPIs it with target/absorber vaults + treasury; clears `settlement_pending`.
+
+---
+
+## 10. Cross-chain later (Base / Arbitrum)
+
+Phase **“cross-chain later”** — mirror Story Markets + VelocityCurve read state onto
+Base and Arbitrum via message-passing (Wormhole / LayerZero / CCIP). Solana stays
+canonical; L2 contracts are read-only mirrors in v1.
+
+| Item | Location |
+|------|----------|
+| Design + message schema | [`docs/CROSS_CHAIN.md`](./docs/CROSS_CHAIN.md) |
+| Solidity stubs | `cross-chain/solidity/IStoryMarketMirror.sol`, `IVelocityMirror.sol` |
+| Env placeholders | `cross-chain/env/base.env.example`, `arbitrum.env.example` |
+
+Not required for Solana localnet / Devnet launch.

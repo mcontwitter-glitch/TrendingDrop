@@ -28,3 +28,24 @@ pub struct TraitAdded {
     pub trait_kind: Trait,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct ReputationNftMinted {
+    pub profile: Pubkey,
+    pub owner: Pubkey,
+    pub mint: Pubkey,
+    pub metadata: Pubkey,
+    pub tier: ReputationTier,
+    pub uri: String,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct ReputationNftMetadataUpdated {
+    pub profile: Pubkey,
+    pub owner: Pubkey,
+    pub mint: Pubkey,
+    pub tier: ReputationTier,
+    pub uri: String,
+    pub timestamp: i64,
+}

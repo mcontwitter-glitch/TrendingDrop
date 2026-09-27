@@ -76,7 +76,8 @@ export type ReputationNft = {
     {
       "name": "initializeProfile",
       "docs": [
-        "Initialize an empty TraderProfile for `owner`."
+        "Initialize an empty TraderProfile for `owner`.",
+        "NFT mint is a separate step (`mint_reputation_nft`)."
       ],
       "discriminator": [
         32,
@@ -126,9 +127,187 @@ export type ReputationNft = {
       "args": []
     },
     {
+      "name": "mintReputationNft",
+      "docs": [
+        "Mint a Metaplex reputation NFT and store mint on TraderProfile."
+      ],
+      "discriminator": [
+        240,
+        117,
+        21,
+        198,
+        77,
+        214,
+        150,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "New SPL mint (decimals = 0). Mint authority = owner for the create+mint flow;",
+            "revoked to None after minting supply=1."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tokenAccount",
+          "docs": [
+            "Owner's ATA receiving the single NFT token."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "metadata",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "profile"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "tokenMetadataProgram",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "updateProfile",
       "docs": [
-        "Record a prediction outcome and recompute accuracy / tier."
+        "Record a prediction outcome and recompute accuracy / tier.",
+        "Syncs Metaplex metadata when `nft_mint` is set."
       ],
       "discriminator": [
         98,
@@ -173,6 +352,16 @@ export type ReputationNft = {
             "the caller; gate via protocol config in a later revision if needed."
           ],
           "signer": true
+        },
+        {
+          "name": "metadata",
+          "docs": [
+            "When no NFT is minted, pass any writable account (e.g. profile) — ignored."
+          ],
+          "writable": true
+        },
+        {
+          "name": "tokenMetadataProgram"
         }
       ],
       "args": [
@@ -240,6 +429,32 @@ export type ReputationNft = {
       ]
     },
     {
+      "name": "reputationNftMetadataUpdated",
+      "discriminator": [
+        214,
+        53,
+        245,
+        63,
+        180,
+        243,
+        195,
+        13
+      ]
+    },
+    {
+      "name": "reputationNftMinted",
+      "discriminator": [
+        76,
+        92,
+        72,
+        157,
+        250,
+        198,
+        79,
+        188
+      ]
+    },
+    {
       "name": "traitAdded",
       "discriminator": [
         15,
@@ -283,6 +498,26 @@ export type ReputationNft = {
       "code": 6005,
       "name": "invalidVolume",
       "msg": "Invalid volume amount"
+    },
+    {
+      "code": 6006,
+      "name": "nftAlreadyMinted",
+      "msg": "Reputation NFT already minted for this profile"
+    },
+    {
+      "code": 6007,
+      "name": "invalidMetadataPda",
+      "msg": "Invalid Metaplex metadata PDA"
+    },
+    {
+      "code": 6008,
+      "name": "invalidMetadataProgram",
+      "msg": "Invalid Token Metadata program id"
+    },
+    {
+      "code": 6009,
+      "name": "nftNotMinted",
+      "msg": "Reputation NFT not yet minted"
     }
   ],
   "types": [
@@ -342,6 +577,82 @@ export type ReputationNft = {
           {
             "name": "totalPredictions",
             "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "reputationNftMetadataUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "profile",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier",
+            "type": {
+              "defined": {
+                "name": "reputationTier"
+              }
+            }
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "reputationNftMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "profile",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "metadata",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier",
+            "type": {
+              "defined": {
+                "name": "reputationTier"
+              }
+            }
+          },
+          {
+            "name": "uri",
+            "type": "string"
           },
           {
             "name": "timestamp",
@@ -433,7 +744,7 @@ export type ReputationNft = {
           {
             "name": "nftMint",
             "docs": [
-              "Placeholder for future Metaplex mint pubkey (zeros until minted)."
+              "Metaplex NFT mint pubkey (default until `mint_reputation_nft`)."
             ],
             "type": "pubkey"
           },

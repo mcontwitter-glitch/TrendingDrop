@@ -14,4 +14,12 @@ pub enum ReputationError {
     TraitDuplicate,
     #[msg("Invalid volume amount")]
     InvalidVolume,
+    #[msg("Reputation NFT already minted for this profile")]
+    NftAlreadyMinted,
+    #[msg("Invalid Metaplex metadata PDA")]
+    InvalidMetadataPda,
+    #[msg("Invalid Token Metadata program id")]
+    InvalidMetadataProgram,
+    #[msg("Reputation NFT not yet minted")]
+    NftNotMinted,
 }

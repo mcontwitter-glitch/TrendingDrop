@@ -9,7 +9,8 @@
 //! ## Instructions
 //! - `initialize_config` / `update_config` — singleton protocol config
 //! - `initialize_story` — open a new Active StoryMarket
-//! - `stake_on_narrative` — stake SOL (fee → treasury, net → vault)
+//! - `stake_on_narrative` — stake SOL (fee → treasury, net → vault); enforces
+//!   `max_stakes_per_user` via `UserStakeIndex` PDA `["user-stakes", user]`
 //! - `graduate_narrative` — permissionless crank when ended + threshold + rank 1–5
 //! - `fail_story` — mark Failed when below threshold (reclaim path)
 //! - `forfeit_story` — mark Forfeited when above threshold but not top-ranked

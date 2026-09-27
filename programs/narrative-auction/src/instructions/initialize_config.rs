@@ -8,8 +8,7 @@ use crate::state::NarrativeConfig;
 pub const DEFAULT_FEE_BPS: u16 = 200;
 /// Default min stake: 0.01 SOL.
 pub const DEFAULT_MIN_STAKE: u64 = 10_000_000;
-/// Default max distinct stories a user can stake on (soft limit; enforced off-chain /
-/// via future UserStakeIndex PDA — stored for crank/UI).
+/// Default max distinct stories a user can stake on (enforced via UserStakeIndex PDA).
 pub const DEFAULT_MAX_STAKES_PER_USER: u8 = 20;
 /// Default auction window: 48 hours.
 pub const DEFAULT_GRADUATION_WINDOW: i64 = 48 * 60 * 60;

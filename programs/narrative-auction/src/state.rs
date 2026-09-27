@@ -112,3 +112,23 @@ impl RankingBoard {
     pub const SEED: &'static [u8] = b"ranking-board";
     pub const MAX_RANK: u8 = 5;
 }
+
+/// Per-user index of distinct open story stakes.
+/// Seeds = [b"user-stakes", user]
+///
+/// Enforces `NarrativeConfig.max_stakes_per_user` (default 20): counts how many
+/// distinct stories the user currently has an open StakePosition on. Incremented
+/// when a new position is opened; decremented on claim (Graduated/Failed) or on
+/// resolve when Forfeited (claimable = 0, lifecycle ends without claim).
+#[account]
+#[derive(InitSpace)]
+pub struct UserStakeIndex {
+    pub user: Pubkey,
+    /// Distinct stories with an open (not yet closed) stake.
+    pub active_stakes: u8,
+    pub bump: u8,
+}
+
+impl UserStakeIndex {
+    pub const SEED: &'static [u8] = b"user-stakes";
+}
