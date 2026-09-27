@@ -48,14 +48,13 @@ npm run preview
 
 ## GitHub Pages
 
-Live site: **https://mcontwitter-glitch.github.io/TrendingDrop/**
+- **Custom domain (primary):** https://www.findtrending.com  
+- **Fallback:** https://mcontwitter-glitch.github.io/TrendingDrop/
 
-Deployed via `.github/workflows/pages.yml` (Actions → Pages). Vite `base` is `/TrendingDrop/` for the project site.
+Deployed via `.github/workflows/pages.yml`. Vite `base` is `/` (custom domain). `public/CNAME` is `www.findtrending.com`.
 
-### Custom domain (later)
-
-1. **Apex**: A records → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
-2. **www**: CNAME → `mcontwitter-glitch.github.io`
-3. Repo **Settings → Pages → Custom domain**, then wait for DNS/HTTPS.
-4. When the custom domain is live, change Vite `base` to `/` and add `public/CNAME` with that domain (tell us the domain to wire it).
+### DNS for www.findtrending.com
+1. At your DNS host, create a **CNAME** for `www` → `mcontwitter-glitch.github.io`
+2. (Optional) Apex `findtrending.com`: four **A** records → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`, then enable apex→www redirect in GitHub Pages or at your DNS host
+3. Wait for GitHub to verify DNS and provision HTTPS (can take minutes to hours)
 

@@ -63,7 +63,7 @@ Requires Anchor 0.30.x + Solana CLI to build/deploy (`anchor` / `solana` are not
 - **Indexer** (optional): see [`indexer/README.md`](./indexer/README.md). Set `VITE_INDEXER_URL=http://localhost:8787` for the LiveTicker feed.
 - **Devnet**: [`docs/DEVNET.md`](./docs/DEVNET.md) — `solana config set --url devnet`, airdrop, `anchor deploy` with tools-version v1.45, Phantom → Devnet.
 - **CI**: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
-- **GitHub Pages**: https://mcontwitter-glitch.github.io/TrendingDrop/ (Actions deploy). For a custom domain: apex A → `185.199.108.153` / `185.199.109.153` / `185.199.110.153` / `185.199.111.153`, or www CNAME → `mcontwitter-glitch.github.io`; then Settings → Pages → Custom domain. Switch Vite `base` to `/` once the custom domain is live (see [PREVIEW.md](./PREVIEW.md)).
+- **GitHub Pages**: https://www.findtrending.com (CNAME `www` → `mcontwitter-glitch.github.io`). Fallback: https://mcontwitter-glitch.github.io/TrendingDrop/. See [PREVIEW.md](./PREVIEW.md).
 - **Localnet smoke**: `node scripts/localnet-smoke.mjs` (requires running validator + deployed programs).
 
 ## License / Fonts

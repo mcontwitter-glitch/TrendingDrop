@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig({
-  base: '/TrendingDrop/',
+  base: '/',
   plugins: [
     nodePolyfills({
       include: ['buffer', 'process', 'stream', 'util'],
