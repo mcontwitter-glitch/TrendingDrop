@@ -233,6 +233,9 @@ bonding-curve-casino/
   Cargo.toml               ← workspace
   .github/workflows/ci.yml ← frontend + cargo check (+ optional anchor BPF)
   docs/WESAYSO_LICENSE.md  ← commercial font checklist (launch blocker)
+  docs/DEVNET.md           ← Devnet deploy checklist (tools-version v1.45)
+  .env.example             ← Vite cluster / program ID env template
+  scripts/localnet-smoke.mjs
   programs/
     narrative-auction/     ← Phase 1 (full scaffold)
     velocity-curve/        ← Phase 2 (dual-curve + oracle 3/5)
@@ -254,6 +257,13 @@ bonding-curve-casino/
 | **Indexer** | ✅ Scaffold | `indexer/` — SQLite via `sql.js` + RPC poll (`getProgramAccounts` / logs). HTTP: `GET /api/stories`, `/api/activity`, `/api/curves`. Yellowstone/Geyser plan in `indexer/README.md`; set `GEYSER_ENDPOINT` when available. Frontend: `useIndexerFeed` + LiveTicker prefers `VITE_INDEXER_URL`. |
 | **CI** | ✅ In-repo | `.github/workflows/ci.yml` — required: Node 22 frontend build + `cargo check --workspace`; optional `anchor-build` (`continue-on-error`). Remote/push is a separate auth step. |
 | **Wesayso font** | ⚠️ Blocker | Personal-use FontSpace font in `public/fonts/`. Buy commercial license before public launch — checklist in [`docs/WESAYSO_LICENSE.md`](./docs/WESAYSO_LICENSE.md). |
+
+**Ops readiness**
+
+- CI green (`.github/workflows/ci.yml` — frontend build + `cargo check`; optional Anchor BPF).
+- Localnet smoke: `scripts/localnet-smoke.mjs` (validator + deployed programs; `RPC_URL` defaults to `http://127.0.0.1:8899`).
+- Env templates: root `.env.example` (Vite) + `indexer/.env.example`; Devnet steps in [`docs/DEVNET.md`](./docs/DEVNET.md).
+- **Pending:** real `GEYSER_ENDPOINT` (Yellowstone slot); Wesayso commercial license; optional public Devnet deploy (document-only until funded RPC/airdrop).
 
 **Left for ops:** GitHub remote + push; real Yellowstone endpoint; purchase Wesayso commercial license; Metaplex metadata / absorption burn-mint claim window.
 

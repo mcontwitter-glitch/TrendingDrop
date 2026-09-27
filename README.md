@@ -59,6 +59,12 @@ Requires Anchor 0.30.x + Solana CLI to build/deploy (`anchor` / `solana` are not
 
 ## Infra
 
+- **Env**: copy [`.env.example`](./.env.example) → `.env` for Vite (`VITE_SOLANA_RPC_URL`, program IDs, `VITE_INDEXER_URL`).
 - **Indexer** (optional): see [`indexer/README.md`](./indexer/README.md). Set `VITE_INDEXER_URL=http://localhost:8787` for the LiveTicker feed.
+- **Devnet**: [`docs/DEVNET.md`](./docs/DEVNET.md) — `solana config set --url devnet`, airdrop, `anchor deploy` with tools-version v1.45, Phantom → Devnet.
 - **CI**: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
-- **Wesayso font license**: [`docs/WESAYSO_LICENSE.md`](./docs/WESAYSO_LICENSE.md) — commercial license required before public launch.
+- **Localnet smoke**: `node scripts/localnet-smoke.mjs` (requires running validator + deployed programs).
+
+## License / Fonts
+
+- **Wesayso**: personal-use only until commercial purchase — see [`docs/WESAYSO_LICENSE.md`](./docs/WESAYSO_LICENSE.md).
