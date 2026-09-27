@@ -246,6 +246,7 @@ trendingdrop/
   .github/workflows/ci.yml ← frontend + cargo check (+ optional anchor BPF)
   docs/WESAYSO_LICENSE.md  ← commercial font checklist (launch blocker)
   docs/DEVNET.md           ← Devnet deploy checklist (tools-version v1.45)
+  docs/MAINNET.md          ← Mainnet ops runbook (keys, authority, cutover)
   docs/CROSS_CHAIN.md      ← Base/Arbitrum mirror design (later)
   cross-chain/             ← Solidity stubs + L2 env placeholders
   .env.example             ← Vite cluster / program ID env template
@@ -276,10 +277,10 @@ trendingdrop/
 
 - CI green (`.github/workflows/ci.yml` — frontend build + `cargo check`; optional Anchor BPF).
 - Localnet smoke: `scripts/localnet-smoke.mjs` (validator + deployed programs; `RPC_URL` defaults to `http://127.0.0.1:8899`).
-- Env templates: root `.env.example` (Vite) + `indexer/.env.example`; Devnet steps in [`docs/DEVNET.md`](./docs/DEVNET.md).
-- **Pending:** real `GEYSER_ENDPOINT` (Yellowstone slot); Wesayso commercial license; optional public Devnet deploy (document-only until funded RPC/airdrop).
+- Env templates: root `.env.example` (Vite) + `indexer/.env.example`; Devnet: [`docs/DEVNET.md`](./docs/DEVNET.md); Mainnet: [`docs/MAINNET.md`](./docs/MAINNET.md).
+- **Pending:** real `GEYSER_ENDPOINT` (Yellowstone slot); Wesayso commercial license; Mainnet keys + multisig upgrade authority.
 
-**Left for ops:** GitHub remote + push; real Yellowstone endpoint; purchase Wesayso commercial license; absorption burn-mint claim window; cross-chain relayer (see §10).
+**Left for ops:** real Yellowstone endpoint; purchase Wesayso commercial license; Mainnet cutover per MAINNET.md; absorption burn-mint claim window; cross-chain relayer (see §10).
 
 ---
 

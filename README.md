@@ -61,7 +61,8 @@ Requires Anchor 0.30.x + Solana CLI to build/deploy (`anchor` / `solana` are not
 
 - **Env**: copy [`.env.example`](./.env.example) → `.env` for Vite (`VITE_SOLANA_RPC_URL`, program IDs, `VITE_INDEXER_URL`).
 - **Indexer** (optional): see [`indexer/README.md`](./indexer/README.md). Set `VITE_INDEXER_URL=http://localhost:8787` for the LiveTicker feed.
-- **Devnet**: [`docs/DEVNET.md`](./docs/DEVNET.md) — `solana config set --url devnet`, airdrop, `anchor deploy` with tools-version v1.45, Phantom → Devnet.
+- **Devnet**: [`docs/DEVNET.md`](./docs/DEVNET.md)
+- **Mainnet ops**: [`docs/MAINNET.md`](./docs/MAINNET.md) — keys, budget, deploy, authority, indexer/oracle cutover. — `solana config set --url devnet`, airdrop, `anchor deploy` with tools-version v1.45, Phantom → Devnet.
 - **CI**: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 - **GitHub Pages**: https://www.findtrending.com (CNAME `www` → `mcontwitter-glitch.github.io`). Fallback: https://mcontwitter-glitch.github.io/TrendingDrop/. See [PREVIEW.md](./PREVIEW.md).
 - **Localnet smoke**: `node scripts/localnet-smoke.mjs` (requires running validator + deployed programs).
