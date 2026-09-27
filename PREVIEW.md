@@ -53,6 +53,8 @@ npm run preview
 
 Deployed via `.github/workflows/pages.yml`. Vite `base` is `/` (custom domain). `public/CNAME` is `www.findtrending.com`.
 
+**Cluster:** GitHub Pages builds with **Devnet** RPC + program IDs (workflow env). Indexer URL is unset on Pages (on-chain/mock fallbacks). Switch to Mainnet per `docs/MAINNET.md` when ready.
+
 ### DNS for www.findtrending.com
 1. At your DNS host, create a **CNAME** for `www` → `mcontwitter-glitch.github.io`
 2. (Optional) Apex `findtrending.com`: four **A** records → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`, then enable apex→www redirect in GitHub Pages or at your DNS host
