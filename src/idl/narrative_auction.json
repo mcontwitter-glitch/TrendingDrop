@@ -1,0 +1,1998 @@
+{
+  "address": "75xWzXGb3A7UgpqDDL9ByVXpaZ8Zw4AF4i7whnVXyh8m",
+  "metadata": {
+    "name": "narrative_auction",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Bonding Curve Casino — Phase 1 Narrative Auction"
+  },
+  "instructions": [
+    {
+      "name": "claim_stake",
+      "discriminator": [
+        62,
+        145,
+        133,
+        242,
+        244,
+        59,
+        53,
+        139
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              },
+              {
+                "kind": "account",
+                "path": "staker"
+              }
+            ]
+          }
+        },
+        {
+          "name": "staker",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "stake_position"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "contribute_losing_pool",
+      "discriminator": [
+        141,
+        1,
+        52,
+        12,
+        50,
+        248,
+        241,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "source_story",
+          "docs": [
+            "Forfeited story whose vault SOL feeds the winner."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "source_story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "source_story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "source_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "source_story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "dest_story",
+          "docs": [
+            "Winner (or soon-to-graduate Active) narrative receiving the losing pool."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "dest_story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "dest_story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "dest_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "dest_story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "fail_story",
+      "discriminator": [
+        42,
+        21,
+        232,
+        85,
+        92,
+        201,
+        180,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "forfeit_story",
+      "discriminator": [
+        166,
+        60,
+        2,
+        116,
+        231,
+        20,
+        48,
+        125
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "graduate_narrative",
+      "discriminator": [
+        21,
+        32,
+        48,
+        232,
+        31,
+        141,
+        95,
+        249
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ranking_board",
+          "docs": [
+            "King-of-the-Hill rank slots (1..=5). Lazy-init on first graduate."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  97,
+                  110,
+                  107,
+                  105,
+                  110,
+                  103,
+                  45,
+                  98,
+                  111,
+                  97,
+                  114,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "docs": [
+            "Story SOL vault — retains winner principals + winning_pool / liquidity."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "curve_program"
+        },
+        {
+          "name": "token_mint",
+          "writable": true
+        },
+        {
+          "name": "curve_state",
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Crank / payer for RankingBoard init and future CPI rent."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "rank",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "curve_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_bps",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "min_stake",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_story",
+      "discriminator": [
+        44,
+        222,
+        203,
+        51,
+        69,
+        186,
+        15,
+        67
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "content_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "content_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "duration",
+          "type": "i64"
+        },
+        {
+          "name": "graduation_threshold",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "resolve_stakes",
+      "discriminator": [
+        218,
+        246,
+        68,
+        196,
+        44,
+        147,
+        203,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_position",
+          "docs": [
+            "The stake being marked claimable in this crank call."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              },
+              {
+                "kind": "account",
+                "path": "stake_position.staker",
+                "account": "StakePosition"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "stake_on_narrative",
+      "discriminator": [
+        217,
+        203,
+        70,
+        49,
+        37,
+        59,
+        141,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "docs": [
+            "Story SOL vault PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              },
+              {
+                "kind": "account",
+                "path": "staker"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "staker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_config",
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_bps",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "min_stake",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "treasury",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "curve_program",
+          "type": {
+            "option": "pubkey"
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "NarrativeConfig",
+      "discriminator": [
+        196,
+        155,
+        239,
+        15,
+        94,
+        3,
+        212,
+        204
+      ]
+    },
+    {
+      "name": "RankingBoard",
+      "discriminator": [
+        235,
+        106,
+        201,
+        166,
+        29,
+        242,
+        21,
+        212
+      ]
+    },
+    {
+      "name": "StakePosition",
+      "discriminator": [
+        78,
+        165,
+        30,
+        111,
+        171,
+        125,
+        11,
+        220
+      ]
+    },
+    {
+      "name": "StoryMarket",
+      "discriminator": [
+        143,
+        16,
+        240,
+        145,
+        12,
+        253,
+        111,
+        98
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ConfigInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
+      "name": "ConfigUpdated",
+      "discriminator": [
+        40,
+        241,
+        230,
+        122,
+        11,
+        19,
+        198,
+        194
+      ]
+    },
+    {
+      "name": "LosingPoolContributed",
+      "discriminator": [
+        81,
+        85,
+        77,
+        81,
+        56,
+        249,
+        154,
+        240
+      ]
+    },
+    {
+      "name": "NarrativeGraduated",
+      "discriminator": [
+        57,
+        200,
+        172,
+        47,
+        120,
+        203,
+        82,
+        125
+      ]
+    },
+    {
+      "name": "NarrativeStaked",
+      "discriminator": [
+        48,
+        33,
+        186,
+        51,
+        119,
+        204,
+        64,
+        88
+      ]
+    },
+    {
+      "name": "StakeClaimed",
+      "discriminator": [
+        231,
+        124,
+        83,
+        169,
+        100,
+        57,
+        96,
+        131
+      ]
+    },
+    {
+      "name": "StakesResolved",
+      "discriminator": [
+        202,
+        86,
+        169,
+        248,
+        98,
+        22,
+        187,
+        11
+      ]
+    },
+    {
+      "name": "StoryFailed",
+      "discriminator": [
+        152,
+        19,
+        194,
+        58,
+        49,
+        24,
+        14,
+        38
+      ]
+    },
+    {
+      "name": "StoryForfeited",
+      "discriminator": [
+        185,
+        159,
+        208,
+        225,
+        182,
+        24,
+        60,
+        190
+      ]
+    },
+    {
+      "name": "StoryInitialized",
+      "discriminator": [
+        180,
+        137,
+        133,
+        140,
+        105,
+        139,
+        102,
+        36
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "StakeTooSmall",
+      "msg": "Stake amount below minimum"
+    },
+    {
+      "code": 6001,
+      "name": "NotActive",
+      "msg": "Story market is not Active"
+    },
+    {
+      "code": 6002,
+      "name": "AuctionEnded",
+      "msg": "Auction has already ended"
+    },
+    {
+      "code": 6003,
+      "name": "AuctionNotEnded",
+      "msg": "Auction has not ended yet"
+    },
+    {
+      "code": 6004,
+      "name": "ThresholdNotMet",
+      "msg": "Graduation threshold not met"
+    },
+    {
+      "code": 6005,
+      "name": "ThresholdMet",
+      "msg": "Cannot fail: graduation threshold is met (graduate or forfeit instead)"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidRank",
+      "msg": "Rank must be 1–5 for graduation"
+    },
+    {
+      "code": 6007,
+      "name": "RankTaken",
+      "msg": "Rank slot already occupied by another story"
+    },
+    {
+      "code": 6008,
+      "name": "AlreadyResolved",
+      "msg": "Story already resolved (Graduated, Failed, or Forfeited)"
+    },
+    {
+      "code": 6009,
+      "name": "StakeAlreadyResolved",
+      "msg": "Stake position already resolved"
+    },
+    {
+      "code": 6010,
+      "name": "AlreadyClaimed",
+      "msg": "Stake already claimed"
+    },
+    {
+      "code": 6011,
+      "name": "NothingToClaim",
+      "msg": "Nothing claimable on this position"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidFeeBps",
+      "msg": "Invalid fee bps (max 1000 = 10%)"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidDuration",
+      "msg": "Duration outside allowed graduation window"
+    },
+    {
+      "code": 6014,
+      "name": "MathOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6015,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidContentHash",
+      "msg": "Content hash must be non-zero"
+    },
+    {
+      "code": 6017,
+      "name": "NotForfeited",
+      "msg": "Story must be Forfeited to contribute losing stakes"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidContributeDest",
+      "msg": "Destination must be Active or Graduated to receive losing pool"
+    },
+    {
+      "code": 6019,
+      "name": "InsufficientVault",
+      "msg": "Vault has insufficient lamports (rent / liquidity reserve)"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidContributeAmount",
+      "msg": "Contribute amount is zero or exceeds available"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidCurveProgram",
+      "msg": "Curve program id mismatch"
+    }
+  ],
+  "types": [
+    {
+      "name": "ConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_stake",
+            "type": "u64"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "curve_program",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LosingPoolContributed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "source_story",
+            "type": "pubkey"
+          },
+          {
+            "name": "dest_story",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "dest_winning_pool",
+            "type": "u64"
+          },
+          {
+            "name": "dest_winner_bonus_pool",
+            "type": "u64"
+          },
+          {
+            "name": "dest_liquidity_reserve",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketPhase",
+      "docs": [
+        "Lifecycle of a StoryMarket."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Draft"
+          },
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Graduated"
+          },
+          {
+            "name": "Failed"
+          },
+          {
+            "name": "Forfeited"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NarrativeConfig",
+      "docs": [
+        "Global config PDA: seeds = [b\"narrative-config\"]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "docs": [
+              "Protocol fee on each stake. 200 = 2%."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "min_stake",
+            "type": "u64"
+          },
+          {
+            "name": "max_stakes_per_user",
+            "type": "u8"
+          },
+          {
+            "name": "graduation_window",
+            "docs": [
+              "Default auction duration in seconds (24–48h)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "curve_program",
+            "docs": [
+              "VelocityCurve program id for graduation CPI."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NarrativeGraduated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "rank",
+            "type": "u8"
+          },
+          {
+            "name": "total_staked",
+            "type": "u64"
+          },
+          {
+            "name": "liquidity_reserve",
+            "type": "u64"
+          },
+          {
+            "name": "winner_bonus_pool",
+            "type": "u64"
+          },
+          {
+            "name": "winning_pool",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NarrativeStaked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "gross_amount",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "net_amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_staked",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RankingBoard",
+      "docs": [
+        "Singleton King-of-the-Hill board: which stories occupy ranks 1..=5.",
+        "Seeds = [b\"ranking-board\"]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ranks",
+            "docs": [
+              "Story pubkeys for ranks 1..=5 (`Pubkey::default()` = empty slot)."
+            ],
+            "type": {
+              "array": [
+                "pubkey",
+                5
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakeClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "claimed_total",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakePosition",
+      "docs": [
+        "Per-user stake on a story.",
+        "Seeds = [b\"stake\", story, staker]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "docs": [
+              "Net amount credited after fee (lamports)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "locked_at",
+            "type": "i64"
+          },
+          {
+            "name": "claimed",
+            "type": "bool"
+          },
+          {
+            "name": "accuracy_score",
+            "docs": [
+              "Updated post-resolution (0–10000 bps accuracy)."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "claimable",
+            "docs": [
+              "Claimable lamports after resolve (winner bonus and/or principal)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "is_winner",
+            "docs": [
+              "True if this stake is on a Graduated narrative."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "resolved",
+            "docs": [
+              "True once resolve_stakes has set claimable (even if 0 for Forfeited)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakesResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "phase",
+            "type": "u8"
+          },
+          {
+            "name": "claimable",
+            "type": "u64"
+          },
+          {
+            "name": "is_winner",
+            "type": "bool"
+          },
+          {
+            "name": "winner_bonus_pool",
+            "type": "u64"
+          },
+          {
+            "name": "liquidity_reserve",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StoryFailed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_staked",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StoryForfeited",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_staked",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StoryInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "content_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "graduation_threshold",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StoryMarket",
+      "docs": [
+        "One narrative / story market.",
+        "Seeds = [b\"story\", creator, content_hash]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "content_hash",
+            "docs": [
+              "IPFS / content-addressed hash of the narrative JSON."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "phase",
+            "type": {
+              "defined": {
+                "name": "MarketPhase"
+              }
+            }
+          },
+          {
+            "name": "total_staked",
+            "docs": [
+              "Net SOL credited to this narrative after fees (lamports)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "unique_stakers",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "graduation_threshold",
+            "docs": [
+              "Minimum total_staked required to graduate."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "winning_pool",
+            "docs": [
+              "Accumulated losing-stake SOL attributed to this winner (pre-split)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rank",
+            "docs": [
+              "Rank assigned at graduation (1..=5). 0 = unranked."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "liquidity_reserve",
+            "docs": [
+              "SOL reserved for initial VelocityCurve liquidity (80% of winning_pool)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "winner_bonus_pool",
+            "docs": [
+              "SOL reserved for proportional winner payouts (20% of winning_pool)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "contributed_out",
+            "docs": [
+              "Lamports already transferred out of this vault via contribute (Forfeited)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "claimed_total",
+            "docs": [
+              "Lamports paid out via claim_stake (vault accounting)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

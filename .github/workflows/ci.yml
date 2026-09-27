@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  indexer:
+    name: indexer
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: indexer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: indexer/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+
+  anchor-check:
+    name: cargo-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: cargo check --workspace
+        run: cargo check --workspace
+
+  # Optional BPF build — may be flaky / heavy on ubuntu-latest without full Solana platform-tools.
+  # Required gate is cargo-check + frontend; this job continues on error.
+  anchor-build:
+    name: anchor-build (optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Solana CLI (best-effort)
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v1.18.26/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install Anchor CLI
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force || true
+          avm install 0.30.1 || true
+          avm use 0.30.1 || true
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: anchor build velocity_curve
+        run: |
+          anchor build -p velocity_curve -- --tools-version v1.45
+        # Documented alternative if BPF tools missing:
+        #   cargo check --workspace
+        # Full BPF is optional; see continue-on-error above.

@@ -1,0 +1,29 @@
+[toolchain]
+anchor_version = "0.30.1"
+solana_version = "1.18.26"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+lore_merge = "8pSr3X9iP66rvqMWT4S2gsEGtS8VnCLZtJayY9NB9ySy"
+narrative_auction = "75xWzXGb3A7UgpqDDL9ByVXpaZ8Zw4AF4i7whnVXyh8m"
+reputation_nft = "DrzQKZpvg8y7Gymp5yz2upX24v3fV7j7eFuqT31Nxgvd"
+velocity_curve = "5VbDjccBDNVCPLpSgxyuw7ptYekrcxH8FySBxaAXx6C"
+
+[programs.localnet]
+lore_merge = "8pSr3X9iP66rvqMWT4S2gsEGtS8VnCLZtJayY9NB9ySy"
+narrative_auction = "75xWzXGb3A7UgpqDDL9ByVXpaZ8Zw4AF4i7whnVXyh8m"
+reputation_nft = "DrzQKZpvg8y7Gymp5yz2upX24v3fV7j7eFuqT31Nxgvd"
+velocity_curve = "5VbDjccBDNVCPLpSgxyuw7ptYekrcxH8FySBxaAXx6C"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

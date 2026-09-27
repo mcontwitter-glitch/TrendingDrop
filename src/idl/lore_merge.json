@@ -1,0 +1,1253 @@
+{
+  "address": "8pSr3X9iP66rvqMWT4S2gsEGtS8VnCLZtJayY9NB9ySy",
+  "metadata": {
+    "name": "lore_merge",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Bonding Curve Casino — Phase 3 Lore Merge"
+  },
+  "instructions": [
+    {
+      "name": "execute_merge",
+      "docs": [
+        "Execute absorption after quorum + voting window."
+      ],
+      "discriminator": [
+        118,
+        136,
+        161,
+        164,
+        6,
+        225,
+        143,
+        51
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal.absorber",
+                "account": "MergeProposal"
+              },
+              {
+                "kind": "account",
+                "path": "proposal.target",
+                "account": "MergeProposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "absorber_lore",
+          "docs": [
+            "Absorber lore — gains history entry + lore_power bump."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  114,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal.absorber",
+                "account": "MergeProposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "target_lore",
+          "docs": [
+            "Target lore — transfers current_holder to absorber."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  114,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal.target",
+                "account": "MergeProposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "absorber_curve"
+        },
+        {
+          "name": "target_curve"
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "executor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_config",
+      "docs": [
+        "Bootstrap protocol config (treasury, velocity program, vote params)."
+      ],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "velocity_curve_program"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_bps",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "proposer_min_bps",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "quorum_bps",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "voting_duration_secs",
+          "type": {
+            "option": "i64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_lore_asset",
+      "docs": [
+        "Register a LoreAsset for a graduated VelocityToken curve."
+      ],
+      "discriminator": [
+        220,
+        157,
+        132,
+        39,
+        212,
+        118,
+        201,
+        144
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "curve"
+        },
+        {
+          "name": "lore_asset",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  114,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "curve"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "content_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "propose_merge",
+      "docs": [
+        "Create merge proposal. Requires holding >1% of absorber supply."
+      ],
+      "discriminator": [
+        116,
+        243,
+        50,
+        14,
+        255,
+        207,
+        76,
+        126
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "absorber"
+              },
+              {
+                "kind": "account",
+                "path": "target"
+              }
+            ]
+          }
+        },
+        {
+          "name": "absorber"
+        },
+        {
+          "name": "target"
+        },
+        {
+          "name": "absorber_lore",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  114,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "absorber"
+              }
+            ]
+          }
+        },
+        {
+          "name": "target_lore",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  114,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "target"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposer_holder"
+        },
+        {
+          "name": "proposer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "target_token",
+          "type": "pubkey"
+        },
+        {
+          "name": "absorption_ratio",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "vote_merge",
+      "docs": [
+        "Vote with holder balance (lore_power soft bonus). One vote per wallet."
+      ],
+      "discriminator": [
+        31,
+        122,
+        95,
+        31,
+        18,
+        72,
+        93,
+        253
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  103,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal.absorber",
+                "account": "MergeProposal"
+              },
+              {
+                "kind": "account",
+                "path": "proposal.target",
+                "account": "MergeProposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vote_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  111,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal"
+              },
+              {
+                "kind": "account",
+                "path": "voter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "voter_holder"
+        },
+        {
+          "name": "voter",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "support",
+          "type": "bool"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "LoreAsset",
+      "discriminator": [
+        0,
+        171,
+        115,
+        117,
+        120,
+        235,
+        120,
+        207
+      ]
+    },
+    {
+      "name": "MergeConfig",
+      "discriminator": [
+        188,
+        128,
+        90,
+        187,
+        61,
+        228,
+        50,
+        36
+      ]
+    },
+    {
+      "name": "MergeProposal",
+      "discriminator": [
+        9,
+        123,
+        176,
+        217,
+        218,
+        235,
+        50,
+        3
+      ]
+    },
+    {
+      "name": "VoteRecord",
+      "discriminator": [
+        112,
+        9,
+        123,
+        165,
+        234,
+        9,
+        157,
+        167
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "LoreAssetInitialized",
+      "discriminator": [
+        141,
+        56,
+        34,
+        75,
+        246,
+        29,
+        77,
+        252
+      ]
+    },
+    {
+      "name": "MergeConfigInitialized",
+      "discriminator": [
+        132,
+        71,
+        193,
+        118,
+        248,
+        100,
+        124,
+        151
+      ]
+    },
+    {
+      "name": "MergeExecuted",
+      "discriminator": [
+        212,
+        9,
+        237,
+        250,
+        181,
+        177,
+        71,
+        244
+      ]
+    },
+    {
+      "name": "MergeProposed",
+      "discriminator": [
+        113,
+        180,
+        73,
+        36,
+        170,
+        89,
+        47,
+        59
+      ]
+    },
+    {
+      "name": "MergeVoteCast",
+      "discriminator": [
+        57,
+        35,
+        21,
+        240,
+        178,
+        18,
+        213,
+        50
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6001,
+      "name": "MathOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6002,
+      "name": "ZeroAmount",
+      "msg": "Amount must be > 0"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidCurveOwner",
+      "msg": "Invalid VelocityCurve account owner"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidCurveData",
+      "msg": "Failed to deserialize VelocityCurve account"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidHolder",
+      "msg": "Holder position does not belong to voter / curve"
+    },
+    {
+      "code": 6006,
+      "name": "InsufficientHoldings",
+      "msg": "Insufficient absorber holdings to propose (>1% required)"
+    },
+    {
+      "code": 6007,
+      "name": "SameToken",
+      "msg": "Absorber and target must differ"
+    },
+    {
+      "code": 6008,
+      "name": "AbsorberTooYoung",
+      "msg": "Absorber lore not old enough for merge (need 7 days)"
+    },
+    {
+      "code": 6009,
+      "name": "TargetAlreadyAbsorbed",
+      "msg": "Target lore already absorbed"
+    },
+    {
+      "code": 6010,
+      "name": "AbsorberInactive",
+      "msg": "Absorber lore is absorbed / inactive"
+    },
+    {
+      "code": 6011,
+      "name": "VotingEnded",
+      "msg": "Voting period has ended"
+    },
+    {
+      "code": 6012,
+      "name": "VotingActive",
+      "msg": "Voting period not ended"
+    },
+    {
+      "code": 6013,
+      "name": "QuorumNotMet",
+      "msg": "Quorum not reached"
+    },
+    {
+      "code": 6014,
+      "name": "ProposalRejected",
+      "msg": "Proposal rejected (no >= yes)"
+    },
+    {
+      "code": 6015,
+      "name": "AlreadyExecuted",
+      "msg": "Proposal already executed"
+    },
+    {
+      "code": 6016,
+      "name": "HistoryFull",
+      "msg": "Absorption history at max capacity (10)"
+    },
+    {
+      "code": 6017,
+      "name": "InsufficientVotingPower",
+      "msg": "Vote amount exceeds holder voting power"
+    },
+    {
+      "code": 6018,
+      "name": "AlreadyVoted",
+      "msg": "Already voted on this proposal"
+    },
+    {
+      "code": 6019,
+      "name": "CurveMerged",
+      "msg": "Curve is_merged flag set"
+    },
+    {
+      "code": 6020,
+      "name": "CurveProgramMismatch",
+      "msg": "Config velocity_curve_program mismatch"
+    },
+    {
+      "code": 6021,
+      "name": "LoreMismatch",
+      "msg": "Lore asset origin_curve mismatch"
+    }
+  ],
+  "types": [
+    {
+      "name": "LoreAsset",
+      "docs": [
+        "NFT-like lore asset tied to a curve/token.",
+        "Seeds = [b\"lore\", origin_curve]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "origin_story",
+            "docs": [
+              "NarrativeAuction StoryMarket (from VelocityToken.story_id)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "origin_curve",
+            "docs": [
+              "Origin VelocityToken curve PDA."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "current_holder",
+            "docs": [
+              "Which token curve currently owns this lore."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "content_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "absorption_history",
+            "docs": [
+              "Chain of absorbed origin curves (capped at MAX_ABSORPTION_HISTORY)."
+            ],
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "lore_value",
+            "docs": [
+              "Calculated from original stakes / seed liquidity."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "lore_power",
+            "docs": [
+              "Multiplier in bps (10_000 = 1.0x). Bumps on each absorb."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "registered_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_absorbed",
+            "docs": [
+              "Set when this lore has been absorbed into another token."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoreAssetInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lore",
+            "type": "pubkey"
+          },
+          {
+            "name": "origin_curve",
+            "type": "pubkey"
+          },
+          {
+            "name": "origin_story",
+            "type": "pubkey"
+          },
+          {
+            "name": "lore_value",
+            "type": "u64"
+          },
+          {
+            "name": "lore_power",
+            "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MergeConfig",
+      "docs": [
+        "Protocol config for LoreMerge.",
+        "Seeds = [b\"merge-config\"]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "velocity_curve_program",
+            "docs": [
+              "VelocityCurve program id (owner check for curve / holder PDAs)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "proposer_min_bps",
+            "type": "u16"
+          },
+          {
+            "name": "quorum_bps",
+            "type": "u16"
+          },
+          {
+            "name": "voting_duration_secs",
+            "type": "i64"
+          },
+          {
+            "name": "merge_min_age_secs",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MergeConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "velocity_curve_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MergeExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proposal",
+            "type": "pubkey"
+          },
+          {
+            "name": "absorber",
+            "type": "pubkey"
+          },
+          {
+            "name": "target",
+            "type": "pubkey"
+          },
+          {
+            "name": "lore_asset",
+            "type": "pubkey"
+          },
+          {
+            "name": "absorber_lore_power",
+            "type": "u32"
+          },
+          {
+            "name": "fee_lamports",
+            "type": "u64"
+          },
+          {
+            "name": "liquidity_lamports",
+            "type": "u64"
+          },
+          {
+            "name": "absorption_ratio",
+            "type": "u16"
+          },
+          {
+            "name": "history_len",
+            "type": "u8"
+          },
+          {
+            "name": "settlement_pending",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MergeProposal",
+      "docs": [
+        "Community merge proposal (strong token absorbs weak).",
+        "Seeds = [b\"merge\", absorber, target]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "absorber",
+            "docs": [
+              "Strong token curve PDA."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "target",
+            "docs": [
+              "Weak token curve PDA to absorb."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "proposer",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposed_at",
+            "type": "i64"
+          },
+          {
+            "name": "voting_ends",
+            "type": "i64"
+          },
+          {
+            "name": "yes_votes",
+            "type": "u64"
+          },
+          {
+            "name": "no_votes",
+            "type": "u64"
+          },
+          {
+            "name": "quorum_required",
+            "type": "u64"
+          },
+          {
+            "name": "executed",
+            "type": "bool"
+          },
+          {
+            "name": "absorption_ratio",
+            "docs": [
+              "Target:absorber conversion scaled ×100 (e.g. 500 = 1:5)."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "target_liquidity_snapshot",
+            "docs": [
+              "Snapshot of target sol_reserve at execute (for settlement crank)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "fee_lamports",
+            "docs": [
+              "5% fee lamports computed at execute."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "liquidity_lamports",
+            "docs": [
+              "90% liquidity lamports intended for absorber vault."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "settlement_pending",
+            "docs": [
+              "True until VelocityCurve settle CPI moves vault SOL (deferred)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MergeProposed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proposal",
+            "type": "pubkey"
+          },
+          {
+            "name": "absorber",
+            "type": "pubkey"
+          },
+          {
+            "name": "target",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposer",
+            "type": "pubkey"
+          },
+          {
+            "name": "absorption_ratio",
+            "type": "u16"
+          },
+          {
+            "name": "quorum_required",
+            "type": "u64"
+          },
+          {
+            "name": "voting_ends",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MergeVoteCast",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proposal",
+            "type": "pubkey"
+          },
+          {
+            "name": "voter",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "support",
+            "type": "bool"
+          },
+          {
+            "name": "yes_votes",
+            "type": "u64"
+          },
+          {
+            "name": "no_votes",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VoteRecord",
+      "docs": [
+        "One vote per voter per proposal.",
+        "Seeds = [b\"vote\", proposal, voter]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proposal",
+            "type": "pubkey"
+          },
+          {
+            "name": "voter",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "support",
+            "type": "bool"
+          },
+          {
+            "name": "voted_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

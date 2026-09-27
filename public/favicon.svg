@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#0a0a0a"/>
+  <circle cx="32" cy="32" r="22" stroke="#39ff14" stroke-width="3"/>
+  <path d="M20 36c4-10 20-10 24 0" stroke="#39ff14" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="24" cy="26" r="3" fill="#39ff14"/>
+  <circle cx="40" cy="26" r="3" fill="#39ff14"/>
+  <text x="32" y="48" text-anchor="middle" font-size="10" fill="#39ff14" font-family="sans-serif" font-weight="700">BCC</text>
+</svg>
