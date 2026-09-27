@@ -239,7 +239,7 @@ Client helpers: `src/lib/solana/{merge*,reputation*}.ts` (PDAs match program see
 ## Repo layout
 
 ```
-bonding-curve-casino/
+trendingdrop/
   ARCHITECTURE.md          ← this file
   Anchor.toml
   Cargo.toml               ← workspace

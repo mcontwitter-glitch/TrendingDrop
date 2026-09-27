@@ -3,7 +3,7 @@
 ## How to run
 
 ```bash
-cd /workspace/bonding-curve-casino
+cd /workspace/trendingdrop
 npm install
 npm run dev
 ```

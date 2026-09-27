@@ -55,7 +55,7 @@ solana balance
 From the repo root:
 
 ```bash
-cd /path/to/bonding-curve-casino
+cd /path/to/trendingdrop
 export SBF_TOOLS_VERSION=v1.45
 anchor build
 ```

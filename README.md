@@ -14,7 +14,7 @@ This UI is **mock-data only** — no Solana wallet wiring yet. On-chain Anchor p
 ## Run locally
 
 ```bash
-cd /workspace/bonding-curve-casino
+cd /workspace/trendingdrop
 npm install
 npm run dev
 ```
