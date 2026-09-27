@@ -13,7 +13,7 @@ Operational guide for deploying **TrendingDrop** programs to **Solana Mainnet-Be
 | Programs (localnet / Devnet IDs) | Same four IDs currently used on Devnet — **generate new keypairs for Mainnet** |
 | Upgrade authority (Devnet) | Deployer `8UxuHLFBjmaMPVzBXQzw2uMUAePNUyHafLocffyCEkGa` |
 | Frontend Pages | https://www.findtrending.com (DNS) / https://mcontwitter-glitch.github.io/TrendingDrop/ |
-| Wesayso | Commercial license still required before public marketing — [`WESAYSO_LICENSE.md`](./WESAYSO_LICENSE.md) |
+| Display font | Orbitron (SIL OFL) — [`DISPLAY_FONT.md`](./DISPLAY_FONT.md) |
 | Cross-chain | Deferred — [`CROSS_CHAIN.md`](./CROSS_CHAIN.md) |
 
 ---
@@ -27,7 +27,7 @@ Before spending Mainnet SOL:
 - [ ] Deployer + fee payer funded (see §2)
 - [ ] Upgrade authority plan decided (Squads / multi-sig strongly preferred over a hot single key)
 - [ ] Metadata HTTPS host ready (replace any `bcc.local` / placeholder URIs)
-- [ ] Wesayso commercial license purchased **or** display font swapped
+- [x] Display font libre / commercial-safe (Orbitron SIL OFL — [`DISPLAY_FONT.md`](./DISPLAY_FONT.md))
 - [ ] Oracle operator keys provisioned (3–5) + crank process documented
 - [ ] Incident contact + pause / upgrade playbook agreed
 
@@ -230,7 +230,6 @@ Watch:
 
 | Item | Doc |
 |------|-----|
-| Wesayso commercial license | [`WESAYSO_LICENSE.md`](./WESAYSO_LICENSE.md) |
 | LoreMerge SPL burn→mint claim window | Deferred on-chain (see `ARCHITECTURE.md`) |
 | Cross-chain Base/Arbitrum | [`CROSS_CHAIN.md`](./CROSS_CHAIN.md) — not required for Solana Mainnet v1 |
 

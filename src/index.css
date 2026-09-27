@@ -1,14 +1,11 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: "Wesayso";
-  src: url("/fonts/Wesayso-Bold.woff2") format("woff2"),
-       url("/fonts/Wesayso-Bold.otf") format("opentype");
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-  /* Personal-use Wesayso breaks / watermarks digit glyphs — keep 0-9 on Inter */
-  unicode-range: U+0000-002F, U+003A-10FFFF;
 }
 
 
@@ -27,7 +24,7 @@
   --color-bcc-gold: #fbbf24;
   --color-bcc-gold-dim: #f59e0b;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Wesayso", "Inter", ui-sans-serif, sans-serif;
+  --font-display: "Orbitron", "Inter", ui-sans-serif, sans-serif;
 }
 
 * {
@@ -120,7 +117,7 @@ body {
 }
 
 
-/* Display / branding: Wesayso — cyan neon */
+/* Display / branding: Orbitron — cyan neon */
 .font-display {
   font-family: var(--font-display);
   font-weight: 700;
@@ -130,7 +127,7 @@ body {
 }
 
 
-/* Numeric / amounts: Inter only (Wesayso digits are broken) */
+/* Numeric / amounts: Inter tabular (stats stay on sans) */
 .font-stat {
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;

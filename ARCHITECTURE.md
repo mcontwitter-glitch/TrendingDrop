@@ -232,7 +232,7 @@ Client helpers: `src/lib/solana/{merge*,reputation*}.ts` (PDAs match program see
 10. ~~UI trade + merge + reputation surfaces~~ ✅ — Metaplex mint wired (`mint_reputation_nft`).
 11. **Indexer**: `indexer/` RPC-poll SQLite service + Yellowstone scaffold; set `VITE_INDEXER_URL` / `GEYSER_ENDPOINT` for prod.
 12. **CI**: `.github/workflows/ci.yml` (frontend + cargo check; optional anchor BPF).
-13. **Wesayso commercial license** — see `docs/WESAYSO_LICENSE.md` (blocker before public launch).
+13. ~~Wesayso commercial license~~ ✅ — swapped to Orbitron (SIL OFL); see `docs/DISPLAY_FONT.md`.
 
 ---
 
@@ -244,7 +244,7 @@ trendingdrop/
   Anchor.toml
   Cargo.toml               ← workspace
   .github/workflows/ci.yml ← frontend + cargo check (+ optional anchor BPF)
-  docs/WESAYSO_LICENSE.md  ← commercial font checklist (launch blocker)
+  docs/DISPLAY_FONT.md     ← Orbitron display font (SIL OFL, self-hosted)
   docs/DEVNET.md           ← Devnet deploy checklist (tools-version v1.45)
   docs/MAINNET.md          ← Mainnet ops runbook (keys, authority, cutover)
   docs/CROSS_CHAIN.md      ← Base/Arbitrum mirror design (later)
@@ -271,16 +271,16 @@ trendingdrop/
 | **Oracle 3/5** | ✅ Done | `OracleConfig.quorum` (default 3), up to 5 `authorized_oracles`. Two modes — **tx-signer** (`proof` empty) or **ed25519** (`proof` = timestamp i64 LE + prior Ed25519Program ixs). See §9. Admin: `set_oracle_quorum` / `add_oracle` / `remove_oracle`. |
 | **Indexer** | ✅ Scaffold | `indexer/` — SQLite via `sql.js` + RPC poll (`getProgramAccounts` / logs). HTTP: `GET /api/stories`, `/api/activity`, `/api/curves`. Yellowstone/Geyser plan in `indexer/README.md`; set `GEYSER_ENDPOINT` when available. Frontend: `useIndexerFeed` + LiveTicker prefers `VITE_INDEXER_URL`. |
 | **CI** | ✅ In-repo | `.github/workflows/ci.yml` — required: Node 22 frontend build + `cargo check --workspace`; optional `anchor-build` (`continue-on-error`). Remote/push is a separate auth step. |
-| **Wesayso font** | ⚠️ Blocker | Personal-use FontSpace font in `public/fonts/`. Buy commercial license before public launch — checklist in [`docs/WESAYSO_LICENSE.md`](./docs/WESAYSO_LICENSE.md). |
+| **Display font** | ✅ Done | Orbitron Bold (SIL OFL) self-hosted in `public/fonts/` — [`docs/DISPLAY_FONT.md`](./docs/DISPLAY_FONT.md). |
 
 **Ops readiness**
 
 - CI green (`.github/workflows/ci.yml` — frontend build + `cargo check`; optional Anchor BPF).
 - Localnet smoke: `scripts/localnet-smoke.mjs` (validator + deployed programs; `RPC_URL` defaults to `http://127.0.0.1:8899`).
 - Env templates: root `.env.example` (Vite) + `indexer/.env.example`; Devnet: [`docs/DEVNET.md`](./docs/DEVNET.md); Mainnet: [`docs/MAINNET.md`](./docs/MAINNET.md).
-- **Pending:** real `GEYSER_ENDPOINT` (Yellowstone slot); Wesayso commercial license; Mainnet keys + multisig upgrade authority.
+- **Pending:** real `GEYSER_ENDPOINT` (Yellowstone slot); Mainnet keys + multisig upgrade authority.
 
-**Left for ops:** real Yellowstone endpoint; purchase Wesayso commercial license; Mainnet cutover per MAINNET.md; absorption burn-mint claim window; cross-chain relayer (see §10).
+**Left for ops:** real Yellowstone endpoint; Mainnet cutover per MAINNET.md; absorption burn-mint claim window; cross-chain relayer (see §10).
 
 ---
 

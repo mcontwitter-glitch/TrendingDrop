@@ -69,4 +69,4 @@ Requires Anchor 0.30.x + Solana CLI to build/deploy (`anchor` / `solana` are not
 
 ## License / Fonts
 
-- **Wesayso**: personal-use only until commercial purchase — see [`docs/WESAYSO_LICENSE.md`](./docs/WESAYSO_LICENSE.md).
+- **Orbitron** (SIL OFL): self-hosted display font — see [`docs/DISPLAY_FONT.md`](./docs/DISPLAY_FONT.md).

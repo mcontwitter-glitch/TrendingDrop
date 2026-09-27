@@ -143,6 +143,6 @@ script to pass against public Devnet without funded accounts and matching progra
 ## Blockers / notes
 
 - **No guaranteed airdrop** from CI or shared agents — fund offline if faucet fails.
-- **Wesayso** remains personal-use until commercial purchase (`docs/WESAYSO_LICENSE.md`).
+- **Display font**: Orbitron (SIL OFL) — see `docs/DISPLAY_FONT.md`.
 - **Geyser**: leave `GEYSER_ENDPOINT` unset on Devnet unless you have a Yellowstone slot;
   indexer poll mode is the default (`indexer/README.md`).
