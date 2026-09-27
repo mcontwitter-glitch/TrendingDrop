@@ -577,7 +577,7 @@ export type NarrativeAuction = {
         {
           "name": "vault",
           "docs": [
-            "Story SOL vault — retains winner principals + winning_pool / liquidity."
+            "Story SOL vault — retains winner principals; seed liquidity moves to curve vault."
           ],
           "writable": true,
           "pda": {
@@ -610,16 +610,28 @@ export type NarrativeAuction = {
         },
         {
           "name": "tokenMint",
-          "writable": true
+          "docs": [
+            "New SPL mint for VelocityCurve::initialize_token (must sign; created in CPI)."
+          ],
+          "writable": true,
+          "signer": true
         },
         {
           "name": "curveState",
           "writable": true
         },
         {
+          "name": "curveVault",
+          "writable": true
+        },
+        {
+          "name": "tokenVault",
+          "writable": true
+        },
+        {
           "name": "payer",
           "docs": [
-            "Crank / payer for RankingBoard init and future CPI rent."
+            "Crank / payer for RankingBoard init and CPI rent."
           ],
           "writable": true,
           "signer": true
@@ -627,6 +639,16 @@ export type NarrativeAuction = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         },
         {
           "name": "clock",

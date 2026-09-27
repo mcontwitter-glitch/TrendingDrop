@@ -70,7 +70,7 @@ pub struct MergeProposal {
     pub fee_lamports: u64,
     /// 90% liquidity lamports intended for absorber vault.
     pub liquidity_lamports: u64,
-    /// True until VelocityCurve settle CPI moves vault SOL (deferred).
+    /// True until VelocityCurve::settle_merge CPI moves vault SOL (cleared on execute).
     pub settlement_pending: bool,
     pub bump: u8,
 }

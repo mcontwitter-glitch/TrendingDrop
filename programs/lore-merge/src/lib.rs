@@ -5,10 +5,11 @@
 //! execute:
 //! - Target `LoreAsset` transfers to absorber
 //! - Absorber `lore_power` bumps; `absorption_history` gains target (cap 10)
-//! - 5% merge fee + 90% liquidity amounts recorded (`settlement_pending` until
-//!   VelocityCurve vault CPI settles SOL)
+//! - 5% merge fee + 90% liquidity: CPI into VelocityCurve::settle_merge moves
+//!   SOL, sets target `is_merged`, bumps absorber `merge_count`, clears
+//!   `settlement_pending`
 //! - Target holders burn for absorber tokens at `absorption_ratio` (30-day
-//!   window — SPL burn/mint deferred)
+//!   window — SPL burn/mint claim still deferred)
 //!
 //! Protocol fee on merger transactions: **5%** (`MERGE_FEE_BPS = 500`).
 //!
@@ -20,8 +21,8 @@
 //!
 //! ## VelocityCurve integration
 //! Holder / curve accounts are read via owner check + Borsh deserialize
-//! (no hard CPI crate dependency). Vault SOL moves and `is_merged` /
-//! `merge_count` updates require a follow-up VelocityCurve settle instruction.
+//! (no hard CPI crate dependency). `execute_merge` CPIs `settle_merge` for
+//! vault SOL + `is_merged` / `merge_count`.
 
 use anchor_lang::prelude::*;
 

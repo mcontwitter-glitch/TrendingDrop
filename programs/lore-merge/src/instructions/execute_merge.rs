@@ -1,4 +1,7 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::hash::hash;
+use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
+use anchor_lang::solana_program::program::invoke;
 
 use crate::errors::LoreError;
 use crate::events::MergeExecuted;
@@ -42,13 +45,29 @@ pub struct ExecuteMerge<'info> {
     )]
     pub target_lore: Account<'info, LoreAsset>,
 
-    /// CHECK: Absorber VelocityToken (read merge_count / sol_reserve context).
+    /// CHECK: Absorber VelocityToken (mut for merge_count / sol_reserve via settle CPI).
+    #[account(mut)]
     pub absorber_curve: UncheckedAccount<'info>,
 
-    /// CHECK: Target VelocityToken (read sol_reserve for fee / liquidity split).
+    /// CHECK: Target VelocityToken (mut for is_merged / sol_reserve via settle CPI).
+    #[account(mut)]
     pub target_curve: UncheckedAccount<'info>,
 
-    /// CHECK: Treasury — fee accounting destination (SOL settle deferred).
+    /// CHECK: Target curve SOL vault PDA.
+    #[account(mut)]
+    pub target_vault: UncheckedAccount<'info>,
+
+    /// CHECK: Absorber curve SOL vault PDA.
+    #[account(mut)]
+    pub absorber_vault: UncheckedAccount<'info>,
+
+    /// CHECK: VelocityCurve program — must match config.
+    #[account(
+        constraint = velocity_program.key() == config.velocity_curve_program @ LoreError::CurveProgramMismatch,
+    )]
+    pub velocity_program: UncheckedAccount<'info>,
+
+    /// CHECK: Treasury — fee destination (SOL settle via VelocityCurve CPI).
     #[account(
         mut,
         constraint = treasury.key() == config.treasury @ LoreError::Unauthorized,
@@ -63,17 +82,13 @@ pub struct ExecuteMerge<'info> {
 
 /// Execute absorption after quorum + voting window.
 ///
-/// On-chain effects in this program:
+/// On-chain effects:
 /// - Mark proposal executed; record 5% fee + 90% liquidity amounts
 /// - Transfer target LoreAsset → absorber (`current_holder`, `is_absorbed`)
 /// - Push target origin into absorber `absorption_history` (cap 10)
 /// - Bump absorber `lore_power`
-///
-/// Deferred (needs VelocityCurve CPI / vault signer):
-/// - Move 90% target vault SOL → absorber vault
-/// - Move 5% fee SOL → treasury
-/// - Set target `VelocityToken.is_merged` / bump absorber `merge_count`
-/// - SPL burn-and-mint at `absorption_ratio` (30-day claim window)
+/// - CPI VelocityCurve::settle_merge — move vault SOL, set `is_merged`, bump `merge_count`
+/// - Clear `settlement_pending` when settle succeeds (or when reserve was 0)
 pub fn execute_merge_handler(ctx: Context<ExecuteMerge>) -> Result<()> {
     let clock = Clock::get()?;
     let proposal = &ctx.accounts.proposal;
@@ -113,8 +128,13 @@ pub fn execute_merge_handler(ctx: Context<ExecuteMerge>) -> Result<()> {
     )?;
     require!(!target.is_merged, LoreError::CurveMerged);
 
-    // Prefer live sol_reserve; fall back to seed_liquidity for empty curves.
-    let reserve = target.sol_reserve.max(target.seed_liquidity);
+    // Prefer live sol_reserve (seeded on graduate + updated by buy/sell).
+    // Fall back to seed_liquidity only if reserve accounting is still zero.
+    let reserve = if target.sol_reserve > 0 {
+        target.sol_reserve
+    } else {
+        target.seed_liquidity
+    };
     let (mut fee, liquidity) = merge_split(reserve)?;
     // Honor config.fee_bps if governance changed it from default 500.
     if config.fee_bps != crate::state::MERGE_FEE_BPS {
@@ -145,7 +165,6 @@ pub fn execute_merge_handler(ctx: Context<ExecuteMerge>) -> Result<()> {
         let target_lore = &mut ctx.accounts.target_lore;
         target_lore.current_holder = absorber_key;
         target_lore.is_absorbed = true;
-        // Record absorber in target history for provenance (if room).
         if target_lore.absorption_history.len() < MAX_ABSORPTION_HISTORY {
             target_lore.absorption_history.push(absorber_key);
         }
@@ -159,7 +178,35 @@ pub fn execute_merge_handler(ctx: Context<ExecuteMerge>) -> Result<()> {
     proposal.target_liquidity_snapshot = reserve;
     proposal.fee_lamports = fee;
     proposal.liquidity_lamports = liquidity;
-    proposal.settlement_pending = reserve > 0;
+    proposal.settlement_pending = reserve > 0 && (fee > 0 || liquidity > 0);
+
+    // --- CPI VelocityCurve::settle_merge when there is SOL to move ---
+    if proposal.settlement_pending {
+        let ix = build_settle_merge_ix(
+            ctx.accounts.velocity_program.key(),
+            ctx.accounts.target_curve.key(),
+            ctx.accounts.absorber_curve.key(),
+            ctx.accounts.target_vault.key(),
+            ctx.accounts.absorber_vault.key(),
+            ctx.accounts.treasury.key(),
+            ctx.accounts.executor.key(),
+            fee,
+            liquidity,
+        );
+        invoke(
+            &ix,
+            &[
+                ctx.accounts.target_curve.to_account_info(),
+                ctx.accounts.absorber_curve.to_account_info(),
+                ctx.accounts.target_vault.to_account_info(),
+                ctx.accounts.absorber_vault.to_account_info(),
+                ctx.accounts.treasury.to_account_info(),
+                ctx.accounts.executor.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
+        proposal.settlement_pending = false;
+    }
 
     emit!(MergeExecuted {
         proposal: proposal.key(),
@@ -175,9 +222,40 @@ pub fn execute_merge_handler(ctx: Context<ExecuteMerge>) -> Result<()> {
         timestamp: clock.unix_timestamp,
     });
 
-    let _ = &ctx.accounts.treasury;
-    let _ = &ctx.accounts.executor;
-    let _ = &ctx.accounts.system_program;
-
     Ok(())
+}
+
+fn build_settle_merge_ix(
+    velocity_program: Pubkey,
+    target_curve: Pubkey,
+    absorber_curve: Pubkey,
+    target_vault: Pubkey,
+    absorber_vault: Pubkey,
+    treasury: Pubkey,
+    payer: Pubkey,
+    fee_lamports: u64,
+    liquidity_lamports: u64,
+) -> Instruction {
+    let mut disc = [0u8; 8];
+    let h = hash(b"global:settle_merge");
+    disc.copy_from_slice(&h.to_bytes()[..8]);
+
+    let mut data = Vec::with_capacity(8 + 8 + 8);
+    data.extend_from_slice(&disc);
+    data.extend_from_slice(&fee_lamports.to_le_bytes());
+    data.extend_from_slice(&liquidity_lamports.to_le_bytes());
+
+    Instruction {
+        program_id: velocity_program,
+        accounts: vec![
+            AccountMeta::new(target_curve, false),
+            AccountMeta::new(absorber_curve, false),
+            AccountMeta::new(target_vault, false),
+            AccountMeta::new(absorber_vault, false),
+            AccountMeta::new(treasury, false),
+            AccountMeta::new(payer, true),
+            AccountMeta::new_readonly(anchor_lang::system_program::ID, false),
+        ],
+        data,
+    }
 }

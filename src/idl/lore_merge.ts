@@ -132,10 +132,23 @@ export type LoreMerge = {
           }
         },
         {
-          "name": "absorberCurve"
+          "name": "absorberCurve",
+          "writable": true
         },
         {
-          "name": "targetCurve"
+          "name": "targetCurve",
+          "writable": true
+        },
+        {
+          "name": "targetVault",
+          "writable": true
+        },
+        {
+          "name": "absorberVault",
+          "writable": true
+        },
+        {
+          "name": "velocityProgram"
         },
         {
           "name": "treasury",
@@ -1132,7 +1145,7 @@ export type LoreMerge = {
           {
             "name": "settlementPending",
             "docs": [
-              "True until VelocityCurve settle CPI moves vault SOL (deferred)."
+              "True until VelocityCurve::settle_merge CPI moves vault SOL (cleared on execute)."
             ],
             "type": "bool"
           },

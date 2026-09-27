@@ -4,6 +4,9 @@ use std::collections::BTreeSet;
 use crate::errors::VelocityError;
 use crate::events::AttentionUpdated;
 use crate::math::{ema_update, velocity_params, weighted_attention};
+use crate::oracle_proof::{
+    canonical_message, collect_ed25519_attestations, parse_proof_timestamp,
+};
 use crate::state::{OracleConfig, VelocityToken, EMA_ALPHA_BPS};
 
 #[derive(Accounts)]
@@ -21,19 +24,27 @@ pub struct UpdateAttention<'info> {
     )]
     pub oracle_config: Account<'info, OracleConfig>,
 
-    /// Fee-paying cranker / keeper. Counted toward quorum if authorized.
+    /// Fee-paying cranker / keeper. Counted toward quorum if authorized (signer mode).
     pub cranker: Signer<'info>,
+
+    /// CHECK: Instructions sysvar — required for ed25519 proof mode (`proof` non-empty).
+    /// Pass the sysvar address always; ignored when `proof` is empty.
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
 }
 
 /// Oracle crank — updates attention EMA and sell-tax / effective-k inputs.
 ///
-/// Phase-1 mainnet (multi-sig crank):
-/// - Metrics are passed once (all oracles attest the same values by co-signing the tx).
-/// - `cranker` (if authorized) + `remaining_accounts` that are **signers** and in
-///   `authorized_oracles` form the attestation set.
-/// - Require `≥ quorum` **distinct** authorized oracles. Reject duplicates / unauthorized.
+/// ## Attestation modes
 ///
-/// `proof` is reserved for future ed25519 sysvar introspection (TODO below).
+/// 1. **Tx-signer quorum** (`proof` empty): `cranker` (if authorized) +
+///    `remaining_accounts` that are **signers** and in `authorized_oracles`.
+///    Require `≥ quorum` distinct authorized oracles.
+///
+/// 2. **Ed25519 offline** (`proof` non-empty): `proof = timestamp (i64 LE) [+ ignored]`.
+///    Prior Ed25519Program instructions in this tx must verify signatures over the
+///    canonical message (see `oracle_proof`). Distinct authorized pubkeys ≥ quorum.
+///    Rejects bad proofs with `InvalidOracleProof`.
 pub fn update_attention_handler(
     ctx: Context<UpdateAttention>,
     twitter_delta: u64,
@@ -42,30 +53,34 @@ pub fn update_attention_handler(
     proof: Vec<u8>,
 ) -> Result<()> {
     let cfg = &ctx.accounts.oracle_config;
+    let curve_key = ctx.accounts.curve.key();
 
-    // TODO(mainnet-phase-2): when `proof` is non-empty, verify ed25519 signatures via
-    // the Ed25519Program instruction introspection / sysvar instead of (or in addition
-    // to) requiring remaining accounts as tx signers. Canonical message should commit
-    // to (curve, twitter, telegram, holders, timestamp/epoch). For now we only accept
-    // the multi-sig crank path; `proof` must be empty or is ignored with a soft check.
-    let _ = &proof; // future: ed25519 aggregation stub
-
-    let oracle_count = collect_oracle_attestations(
-        ctx.accounts.cranker.key(),
-        ctx.remaining_accounts,
-        &cfg.authorized_oracles,
-        cfg.quorum,
-    )?;
+    let oracle_count = if !proof.is_empty() {
+        let timestamp = parse_proof_timestamp(&proof)?;
+        let msg = canonical_message(
+            &curve_key,
+            twitter_delta,
+            telegram_delta,
+            new_holders,
+            timestamp,
+        );
+        collect_ed25519_attestations(
+            &ctx.accounts.instructions_sysvar.to_account_info(),
+            &cfg.authorized_oracles,
+            &msg,
+            cfg.quorum,
+        )?
+    } else {
+        collect_oracle_attestations(
+            ctx.accounts.cranker.key(),
+            ctx.remaining_accounts,
+            &cfg.authorized_oracles,
+            cfg.quorum,
+        )?
+    };
 
     let clock = Clock::get()?;
     let curve = &mut ctx.accounts.curve;
-
-    // Optional interval soft-check (staleness is a client concern for trades).
-    if curve.last_oracle_update > 0 && cfg.update_interval > 0 {
-        let _elapsed = clock
-            .unix_timestamp
-            .saturating_sub(curve.last_oracle_update);
-    }
 
     let raw = weighted_attention(
         twitter_delta,

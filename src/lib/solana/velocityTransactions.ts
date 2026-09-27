@@ -1,5 +1,10 @@
 import { BN, type Program } from '@coral-xyz/anchor'
-import { PublicKey, SystemProgram } from '@solana/web3.js'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from '@solana/spl-token'
+import { PublicKey, SystemProgram, SYSVAR_INSTRUCTIONS_PUBKEY } from '@solana/web3.js'
 import type { VelocityCurve } from '../../idl/velocity_curve'
 import { LAMPORTS_PER_SOL } from './constants'
 import { findCurveVaultPda, findHolderPda, findOracleConfigPda } from './velocityPdas'
@@ -60,6 +65,7 @@ export async function buyOnCurve(
   let attention = params.attention ?? 0
   let priceVelocity = params.priceVelocity ?? 0
   let creator = params.creatorPubkey
+  let mint: PublicKey
 
   try {
     const curve = await program.account.velocityToken.fetch(curvePubkey)
@@ -69,6 +75,7 @@ export async function buyOnCurve(
     attention = Number(curve.attentionScore)
     priceVelocity = Number(curve.priceVelocity)
     creator = curve.creator
+    mint = curve.mint
   } catch {
     throw new SolanaClientError('Curve account not found on this cluster')
   }
@@ -79,6 +86,7 @@ export async function buyOnCurve(
 
   const [vaultPda] = findCurveVaultPda(curvePubkey, program.programId)
   const [holderPda] = findHolderPda(curvePubkey, buyer, program.programId)
+  const buyerAta = getAssociatedTokenAddressSync(mint, buyer, false, TOKEN_PROGRAM_ID)
   const treasury = await resolveTreasury(
     program.provider.connection,
     creator ?? buyer,
@@ -90,10 +98,14 @@ export async function buyOnCurve(
       .accountsStrict({
         curve: curvePubkey,
         vault: vaultPda,
+        mint,
+        buyerAta,
         holder: holderPda,
         treasury,
         buyer,
         systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .rpc()
     return { signature, estimatedTokens: quote.tokensOut }
@@ -104,7 +116,7 @@ export async function buyOnCurve(
 
 export interface SellParams {
   curvePubkey: PublicKey
-  /** Token amount (internal ledger units). */
+  /** Token amount (SPL / internal ledger units). */
   tokenAmount: number
   seller: PublicKey
   slippageBps?: number
@@ -124,6 +136,7 @@ export async function sellOnCurve(
   let attention = 0
   let priceVelocity = 0
   let creator: PublicKey = seller
+  let mint: PublicKey
 
   try {
     const curve = await program.account.velocityToken.fetch(curvePubkey)
@@ -133,6 +146,7 @@ export async function sellOnCurve(
     attention = Number(curve.attentionScore)
     priceVelocity = Number(curve.priceVelocity)
     creator = curve.creator
+    mint = curve.mint
   } catch {
     throw new SolanaClientError('Curve account not found on this cluster')
   }
@@ -143,6 +157,7 @@ export async function sellOnCurve(
 
   const [vaultPda] = findCurveVaultPda(curvePubkey, program.programId)
   const [holderPda] = findHolderPda(curvePubkey, seller, program.programId)
+  const sellerAta = getAssociatedTokenAddressSync(mint, seller, false, TOKEN_PROGRAM_ID)
   const treasury = await resolveTreasury(program.provider.connection, creator)
 
   try {
@@ -151,10 +166,13 @@ export async function sellOnCurve(
       .accountsStrict({
         curve: curvePubkey,
         vault: vaultPda,
+        mint,
+        sellerAta,
         holder: holderPda,
         treasury,
         seller,
         systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc()
     return { signature, estimatedSolLamports: quote.solNetLamports }
@@ -202,17 +220,23 @@ export interface UpdateAttentionParams {
   /** Fee-paying cranker (counted toward quorum if authorized). */
   cranker: PublicKey
   /**
-   * Additional authorized oracle pubkeys that co-sign this tx.
+   * Additional authorized oracle pubkeys that co-sign this tx (signer mode).
    * Together with `cranker` (if authorized), must reach OracleConfig.quorum.
    */
   oracleSigners?: PublicKey[]
-  /** Reserved for future ed25519 sysvar verification (pass empty for multi-sig crank). */
+  /**
+   * Ed25519 mode: non-empty proof = i64 LE timestamp (+ ignored bytes).
+   * Prior Ed25519Program ixs in the same tx must sign the canonical message
+   * (curve || twitter || telegram || holders || timestamp). Pass empty for
+   * multi-sig crank (tx-signer) mode.
+   */
   proof?: number[] | Buffer | Uint8Array
 }
 
 /**
- * Multi-sig oracle crank: metrics once + ≥ quorum distinct authorized signers
- * (cranker if authorized + remainingAccounts).
+ * Oracle crank — two modes:
+ * - proof empty: ≥ quorum distinct authorized **tx signers**
+ * - proof non-empty: ≥ quorum distinct authorized **ed25519** attestations
  */
 export async function updateAttention(
   program: Program<VelocityCurve>,
@@ -250,6 +274,7 @@ export async function updateAttention(
         curve: curvePubkey,
         oracleConfig,
         cranker,
+        instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
       })
       .remainingAccounts(remaining)
       .rpc()
@@ -257,4 +282,31 @@ export async function updateAttention(
   } catch (err) {
     throw new SolanaClientError(formatTxError(err))
   }
+}
+
+/**
+ * Canonical oracle message bytes (must match on-chain `oracle_proof::canonical_message`):
+ * curve(32) || twitter_u64_le || telegram_u64_le || holders_u64_le || timestamp_i64_le
+ */
+export function encodeOracleCanonicalMessage(
+  curve: PublicKey,
+  twitterDelta: number | bigint,
+  telegramDelta: number | bigint,
+  newHolders: number | bigint,
+  timestamp: number | bigint,
+): Buffer {
+  const buf = Buffer.alloc(64)
+  curve.toBuffer().copy(buf, 0)
+  buf.writeBigUInt64LE(BigInt(twitterDelta), 32)
+  buf.writeBigUInt64LE(BigInt(telegramDelta), 40)
+  buf.writeBigUInt64LE(BigInt(newHolders), 48)
+  buf.writeBigInt64LE(BigInt(timestamp), 56)
+  return buf
+}
+
+/** Encode `proof` arg for ed25519 mode (timestamp i64 LE). */
+export function encodeOracleProofTimestamp(timestamp: number | bigint): Buffer {
+  const buf = Buffer.alloc(8)
+  buf.writeBigInt64LE(BigInt(timestamp), 0)
+  return buf
 }

@@ -7,6 +7,7 @@ pub mod claim_holder_rewards;
 pub mod set_oracle_quorum;
 pub mod add_oracle;
 pub mod remove_oracle;
+pub mod settle_merge;
 
 pub use initialize_oracle_config::*;
 pub use initialize_token::*;
@@ -17,3 +18,4 @@ pub use claim_holder_rewards::*;
 pub use set_oracle_quorum::*;
 pub use add_oracle::*;
 pub use remove_oracle::*;
+pub use settle_merge::*;

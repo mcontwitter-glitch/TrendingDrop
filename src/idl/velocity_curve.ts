@@ -73,7 +73,7 @@ export type VelocityCurve = {
     {
       "name": "buy",
       "docs": [
-        "Buy tokens along the dual curve with slippage protection."
+        "Buy tokens along the dual curve with slippage protection (mints SPL)."
       ],
       "discriminator": [
         102,
@@ -138,6 +138,103 @@ export type VelocityCurve = {
           }
         },
         {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "buyerAta",
+          "docs": [
+            "Buyer ATA — created if needed."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
           "name": "holder",
           "writable": true,
           "pda": {
@@ -176,6 +273,14 @@ export type VelocityCurve = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         }
       ],
       "args": [
@@ -373,7 +478,8 @@ export type VelocityCurve = {
     {
       "name": "initializeToken",
       "docs": [
-        "Called via CPI from NarrativeAuction::graduate_narrative."
+        "Called via CPI from NarrativeAuction::graduate_narrative.",
+        "Creates SPL mint (authority = curve) + curve vault + curve ATA."
       ],
       "discriminator": [
         38,
@@ -416,7 +522,132 @@ export type VelocityCurve = {
         },
         {
           "name": "mint",
-          "writable": true
+          "docs": [
+            "New SPL mint — mint authority = curve PDA."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "curve"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenVault",
+          "docs": [
+            "Curve-owned ATA holding no circulating supply (mint authority mints to buyers)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "curve"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "payer",
@@ -426,6 +657,18 @@ export type VelocityCurve = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -499,7 +742,7 @@ export type VelocityCurve = {
     {
       "name": "sell",
       "docs": [
-        "Sell tokens with velocity-dependent tax."
+        "Sell tokens with velocity-dependent tax (burns SPL)."
       ],
       "discriminator": [
         51,
@@ -564,6 +807,14 @@ export type VelocityCurve = {
           }
         },
         {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "sellerAta",
+          "writable": true
+        },
+        {
           "name": "holder",
           "writable": true,
           "pda": {
@@ -602,6 +853,10 @@ export type VelocityCurve = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -673,10 +928,155 @@ export type VelocityCurve = {
       ]
     },
     {
+      "name": "settleMerge",
+      "docs": [
+        "Settle LoreMerge: move fee/liquidity SOL, mark target merged, bump absorber merge_count."
+      ],
+      "discriminator": [
+        73,
+        182,
+        140,
+        30,
+        119,
+        153,
+        110,
+        57
+      ],
+      "accounts": [
+        {
+          "name": "targetCurve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "target_curve.story_id",
+                "account": "velocityToken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "absorberCurve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "absorber_curve.story_id",
+                "account": "velocityToken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "targetVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "targetCurve"
+              }
+            ]
+          }
+        },
+        {
+          "name": "absorberVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "absorberCurve"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Pays rent if absorber vault must be created."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "feeLamports",
+          "type": "u64"
+        },
+        {
+          "name": "liquidityLamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "updateAttention",
       "docs": [
-        "Oracle crank — EMA update. Requires ≥ quorum distinct authorized signers",
-        "(cranker if authorized + remaining_accounts). `proof` reserved for ed25519 TODO."
+        "Oracle crank — EMA update. Tx-signer quorum or ed25519 proof mode."
       ],
       "discriminator": [
         123,
@@ -740,9 +1140,16 @@ export type VelocityCurve = {
         {
           "name": "cranker",
           "docs": [
-            "Fee-paying cranker / keeper. Counted toward quorum if authorized."
+            "Fee-paying cranker / keeper. Counted toward quorum if authorized (signer mode)."
           ],
           "signer": true
+        },
+        {
+          "name": "instructionsSysvar",
+          "docs": [
+            "Pass the sysvar address always; ignored when `proof` is empty."
+          ],
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -831,6 +1238,19 @@ export type VelocityCurve = {
         103,
         55,
         178
+      ]
+    },
+    {
+      "name": "mergeSettled",
+      "discriminator": [
+        40,
+        227,
+        160,
+        185,
+        130,
+        242,
+        31,
+        101
       ]
     },
     {
@@ -1035,6 +1455,16 @@ export type VelocityCurve = {
       "code": 6021,
       "name": "oracleRemovalBreaksQuorum",
       "msg": "Cannot remove oracle: would drop below quorum"
+    },
+    {
+      "code": 6022,
+      "name": "mintMismatch",
+      "msg": "Mint account does not match curve.mint"
+    },
+    {
+      "code": 6023,
+      "name": "settlementOverflow",
+      "msg": "Settlement amounts exceed target reserve / vault"
     }
   ],
   "types": [
@@ -1100,7 +1530,7 @@ export type VelocityCurve = {
     {
       "name": "holderPosition",
       "docs": [
-        "Per-holder position (internal ledger until SPL mint wiring).",
+        "Per-holder position — tracks reward-index / claimable alongside SPL balances.",
         "Seeds = [b\"holder\", curve, owner]"
       ],
       "type": {
@@ -1170,6 +1600,38 @@ export type VelocityCurve = {
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "mergeSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "target",
+            "type": "pubkey"
+          },
+          {
+            "name": "absorber",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeLamports",
+            "type": "u64"
+          },
+          {
+            "name": "liquidityLamports",
+            "type": "u64"
+          },
+          {
+            "name": "absorberMergeCount",
+            "type": "u8"
           },
           {
             "name": "timestamp",
@@ -1602,7 +2064,7 @@ export type VelocityCurve = {
           {
             "name": "seedLiquidity",
             "docs": [
-              "Liquidity amount recorded at graduation (may be seeded later)."
+              "Liquidity amount recorded at graduation (SOL moved into curve vault on graduate)."
             ],
             "type": "u64"
           },

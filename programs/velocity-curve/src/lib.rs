@@ -26,10 +26,15 @@
 //! `update_attention` EMA alpha = 0.3.
 //!
 //! ## Oracle network (3/5)
-//! `update_attention` requires ≥ `OracleConfig.quorum` (default 3) distinct
-//! authorized oracle **signers** on the instruction (cranker if authorized +
-//! remaining accounts). Optional `proof: Vec<u8>` reserved for future ed25519
-//! sysvar verification.
+//! Two attestation modes (see `oracle_proof` + ARCHITECTURE.md):
+//! 1. Tx-signer quorum — `proof` empty; cranker + remaining signers ≥ quorum
+//! 2. Ed25519 offline — `proof` = timestamp i64 LE; prior Ed25519Program ixs
+//!    sign canonical message; Instructions sysvar introspection
+//!
+//! ## SPL
+//! `initialize_token` creates mint (authority = curve PDA) + curve ATA.
+//! `buy` mints to buyer ATA; `sell` burns from seller ATA. HolderPosition
+//! remains for reward-index / lore_power.
 //!
 //! ## PDA seeds
 //! - `VelocityToken`  = `["curve", story_id]`
@@ -43,6 +48,7 @@ pub mod errors;
 pub mod events;
 pub mod instructions;
 pub mod math;
+pub mod oracle_proof;
 pub mod state;
 
 use instructions::*;
@@ -81,22 +87,22 @@ pub mod velocity_curve {
     }
 
     /// Called via CPI from NarrativeAuction::graduate_narrative.
+    /// Creates SPL mint (authority = curve) + curve vault + curve ATA.
     pub fn initialize_token(ctx: Context<InitializeToken>, params: state::TokenParams) -> Result<()> {
         initialize_token_handler(ctx, params)
     }
 
-    /// Buy tokens along the dual curve with slippage protection.
+    /// Buy tokens along the dual curve with slippage protection (mints SPL).
     pub fn buy(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> Result<()> {
         buy_handler(ctx, sol_amount, min_tokens_out)
     }
 
-    /// Sell tokens with velocity-dependent tax.
+    /// Sell tokens with velocity-dependent tax (burns SPL).
     pub fn sell(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> Result<()> {
         sell_handler(ctx, token_amount, min_sol_out)
     }
 
-    /// Oracle crank — EMA update. Requires ≥ quorum distinct authorized signers
-    /// (cranker if authorized + remaining_accounts). `proof` reserved for ed25519 TODO.
+    /// Oracle crank — EMA update. Tx-signer quorum or ed25519 proof mode.
     pub fn update_attention<'info>(
         ctx: Context<'_, '_, 'info, 'info, UpdateAttention<'info>>,
         twitter_delta: u64,
@@ -110,5 +116,14 @@ pub mod velocity_curve {
     /// Claim pro-rata share of accumulated sell-tax rewards.
     pub fn claim_holder_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         claim_holder_rewards_handler(ctx)
+    }
+
+    /// Settle LoreMerge: move fee/liquidity SOL, mark target merged, bump absorber merge_count.
+    pub fn settle_merge(
+        ctx: Context<SettleMerge>,
+        fee_lamports: u64,
+        liquidity_lamports: u64,
+    ) -> Result<()> {
+        settle_merge_handler(ctx, fee_lamports, liquidity_lamports)
     }
 }

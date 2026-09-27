@@ -126,10 +126,23 @@
           }
         },
         {
-          "name": "absorber_curve"
+          "name": "absorber_curve",
+          "writable": true
         },
         {
-          "name": "target_curve"
+          "name": "target_curve",
+          "writable": true
+        },
+        {
+          "name": "target_vault",
+          "writable": true
+        },
+        {
+          "name": "absorber_vault",
+          "writable": true
+        },
+        {
+          "name": "velocity_program"
         },
         {
           "name": "treasury",
@@ -1126,7 +1139,7 @@
           {
             "name": "settlement_pending",
             "docs": [
-              "True until VelocityCurve settle CPI moves vault SOL (deferred)."
+              "True until VelocityCurve::settle_merge CPI moves vault SOL (cleared on execute)."
             ],
             "type": "bool"
           },

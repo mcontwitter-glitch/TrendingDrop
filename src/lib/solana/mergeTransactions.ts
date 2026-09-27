@@ -8,7 +8,7 @@ import {
   findMergeProposalPda,
   findVoteRecordPda,
 } from './mergePdas'
-import { findHolderPda } from './velocityPdas'
+import { findCurveVaultPda, findHolderPda } from './velocityPdas'
 import { fetchMergeConfig } from './mergeProgram'
 import { formatTxError, SolanaClientError } from './transactions'
 
@@ -174,7 +174,11 @@ export async function executeMerge(
 
   const [absorberLore] = findLoreAssetPda(absorber, program.programId)
   const [targetLore] = findLoreAssetPda(target, program.programId)
+  const [targetVault] = findCurveVaultPda(target)
+  const [absorberVault] = findCurveVaultPda(absorber)
   const treasury = config.treasury as PublicKey
+  const velocityProgram =
+    (config.velocityCurveProgram as PublicKey | undefined) ?? VELOCITY_CURVE_PROGRAM_ID
 
   try {
     const signature = await program.methods
@@ -186,6 +190,9 @@ export async function executeMerge(
         targetLore,
         absorberCurve: absorber,
         targetCurve: target,
+        targetVault,
+        absorberVault,
+        velocityProgram,
         treasury,
         executor,
         systemProgram: SystemProgram.programId,

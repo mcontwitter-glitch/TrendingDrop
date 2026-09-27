@@ -138,9 +138,9 @@ NarrativeAuction::stake_on_narrative
 
 | Program | Accounts | Instructions | Logic |
 |---------|----------|--------------|-------|
-| **narrative-auction** | ✅ Full | ✅ 10 handlers | ✅ Real: config/update, story init, stake + fee, graduate + ranking board + **CPI invoke** to VelocityCurve, fail/forfeit, contribute 20/80 pool, resolve math, claim |
-| **velocity-curve** | ✅ Full | ✅ 9 handlers | ✅ Dual-curve math, buy/sell + 1.5% fee, attention EMA, holder rewards, **oracle 3/5 multi-sig crank** (`quorum`, add/remove oracle) |
-| **lore-merge** | ✅ Full | ✅ 5 handlers | ✅ propose/vote/execute + lore init; 5% fee; history cap 10; VelocityCurve reads via owner+Borsh (vault settle CPI deferred) |
+| **narrative-auction** | ✅ Full | ✅ 10 handlers | ✅ Real: config/update, story init, stake + fee, graduate + ranking board + **CPI invoke** to VelocityCurve (SPL mint) + **seed liquidity transfer** story vault → curve vault, fail/forfeit, contribute 20/80 pool, resolve math, claim |
+| **velocity-curve** | ✅ Full | ✅ 10 handlers | ✅ Dual-curve math, SPL mint/burn buy/sell + 1.5% fee, attention EMA, holder rewards, **oracle 3/5** (tx-signer **or** ed25519 proof), **`settle_merge`** for LoreMerge |
+| **lore-merge** | ✅ Full | ✅ 5 handlers | ✅ propose/vote/execute + lore init; 5% fee; history cap 10; **CPI `settle_merge`** moves vault SOL + sets `is_merged` / `merge_count` |
 | **reputation-nft** | ✅ Typed | ✅ `initialize_profile` + `update_profile` + `add_trait` | ✅ Accuracy × Weighted_Volume_Factor + Bronze→Mythic tiers; events/errors; Metaplex mint TODO |
 
 NarrativeAuction critical checks encoded:
@@ -150,7 +150,8 @@ NarrativeAuction critical checks encoded:
 - Below threshold → `fail_story` (reclaim); at/above threshold but not top-ranked → `forfeit_story` + `contribute_losing_pool` (20/80)
 - Resolve marks claimable: winners get principal + pro-rata 20% bonus; failed reclaim; forfeited claimable=0
 - Claim preserves rent-exempt + `liquidity_reserve` on Graduated vaults
-- **VelocityCurve CPI is invoked** on graduate (`initialize_token` with matching account metas)
+- **VelocityCurve CPI is invoked** on graduate (`initialize_token` with matching account metas incl. mint/vault/ATA)
+- After CPI, **seed liquidity** (`liquidity_reserve`) is transferred story vault → curve vault; `liquidity_reserve` zeroed so claims stay correct
 
 VelocityCurve critical logic:
 
@@ -158,15 +159,17 @@ VelocityCurve critical logic:
 - Attention = twitter×0.4 + telegram×0.3 + holders×0.3 (oracle passes components; program weights)
 - Effective_k steepen/flatten per PDF (±25% clamp); sell tax 15% / 5%; tax 50/50 holders/treasury
 - Protocol fee `CURVE_FEE_BPS = 150` (1.5%) on buy SOL in and sell SOL out
-- `update_attention` EMA α=0.3; **≥ `OracleConfig.quorum` (default 3) distinct authorized oracle signers** (cranker if authorized + remaining accounts); `proof` reserved for ed25519 TODO; authority can `set_oracle_quorum` / `add_oracle` / `remove_oracle`
-- Holder balances are an internal ledger (SPL mint wiring later); `seed_liquidity` recorded at init
+- `update_attention` EMA α=0.3; **two oracle modes** (see §9): tx-signer quorum **or** ed25519 Instructions-sysvar proof; authority can `set_oracle_quorum` / `add_oracle` / `remove_oracle`
+- SPL mint created on `initialize_token` (authority = curve PDA); `buy` mints to buyer ATA; `sell` burns from seller ATA; `HolderPosition` kept for reward-index / lore_power
+- `seed_liquidity` recorded at init; SOL actually moved by NarrativeAuction graduate into curve vault; `sol_reserve` seeded accordingly
+- `settle_merge(fee, liquidity)`: PDA-signed vault transfers + `target.is_merged` + absorber `merge_count++`
 
 LoreMerge critical logic:
 
 - `initialize_lore_asset` registers lore for a VelocityToken curve (permissionless after graduate)
 - `propose_merge` requires proposer `HolderPosition.balance` >1% of absorber `current_supply`; absorber lore age ≥7 days
 - `vote_merge` weight = balance × (1 + lore_power bonus ≤50%); one `VoteRecord` per voter; quorum default 10% supply
-- `execute_merge` after `voting_ends` + yes≥quorum + yes>no: transfer target lore → absorber, push history (cap **10**), bump `lore_power`, record **5%** fee + **90%** liquidity (`settlement_pending` until VelocityCurve vault CPI)
+- `execute_merge` after `voting_ends` + yes≥quorum + yes>no: transfer target lore → absorber, push history (cap **10**), bump `lore_power`, record **5%** fee + **90%** liquidity, **CPI VelocityCurve::settle_merge**, clear `settlement_pending`
 - `lore_power` bump = 500 + min(target.lore_value / 1 SOL, 2000) bps units on absorber multiplier (base 10_000)
 
 ---
@@ -210,10 +213,10 @@ Client helpers: `src/lib/solana/{merge*,reputation*}.ts` (PDAs match program see
    ```
 4. **Wire the frontend**: Solana wallet adapter, IDL JSON from `target/idl/`, replace mocks for list/stake.
 5. ~~Implement VelocityCurve math + enable graduate CPI~~ ✅
-6. ~~Oracle network 3/5 multi-sig crank~~ ✅ — ed25519 sysvar proof path still TODO (`proof: Vec<u8>` stub).
-7. **Seed curve vault** from story `liquidity_reserve` (transfer/CPI remaining accounts).
-8. **SPL mint / ATA** wiring for VelocityCurve buy/sell (currently internal ledger).
-9. ~~LoreMerge core (propose/vote/execute)~~ ✅ — remaining: VelocityCurve settle CPI (vault SOL + `is_merged`/`merge_count`), SPL burn-mint claim window.
+6. ~~Oracle network 3/5 multi-sig crank~~ ✅ — ~~ed25519 sysvar proof~~ ✅ (both modes; see §9).
+7. ~~Seed curve vault~~ ✅ — graduate transfers `liquidity_reserve` → curve vault after `initialize_token`.
+8. ~~SPL mint / ATA~~ ✅ — mint on init; buy mints / sell burns; Metaplex metadata still deferred.
+9. ~~LoreMerge core (propose/vote/execute)~~ ✅ — ~~VelocityCurve settle CPI~~ ✅; SPL burn-mint claim window still deferred.
 10. ~~UI trade + merge + reputation surfaces~~ ✅ — Metaplex NFT mint still deferred.
 11. **Indexer**: `indexer/` RPC-poll SQLite service + Yellowstone scaffold; set `VITE_INDEXER_URL` / `GEYSER_ENDPOINT` for prod.
 12. **CI**: `.github/workflows/ci.yml` (frontend + cargo check; optional anchor BPF).
@@ -247,9 +250,46 @@ bonding-curve-casino/
 
 | Item | Status | Notes |
 |------|--------|-------|
-| **Oracle 3/5** | ✅ Done | `OracleConfig.quorum` (default 3), up to 5 `authorized_oracles`. `update_attention` requires ≥ quorum distinct authorized **signers** (cranker if authorized + remaining accounts). Events include `oracle_count`. Admin: `set_oracle_quorum` / `add_oracle` / `remove_oracle`. `proof: Vec<u8>` stub for future ed25519 sysvar verification. |
+| **Oracle 3/5** | ✅ Done | `OracleConfig.quorum` (default 3), up to 5 `authorized_oracles`. Two modes — **tx-signer** (`proof` empty) or **ed25519** (`proof` = timestamp i64 LE + prior Ed25519Program ixs). See §9. Admin: `set_oracle_quorum` / `add_oracle` / `remove_oracle`. |
 | **Indexer** | ✅ Scaffold | `indexer/` — SQLite via `sql.js` + RPC poll (`getProgramAccounts` / logs). HTTP: `GET /api/stories`, `/api/activity`, `/api/curves`. Yellowstone/Geyser plan in `indexer/README.md`; set `GEYSER_ENDPOINT` when available. Frontend: `useIndexerFeed` + LiveTicker prefers `VITE_INDEXER_URL`. |
 | **CI** | ✅ In-repo | `.github/workflows/ci.yml` — required: Node 22 frontend build + `cargo check --workspace`; optional `anchor-build` (`continue-on-error`). Remote/push is a separate auth step. |
 | **Wesayso font** | ⚠️ Blocker | Personal-use FontSpace font in `public/fonts/`. Buy commercial license before public launch — checklist in [`docs/WESAYSO_LICENSE.md`](./docs/WESAYSO_LICENSE.md). |
 
-**Left for ops:** GitHub remote + push; real Yellowstone endpoint; purchase Wesayso commercial license; ed25519 proof verification on `update_attention`.
+**Left for ops:** GitHub remote + push; real Yellowstone endpoint; purchase Wesayso commercial license; Metaplex metadata / absorption burn-mint claim window.
+
+---
+
+## 9. Oracle attestation modes + plumbing notes
+
+### `update_attention` modes
+
+| Mode | When | How quorum is met |
+|------|------|-------------------|
+| **Tx-signer** | `proof` is **empty** | `cranker` (if authorized) + `remaining_accounts` that are signers ∈ `authorized_oracles`; distinct count ≥ `quorum` |
+| **Ed25519 offline** | `proof` is **non-empty** | `proof = timestamp (i64 LE)` (+ ignored bytes). Prior `Ed25519Program` instructions in the **same tx** must verify signatures over the canonical message. Instructions sysvar is introspected; distinct authorized pubkeys ≥ `quorum`. Bad proofs → `InvalidOracleProof` |
+
+**Canonical message bytes** (64 total) — must match `velocity_curve::oracle_proof::canonical_message` and TS `encodeOracleCanonicalMessage`:
+
+```text
+curve_pubkey (32)
+|| twitter_delta (u64 LE)
+|| telegram_delta (u64 LE)
+|| new_holders (u64 LE)
+|| timestamp (i64 LE)
+```
+
+### Graduate → curve seed (A)
+
+1. CPI `VelocityCurve::initialize_token` (creates curve PDA, SPL mint authority=curve, curve SOL vault, curve ATA).
+2. `invoke_signed` transfer `liquidity_reserve` from story vault → curve vault.
+3. Zero `StoryMarket.liquidity_reserve` so `claim_stake` rent math stays correct.
+
+### SPL surface (B)
+
+- Decimals = 6 (`TOKEN_DECIMALS`).
+- `HolderPosition.balance` stays aligned with minted/burned amounts for rewards + LoreMerge votes.
+
+### Merge settle (C)
+
+- New ix: `settle_merge(fee_lamports, liquidity_lamports)`.
+- LoreMerge `execute_merge` CPIs it with target/absorber vaults + treasury; clears `settlement_pending`.

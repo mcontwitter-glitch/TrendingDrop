@@ -93,3 +93,13 @@ pub struct OracleRemoved {
     pub oracle: Pubkey,
     pub oracle_count: u8,
 }
+
+#[event]
+pub struct MergeSettled {
+    pub target: Pubkey,
+    pub absorber: Pubkey,
+    pub fee_lamports: u64,
+    pub liquidity_lamports: u64,
+    pub absorber_merge_count: u8,
+    pub timestamp: i64,
+}

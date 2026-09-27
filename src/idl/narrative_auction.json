@@ -571,7 +571,7 @@
         {
           "name": "vault",
           "docs": [
-            "Story SOL vault — retains winner principals + winning_pool / liquidity."
+            "Story SOL vault — retains winner principals; seed liquidity moves to curve vault."
           ],
           "writable": true,
           "pda": {
@@ -604,16 +604,28 @@
         },
         {
           "name": "token_mint",
-          "writable": true
+          "docs": [
+            "New SPL mint for VelocityCurve::initialize_token (must sign; created in CPI)."
+          ],
+          "writable": true,
+          "signer": true
         },
         {
           "name": "curve_state",
           "writable": true
         },
         {
+          "name": "curve_vault",
+          "writable": true
+        },
+        {
+          "name": "token_vault",
+          "writable": true
+        },
+        {
           "name": "payer",
           "docs": [
-            "Crank / payer for RankingBoard init and future CPI rent."
+            "Crank / payer for RankingBoard init and CPI rent."
           ],
           "writable": true,
           "signer": true
@@ -621,6 +633,16 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         },
         {
           "name": "clock",

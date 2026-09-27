@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
+use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount};
 
 use crate::errors::VelocityError;
 use crate::events::TokensSold;
@@ -29,6 +30,19 @@ pub struct Sell<'info> {
 
     #[account(
         mut,
+        address = curve.mint @ VelocityError::MintMismatch,
+    )]
+    pub mint: Account<'info, Mint>,
+
+    #[account(
+        mut,
+        constraint = seller_ata.mint == mint.key() @ VelocityError::MintMismatch,
+        constraint = seller_ata.owner == seller.key() @ VelocityError::Unauthorized,
+    )]
+    pub seller_ata: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
         seeds = [HolderPosition::SEED, curve.key().as_ref(), seller.key().as_ref()],
         bump = holder.bump,
         constraint = holder.owner == seller.key() @ VelocityError::Unauthorized,
@@ -43,17 +57,22 @@ pub struct Sell<'info> {
     pub seller: Signer<'info>,
 
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
 }
 
 /// Sell tokens with velocity-dependent tax.
 ///
-/// Tax: 15% when attention-steepened, else 5%. Of tax: 50% → holders (stays in
-/// vault + reward index), 50% → treasury. Additional 1.5% protocol fee on
-/// post-tax SOL.
+/// Burns SPL from seller ATA; pays SOL from curve vault. Tax: 15% when
+/// attention-steepened, else 5%. Of tax: 50% → holders, 50% → treasury.
+/// Additional 1.5% protocol fee on post-tax SOL. HolderPosition stays in sync.
 pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> Result<()> {
     require!(token_amount > 0, VelocityError::ZeroAmount);
     require!(
         ctx.accounts.holder.balance >= token_amount,
+        VelocityError::InsufficientBalance
+    );
+    require!(
+        ctx.accounts.seller_ata.amount >= token_amount,
         VelocityError::InsufficientBalance
     );
 
@@ -88,7 +107,6 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
         .checked_add(fee)
         .ok_or(VelocityError::MathOverflow)?;
 
-    // Settle rewards before balance change
     {
         let idx = ctx.accounts.curve.reward_index;
         let holder = &mut ctx.accounts.holder;
@@ -100,6 +118,19 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
         )?;
         holder.claimable_rewards = claimable;
     }
+
+    // Burn SPL before updating ledger.
+    token::burn(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Burn {
+                mint: ctx.accounts.mint.to_account_info(),
+                from: ctx.accounts.seller_ata.to_account_info(),
+                authority: ctx.accounts.seller.to_account_info(),
+            },
+        ),
+        token_amount,
+    )?;
 
     let curve = &mut ctx.accounts.curve;
     let holder = &mut ctx.accounts.holder;
@@ -124,7 +155,6 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
             .checked_add(holder_share)
             .ok_or(VelocityError::MathOverflow)?;
     } else if holder_share > 0 {
-        // No remaining holders — fold into treasury
         treasury_pay = treasury_pay
             .checked_add(holder_share)
             .ok_or(VelocityError::MathOverflow)?;
@@ -140,7 +170,6 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
     let vault_leave = sol_net
         .checked_add(treasury_pay)
         .ok_or(VelocityError::MathOverflow)?;
-    // holder_share remains in vault
     let accounting_debit = vault_leave
         .checked_add(holder_share)
         .ok_or(VelocityError::MathOverflow)?;

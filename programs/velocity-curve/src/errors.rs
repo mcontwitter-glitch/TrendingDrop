@@ -46,4 +46,9 @@ pub enum VelocityError {
     InvalidQuorum,
     #[msg("Cannot remove oracle: would drop below quorum")]
     OracleRemovalBreaksQuorum,
+    #[msg("Mint account does not match curve.mint")]
+    MintMismatch,
+    #[msg("Settlement amounts exceed target reserve / vault")]
+    SettlementOverflow,
 }
+

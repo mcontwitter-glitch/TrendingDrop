@@ -6,6 +6,9 @@ pub const MAX_ORACLES: usize = 5;
 /// Protocol fee on bonding-curve volume (1.5%).
 pub const CURVE_FEE_BPS: u16 = 150;
 
+/// SPL mint decimals for VelocityCurve tokens.
+pub const TOKEN_DECIMALS: u8 = 6;
+
 /// Sell tax when attention outpaces price (steepen).
 pub const STEEPEN_TAX_BPS: u16 = 1_500;
 /// Sell tax when price outpaces attention (flatten).
@@ -51,7 +54,7 @@ pub struct VelocityToken {
     pub reward_index: u128,
     /// Previous spot price for velocity MA.
     pub last_price: u64,
-    /// Liquidity amount recorded at graduation (may be seeded later).
+    /// Liquidity amount recorded at graduation (SOL moved into curve vault on graduate).
     pub seed_liquidity: u64,
     pub bump: u8,
     pub vault_bump: u8,
@@ -62,7 +65,7 @@ impl VelocityToken {
     pub const VAULT_SEED: &'static [u8] = b"curve-vault";
 }
 
-/// Per-holder position (internal ledger until SPL mint wiring).
+/// Per-holder position — tracks reward-index / claimable alongside SPL balances.
 /// Seeds = [b"holder", curve, owner]
 #[account]
 #[derive(InitSpace)]

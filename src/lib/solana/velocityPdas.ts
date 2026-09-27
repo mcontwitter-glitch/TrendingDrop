@@ -7,6 +7,9 @@ import { VELOCITY_CURVE_PROGRAM_ID } from './constants'
  * - Curve vault:    [b"curve-vault", curve]
  * - HolderPosition: [b"holder", curve, owner]
  * - OracleConfig:   [b"oracle-config"]
+ *
+ * SPL mint pubkey lives on VelocityToken.mint; buyer/seller ATAs via
+ * getAssociatedTokenAddressSync(mint, owner). Curve ATA authority = curve PDA.
  */
 
 export const CURVE_SEED = Buffer.from('curve')

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_lang::system_program::{transfer, Transfer};
+use anchor_lang::system_program::{create_account, transfer, CreateAccount, Transfer};
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount};
 
 use crate::errors::VelocityError;
 use crate::events::TokensBought;
@@ -27,6 +29,21 @@ pub struct Buy<'info> {
     pub vault: SystemAccount<'info>,
 
     #[account(
+        mut,
+        address = curve.mint @ VelocityError::MintMismatch,
+    )]
+    pub mint: Account<'info, Mint>,
+
+    /// Buyer ATA — created if needed.
+    #[account(
+        init_if_needed,
+        payer = buyer,
+        associated_token::mint = mint,
+        associated_token::authority = buyer,
+    )]
+    pub buyer_ata: Account<'info, TokenAccount>,
+
+    #[account(
         init_if_needed,
         payer = buyer,
         space = 8 + HolderPosition::INIT_SPACE,
@@ -43,18 +60,22 @@ pub struct Buy<'info> {
     pub buyer: Signer<'info>,
 
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 /// Buy tokens along the dual curve with slippage protection.
 ///
-/// 1.5% fee → treasury; net SOL → vault; credit internal holder balance using
-/// `effective_k` from last oracle attention vs price_velocity.
+/// 1.5% fee → treasury; net SOL → vault; mint SPL tokens to buyer ATA;
+/// credit HolderPosition for reward-index math.
 pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> Result<()> {
     require!(sol_amount > 0, VelocityError::ZeroAmount);
 
     let clock = Clock::get()?;
     let curve_key = ctx.accounts.curve.key();
     let buyer_key = ctx.accounts.buyer.key();
+    let story_id = ctx.accounts.curve.story_id;
+    let curve_bump = ctx.accounts.curve.bump;
 
     let (eff_k, _) = velocity_params(
         ctx.accounts.curve.curve_k,
@@ -105,6 +126,21 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
         sol_net,
     )?;
 
+    // Mint SPL tokens to buyer (authority = curve PDA).
+    let signer_seeds: &[&[u8]] = &[VelocityToken::SEED, story_id.as_ref(), &[curve_bump]];
+    token::mint_to(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo {
+                mint: ctx.accounts.mint.to_account_info(),
+                to: ctx.accounts.buyer_ata.to_account_info(),
+                authority: ctx.accounts.curve.to_account_info(),
+            },
+            &[signer_seeds],
+        ),
+        tokens_out,
+    )?;
+
     let curve = &mut ctx.accounts.curve;
     let holder = &mut ctx.accounts.holder;
 
@@ -129,7 +165,6 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
         .balance
         .checked_add(tokens_out)
         .ok_or(VelocityError::MathOverflow)?;
-    // New tokens don't earn historical rewards.
     holder.reward_debt = curve.reward_index;
 
     let old_price = curve.current_price;
@@ -160,6 +195,8 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
         timestamp: clock.unix_timestamp,
     });
 
+    let _ = &ctx.accounts.associated_token_program;
+
     Ok(())
 }
 
@@ -179,10 +216,10 @@ fn ensure_curve_vault<'info>(
         curve_key.as_ref(),
         &[vault_bump],
     ];
-    anchor_lang::system_program::create_account(
+    create_account(
         CpiContext::new_with_signer(
             system_program.to_account_info(),
-            anchor_lang::system_program::CreateAccount {
+            CreateAccount {
                 from: payer.to_account_info(),
                 to: vault.to_account_info(),
             },
