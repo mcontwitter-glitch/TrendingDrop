@@ -40,7 +40,12 @@ const PROGRAM_IDS = {
 }
 
 function loadIdl(name) {
-  const p = path.join(ROOT, 'target', 'idl', `${name}.json`)
+  const candidates = [
+    path.join(ROOT, 'target', 'idl', `${name}.json`),
+    path.join(ROOT, 'src', 'idl', `${name}.json`),
+  ]
+  const p = candidates.find((c) => fs.existsSync(c))
+  if (!p) throw new Error(`IDL not found for ${name}`)
   const idl = JSON.parse(fs.readFileSync(p, 'utf8'))
   idl.address = PROGRAM_IDS[name].toBase58()
   return idl
@@ -155,7 +160,9 @@ async function main() {
     [Buffer.from('story-vault'), storyPda.toBuffer()],
     PROGRAM_IDS.narrative_auction,
   )
-  const duration = 5
+  const isLocal = /127\.0\.0\.1|localhost/.test(RPC)
+  const duration = Number(process.env.SMOKE_STORY_DURATION || (isLocal ? 5 : 3600))
+  const skipGraduate = process.env.SMOKE_SKIP_GRADUATE === '1' || (!isLocal && !process.env.SMOKE_STORY_DURATION)
   const thresholdLamports = new BN(50_000_000)
 
   try {
@@ -179,6 +186,10 @@ async function main() {
     [Buffer.from('stake'), storyPda.toBuffer(), payer.publicKey.toBuffer()],
     PROGRAM_IDS.narrative_auction,
   )
+  const [userStakeIndexPda] = pda(
+    [Buffer.from('user-stakes'), payer.publicKey.toBuffer()],
+    PROGRAM_IDS.narrative_auction,
+  )
   try {
     const sig = await narrative.methods
       .stakeOnNarrative(stakeAmount)
@@ -187,6 +198,7 @@ async function main() {
         story: storyPda,
         vault: vaultPda,
         stakePosition: stakePda,
+        userStakeIndex: userStakeIndexPda,
         treasury: payer.publicKey,
         staker: payer.publicKey,
         systemProgram: SystemProgram.programId,
@@ -201,6 +213,15 @@ async function main() {
     fail('stake_on_narrative', e)
   }
 
+  // 5-8. graduate/buy/sell — skip on Devnet when auction window is long
+  let mint
+  let curvePda
+  if (skipGraduate) {
+    ok('wait_auction_end', 'SKIPPED (SMOKE_SKIP_GRADUATE / Devnet long auction)')
+    ok('graduate_narrative', 'SKIPPED (auction still open)')
+    ok('buy', 'SKIPPED (needs graduate)')
+    ok('sell', 'SKIPPED (needs graduate)')
+  } else {
   // 5. wait for auction end
   try {
     const story = await narrative.account.storyMarket.fetch(storyPda)
@@ -221,8 +242,8 @@ async function main() {
   }
 
   // 6. graduate_narrative
-  const mint = Keypair.generate()
-  const [curvePda] = pda(
+  mint = Keypair.generate()
+  ;[curvePda] = pda(
     [Buffer.from('curve'), storyPda.toBuffer()],
     PROGRAM_IDS.velocity_curve,
   )
@@ -345,6 +366,8 @@ async function main() {
     console.error(`FAIL  sell (optional) — ${e.message || e}`)
   }
 
+  } // end skipGraduate else
+
   // 9. initialize_profile
   try {
     const existing = await connection.getAccountInfo(profilePda)
@@ -385,8 +408,10 @@ async function main() {
           Object.entries(PROGRAM_IDS).map(([k, v]) => [k, v.toBase58()]),
         ),
         story: storyPda.toBase58(),
-        curve: curvePda.toBase58(),
-        mint: mint.publicKey.toBase58(),
+        curve: curvePda ? curvePda.toBase58() : null,
+        mint: mint ? mint.publicKey.toBase58() : null,
+        duration,
+        skipGraduate,
       },
       null,
       2,
