@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ImagePlus, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, ImagePlus, CheckCircle2, AlertCircle, X } from 'lucide-react'
 import { useNarrativeProgram } from '../hooks/useNarrativeProgram'
 import { initializeStory } from '../lib/solana/transactions'
 import { useToast } from '../components/Toast'
+import { compressCoverToDataUrl, coverPublicPath } from '../lib/coverImage'
+import { saveNarrativeMetadata, type NarrativeMetadata } from '../lib/solana/metadata'
 
 export function CreateStory() {
   const navigate = useNavigate()
@@ -17,6 +19,9 @@ export function CreateStory() {
   const [website, setWebsite] = useState('')
   const [duration, setDuration] = useState<'24' | '48'>('24')
   const [imageName, setImageName] = useState<string | null>(null)
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null)
+  const [imageBusy, setImageBusy] = useState(false)
+  const [imageError, setImageError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [mode, setMode] = useState<'chain' | 'mock'>('mock')
@@ -24,17 +29,53 @@ export function CreateStory() {
   const [error, setError] = useState<string | null>(null)
   const [configNote, setConfigNote] = useState<string | null>(null)
 
+  async function handleImageChange(file: File | undefined) {
+    setImageError(null)
+    if (!file) {
+      setImageName(null)
+      setImageDataUrl(null)
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      setImageError('Please choose an image file')
+      return
+    }
+    setImageName(file.name)
+    setImageBusy(true)
+    try {
+      const dataUrl = await compressCoverToDataUrl(file, {
+        maxDim: 512,
+        quality: 0.72,
+      })
+      setImageDataUrl(dataUrl)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setImageError(msg)
+      setImageDataUrl(null)
+      toast.error('Cover compress failed', msg)
+    } finally {
+      setImageBusy(false)
+    }
+  }
+
+  function clearImage() {
+    setImageName(null)
+    setImageDataUrl(null)
+    setImageError(null)
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!title.trim() || !ticker.trim() || !description.trim()) return
     setError(null)
     setConfigNote(null)
 
-    const meta = {
+    const meta: NarrativeMetadata = {
       title: title.trim(),
       ticker: ticker.trim().toUpperCase(),
       blurb: description.trim().slice(0, 140),
       description: description.trim(),
+      ...(imageDataUrl ? { image: imageDataUrl } : {}),
       socials: {
         ...(twitter ? { twitter } : {}),
         ...(telegram ? { telegram } : {}),
@@ -51,6 +92,18 @@ export function CreateStory() {
           durationSeconds,
           creator: publicKey,
         })
+        // Prefer Pages-static path in registry when a cover was uploaded; keep
+        // data URL as fallback so this browser still shows art before a commit
+        // lands `/meta/covers/<pubkey>.jpg` + stories.json.
+        const storyKey = result.storyPda.toBase58()
+        if (imageDataUrl) {
+          const withPath: NarrativeMetadata = {
+            ...meta,
+            image: imageDataUrl,
+            coverUrl: coverPublicPath(storyKey),
+          }
+          saveNarrativeMetadata(result.contentHashHex, withPath, storyKey)
+        }
         setMode('chain')
         setTxSig(result.signature)
         setConfigNote(
@@ -59,7 +112,9 @@ export function CreateStory() {
         setSubmitted(true)
         toast.success(
           'Story created on-chain',
-          `${result.signature.slice(0, 16)}… · Name cached in this browser only (add to public/meta/stories.json for others)`,
+          imageDataUrl
+            ? `${result.signature.slice(0, 16)}… · Cover saved in this browser; add ${coverPublicPath(storyKey)} + stories.json for Pages viewers`
+            : `${result.signature.slice(0, 16)}… · Name cached in this browser only (add to public/meta/stories.json for others)`,
         )
         window.setTimeout(() => navigate(`/story/${result.storyPda.toBase58()}`), 2200)
       } catch (err) {
@@ -175,19 +230,47 @@ export function CreateStory() {
           <div className="mt-1 text-right text-[10px] text-bcc-muted">{description.length}/800</div>
         </Field>
 
-        <Field label="Cover image" hint="Placeholder — upload mocked">
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-bcc-border bg-bcc-bg px-4 py-10 transition hover:border-bcc-green/40 hover:bg-bcc-green/5">
-            <ImagePlus className="h-8 w-8 text-bcc-muted" />
-            <span className="text-sm text-bcc-muted">
-              {imageName ? imageName : 'Click to choose an image'}
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => setImageName(e.target.files?.[0]?.name ?? null)}
-            />
-          </label>
+        <Field
+          label="Cover image"
+          hint={imageDataUrl ? 'Compressed · saved with story' : 'JPEG/PNG · compressed client-side'}
+        >
+          {imageDataUrl ? (
+            <div className="relative overflow-hidden rounded-xl border border-bcc-border bg-bcc-bg">
+              <img
+                src={imageDataUrl}
+                alt="Cover preview"
+                className="h-40 w-full object-cover sm:h-48"
+              />
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
+                <span className="truncate text-xs text-white/90">{imageName}</span>
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-black/40 px-2 py-1 text-[11px] text-white hover:bg-black/60"
+                >
+                  <X className="h-3 w-3" />
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-bcc-border bg-bcc-bg px-4 py-10 transition hover:border-bcc-green/40 hover:bg-bcc-green/5">
+              <ImagePlus className="h-8 w-8 text-bcc-muted" />
+              <span className="text-sm text-bcc-muted">
+                {imageBusy ? 'Compressing…' : imageName ? imageName : 'Click to choose an image'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={imageBusy}
+                onChange={(e) => void handleImageChange(e.target.files?.[0])}
+              />
+            </label>
+          )}
+          {imageError && (
+            <p className="mt-1.5 text-xs text-red-300">{imageError}</p>
+          )}
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -243,7 +326,7 @@ export function CreateStory() {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || imageBusy}
           className="bcc-glow-btn w-full rounded-xl py-3.5 font-display text-sm font-bold disabled:opacity-50"
         >
           {submitting

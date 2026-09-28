@@ -5,6 +5,13 @@
       "ticker": "SMOKE",
       "blurb": "Agent smoke story on Solana Devnet.",
       "description": "Created by the Devnet smoke script for create→stake→graduate→buy→sell."
+    },
+    "72bUVg9hmdygdxNBoqyVmyh2mFXhEprhGzaWQmucm4es": {
+      "title": "Drop",
+      "ticker": "DROP",
+      "blurb": "A rising narrative drop tracing velocity curves into a clean, cyan-powered launch.",
+      "description": "A rising narrative drop tracing velocity curves into a clean, cyan-powered launch.",
+      "image": "/meta/covers/72bUVg9hmdygdxNBoqyVmyh2mFXhEprhGzaWQmucm4es.jpg"
     }
   },
   "byHash": {}

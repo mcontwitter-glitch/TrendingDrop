@@ -1,6 +1,6 @@
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import type { CurveToken, HolderPositionView, VelocityMode } from '../../types'
-import { getMetadataByPubkey } from './metadata'
+import { getMetadataByPubkey, metaCoverUrl } from './metadata'
 import { modeFromScores, settleHolderRewards, velocityParams } from './velocityMath'
 import { coverForTicker, hashCover } from '../tokenCovers'
 
@@ -105,7 +105,7 @@ export function mapVelocityTokenToCurve(
       meta?.description?.slice(0, 120) ??
       "Metadata not shared yet — only this browser's Create Story cache has the name.",
     emoji: hashPick(seed, EMOJIS),
-    imageUrl: meta?.ticker ? coverForTicker(meta.ticker) : hashCover(seed),
+    imageUrl: metaCoverUrl(meta) ?? (meta?.ticker ? coverForTicker(meta.ticker) : hashCover(seed)),
     gradient: hashPick(seed + 'g', GRADIENTS),
     creator: truncateAddress(account.creator.toBase58()),
     creatorPubkey: account.creator.toBase58(),

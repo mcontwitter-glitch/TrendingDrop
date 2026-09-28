@@ -2,6 +2,7 @@ import { PublicKey } from '@solana/web3.js'
 import type { LoreAssetView, MergeProposalStatus, MergeProposalView } from '../../types'
 import { mockCurves } from '../../data/mockCurves'
 import { coverForTicker, hashCover } from '../tokenCovers'
+import { getMetadataByPubkey, metaCoverUrl } from './metadata'
 
 export interface OnChainMergeProposal {
   absorber: PublicKey
@@ -55,6 +56,15 @@ function curveMeta(pubkey: string): {
       emoji: c.emoji,
       imageUrl: c.imageUrl ?? coverForTicker(c.ticker),
     }
+  const meta = getMetadataByPubkey(pubkey)
+  if (meta) {
+    return {
+      ticker: meta.ticker,
+      title: meta.title,
+      emoji: '📜',
+      imageUrl: metaCoverUrl(meta) ?? coverForTicker(meta.ticker),
+    }
+  }
   const ticker = pubkey.slice(0, 4).toUpperCase()
   return { ticker, title: 'Curve', emoji: '📜', imageUrl: hashCover(pubkey) }
 }

@@ -1,9 +1,9 @@
 /**
  * Off-chain narrative metadata cache.
  *
- * On-chain StoryMarket only stores content_hash — title/ticker/blurb live here.
- * Lookup order: localStorage (creator browser) → shared public/meta/stories.json
- * → caller fallback. Names are local-only unless added to public/meta/stories.json
+ * On-chain StoryMarket only stores content_hash — title/ticker/blurb/image live here.
+ * Lookup order: localStorage (creator browser) merged with shared public/meta/stories.json
+ * → caller fallback. Names/covers are local-only unless added to public/meta/stories.json
  * for cross-browser / GitHub Pages viewers.
  */
 
@@ -12,6 +12,13 @@ export interface NarrativeMetadata {
   ticker: string
   blurb: string
   description: string
+  /**
+   * Cover art URL: `/meta/covers/<pubkey>.jpg` (Pages-static) or a compressed
+   * `data:image/jpeg;base64,…` from Create Story (localStorage / registry).
+   */
+  image?: string
+  /** Alias for `image` (accepted when reading shared registry entries). */
+  coverUrl?: string
   socials?: {
     twitter?: string
     telegram?: string
@@ -61,6 +68,29 @@ function registryUrl(): string {
   return `${normalized}meta/stories.json`
 }
 
+/** Prefer whichever side has a concrete cover. Local text fields win. */
+function mergeMeta(
+  local?: NarrativeMetadata,
+  shared?: NarrativeMetadata,
+): NarrativeMetadata | undefined {
+  if (!local && !shared) return undefined
+  if (!local) return shared
+  if (!shared) return local
+  const image =
+    local.image ||
+    local.coverUrl ||
+    shared.image ||
+    shared.coverUrl ||
+    undefined
+  return {
+    ...shared,
+    ...local,
+    image,
+    coverUrl: image,
+    socials: { ...shared.socials, ...local.socials },
+  }
+}
+
 /**
  * Fetch shared static metadata once (GitHub Pages–friendly). Safe to call
  * repeatedly; subsequent calls return the same Promise / cached registry.
@@ -98,32 +128,37 @@ export function saveNarrativeMetadata(
   meta: NarrativeMetadata,
   storyPubkey?: string,
 ) {
+  const normalized: NarrativeMetadata = {
+    ...meta,
+    image: meta.image || meta.coverUrl,
+  }
   const byHash = readMap(BY_HASH)
-  byHash[contentHashHex] = meta
+  byHash[contentHashHex] = normalized
   writeMap(BY_HASH, byHash)
-  sharedRegistry.byHash[contentHashHex] = meta
+  sharedRegistry.byHash[contentHashHex] = normalized
   if (storyPubkey) {
     const byPk = readMap(BY_PUBKEY)
-    byPk[storyPubkey] = meta
+    byPk[storyPubkey] = normalized
     writeMap(BY_PUBKEY, byPk)
-    sharedRegistry.byPubkey[storyPubkey] = meta
+    sharedRegistry.byPubkey[storyPubkey] = normalized
   }
 }
 
 export function getMetadataByPubkey(pubkey: string): NarrativeMetadata | undefined {
   ensureLoadStarted()
-  return (
-    readMap(BY_PUBKEY)[pubkey] ??
-    sharedRegistry.byPubkey[pubkey]
-  )
+  return mergeMeta(readMap(BY_PUBKEY)[pubkey], sharedRegistry.byPubkey[pubkey])
 }
 
 export function getMetadataByHash(contentHashHex: string): NarrativeMetadata | undefined {
   ensureLoadStarted()
-  return (
-    readMap(BY_HASH)[contentHashHex] ??
-    sharedRegistry.byHash[contentHashHex]
-  )
+  return mergeMeta(readMap(BY_HASH)[contentHashHex], sharedRegistry.byHash[contentHashHex])
+}
+
+/** Resolved cover URL from meta (image | coverUrl), or undefined. */
+export function metaCoverUrl(meta?: NarrativeMetadata | null): string | undefined {
+  if (!meta) return undefined
+  const url = meta.image || meta.coverUrl
+  return url && url.length > 0 ? url : undefined
 }
 
 export function bytesToHex(bytes: Uint8Array | number[] | Buffer): string {

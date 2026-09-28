@@ -7,6 +7,7 @@ import {
   bytesToHex,
   printableAsciiPrefixFromHash,
   tickerFromAsciiPrefix,
+  metaCoverUrl,
   type NarrativeMetadata,
 } from './metadata'
 import { coverForTicker, hashCover } from '../tokenCovers'
@@ -151,7 +152,7 @@ export function mapStoryMarketToStory(
     blurb: meta.blurb || meta.description.slice(0, 120),
     description: meta.description,
     emoji: hashPick(seed, EMOJIS),
-    imageUrl: meta.ticker ? coverForTicker(meta.ticker) : hashCover(seed),
+    imageUrl: metaCoverUrl(meta) ?? (meta.ticker ? coverForTicker(meta.ticker) : hashCover(seed)),
     gradient: hashPick(seed + 'g', GRADIENTS),
     solStaked: totalSol,
     stakerCount: account.uniqueStakers,
