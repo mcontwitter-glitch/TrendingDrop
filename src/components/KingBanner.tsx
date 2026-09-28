@@ -24,11 +24,15 @@ export function KingBanner({ story }: KingBannerProps) {
 
       <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-6">
         <div className="flex items-start gap-4 sm:items-center">
-          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 text-4xl backdrop-blur sm:h-20 sm:w-20 sm:text-5xl">
+          <div className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-bcc-cyan/30 bg-black/40 text-4xl backdrop-blur sm:h-20 sm:w-20 sm:text-5xl">
             {story.imageUrl ? (
-              <img src={story.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <img
+                src={story.imageUrl}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
             ) : (
-              story.emoji
+              <span className="flex h-full w-full items-center justify-center">{story.emoji}</span>
             )}
           </div>
           <div className="min-w-0 flex-1">

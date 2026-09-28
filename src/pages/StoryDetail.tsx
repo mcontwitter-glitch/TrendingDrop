@@ -119,33 +119,37 @@ export function StoryDetail() {
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
           <div className="overflow-hidden rounded-2xl border border-bcc-border bg-bcc-surface">
-            <div
-              className={`relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br ${story.gradient} sm:h-56`}
-            >
-              {story.imageUrl ? (
-                <img
-                  src={story.imageUrl}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              ) : (
-                <span className="relative text-7xl drop-shadow-xl sm:text-8xl">{story.emoji}</span>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-              <div className="absolute left-4 top-4 z-10 flex flex-wrap items-center gap-2">
-                <StatusPill status={story.status} endsAt={story.endsAt} now={now} />
-                <TickerCaChip
-                  ticker={story.ticker}
-                  address={
-                    graduatedResult?.mint ??
-                    story.mint ??
-                    (story.curveId ? getCurve(story.curveId)?.mint : undefined) ??
-                    (story.pubkey ? getCurve(story.pubkey)?.mint : undefined) ??
-                    story.pubkey
-                  }
-                  size="md"
-                  tone="green"
-                />
+            <div className="flex justify-center bg-bcc-bg/40 px-4 pt-4 sm:px-6 sm:pt-5">
+              <div
+                className={`relative aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl border border-bcc-cyan/20 bg-gradient-to-br ${story.gradient} sm:max-w-xs`}
+              >
+                {story.imageUrl ? (
+                  <img
+                    src={story.imageUrl}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover object-center"
+                  />
+                ) : (
+                  <span className="relative flex h-full w-full items-center justify-center text-7xl drop-shadow-xl sm:text-8xl">
+                    {story.emoji}
+                  </span>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-2">
+                  <StatusPill status={story.status} endsAt={story.endsAt} now={now} />
+                  <TickerCaChip
+                    ticker={story.ticker}
+                    address={
+                      graduatedResult?.mint ??
+                      story.mint ??
+                      (story.curveId ? getCurve(story.curveId)?.mint : undefined) ??
+                      (story.pubkey ? getCurve(story.pubkey)?.mint : undefined) ??
+                      story.pubkey
+                    }
+                    size="md"
+                    tone="green"
+                  />
+                </div>
               </div>
             </div>
 

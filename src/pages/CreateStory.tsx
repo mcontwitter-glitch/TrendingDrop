@@ -232,32 +232,34 @@ export function CreateStory() {
 
         <Field
           label="Cover image"
-          hint={imageDataUrl ? 'Compressed · saved with story' : 'JPEG/PNG · compressed client-side'}
+          hint={imageDataUrl ? '1:1 crop · saved with story' : 'JPEG/PNG · center-cropped to square'}
         >
           {imageDataUrl ? (
-            <div className="relative overflow-hidden rounded-xl border border-bcc-border bg-bcc-bg">
-              <img
-                src={imageDataUrl}
-                alt="Cover preview"
-                className="h-40 w-full object-cover sm:h-48"
-              />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
-                <span className="truncate text-xs text-white/90">{imageName}</span>
-                <button
-                  type="button"
-                  onClick={clearImage}
-                  className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-black/40 px-2 py-1 text-[11px] text-white hover:bg-black/60"
-                >
-                  <X className="h-3 w-3" />
-                  Remove
-                </button>
+            <div className="flex justify-center">
+              <div className="relative aspect-square w-full max-w-[240px] overflow-hidden rounded-xl border border-bcc-cyan/30 bg-bcc-bg sm:max-w-xs">
+                <img
+                  src={imageDataUrl}
+                  alt="Cover preview"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                />
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
+                  <span className="truncate text-xs text-white/90">{imageName}</span>
+                  <button
+                    type="button"
+                    onClick={clearImage}
+                    className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-black/40 px-2 py-1 text-[11px] text-white hover:bg-black/60"
+                  >
+                    <X className="h-3 w-3" />
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-bcc-border bg-bcc-bg px-4 py-10 transition hover:border-bcc-green/40 hover:bg-bcc-green/5">
-              <ImagePlus className="h-8 w-8 text-bcc-muted" />
-              <span className="text-sm text-bcc-muted">
-                {imageBusy ? 'Compressing…' : imageName ? imageName : 'Click to choose an image'}
+            <label className="mx-auto flex aspect-square w-full max-w-[240px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-bcc-cyan/40 bg-bcc-bg px-4 transition hover:border-bcc-gold/50 hover:bg-bcc-cyan/5 sm:max-w-xs">
+              <ImagePlus className="h-8 w-8 text-bcc-cyan" />
+              <span className="text-center text-sm text-bcc-muted">
+                {imageBusy ? 'Compressing…' : imageName ? imageName : 'Square cover · click to upload'}
               </span>
               <input
                 type="file"

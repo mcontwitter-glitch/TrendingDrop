@@ -108,29 +108,33 @@ export function TradeDesk() {
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
           <div className="overflow-hidden bcc-card rounded-2xl">
-            <div
-              className={`relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br ${curve.gradient} sm:h-48`}
-            >
-              {curve.imageUrl ? (
-                <img
-                  src={curve.imageUrl}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              ) : (
-                <span className="relative text-7xl drop-shadow-xl sm:text-8xl">{curve.emoji}</span>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-              <div className="absolute left-4 top-4 z-10 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-bcc-green/25 bg-bcc-green/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-bcc-green backdrop-blur">
-                  Live
-                </span>
-                <TickerCaChip
-                  ticker={curve.ticker}
-                  address={curve.mint}
-                  size="md"
-                  tone="green"
-                />
+            <div className="flex justify-center bg-bcc-bg/40 px-4 pt-4 sm:px-6 sm:pt-5">
+              <div
+                className={`relative aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl border border-bcc-cyan/20 bg-gradient-to-br ${curve.gradient} sm:max-w-xs`}
+              >
+                {curve.imageUrl ? (
+                  <img
+                    src={curve.imageUrl}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover object-center"
+                  />
+                ) : (
+                  <span className="relative flex h-full w-full items-center justify-center text-7xl drop-shadow-xl sm:text-8xl">
+                    {curve.emoji}
+                  </span>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-bcc-green/25 bg-bcc-green/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-bcc-green backdrop-blur">
+                    Live
+                  </span>
+                  <TickerCaChip
+                    ticker={curve.ticker}
+                    address={curve.mint}
+                    size="md"
+                    tone="green"
+                  />
+                </div>
               </div>
             </div>
             <div className="p-5 sm:p-6">

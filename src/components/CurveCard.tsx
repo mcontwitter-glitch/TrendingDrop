@@ -35,16 +35,18 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
       style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       <div
-        className={`relative flex h-28 items-center justify-center overflow-hidden bg-gradient-to-br ${curve.gradient}`}
+        className={`relative aspect-square w-full overflow-hidden bg-gradient-to-br ${curve.gradient}`}
       >
         {curve.imageUrl ? (
           <img
             src={curve.imageUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover object-center transition duration-300 group-hover:scale-105"
           />
         ) : (
-          <span className="relative text-5xl drop-shadow-lg">{curve.emoji}</span>
+          <span className="relative flex h-full w-full items-center justify-center text-5xl drop-shadow-lg">
+            {curve.emoji}
+          </span>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-black/10" />
         <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">

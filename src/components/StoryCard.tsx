@@ -37,15 +37,15 @@ export function StoryCard({ story, index = 0 }: StoryCardProps) {
       className="fade-up bcc-card group flex flex-col overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-0.5"
       style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
     >
-      <div className={`relative flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br ${story.gradient}`}>
+      <div className={`relative aspect-square w-full overflow-hidden bg-gradient-to-br ${story.gradient}`}>
         {story.imageUrl ? (
           <img
             src={story.imageUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover object-center transition duration-300 group-hover:scale-105"
           />
         ) : (
-          <span className="relative text-6xl drop-shadow-lg transition duration-300 group-hover:scale-105">
+          <span className="relative flex h-full w-full items-center justify-center text-6xl drop-shadow-lg transition duration-300 group-hover:scale-105">
             {story.emoji}
           </span>
         )}

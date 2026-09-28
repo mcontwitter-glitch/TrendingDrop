@@ -1,10 +1,10 @@
 /**
  * Browser-side cover compression for Create Story uploads.
- * Produces a small JPEG data URL suitable for localStorage / meta registry.
+ * Produces a square JPEG data URL (pump.fun-style) for localStorage / meta registry.
  */
 
 export interface CompressCoverOptions {
-  /** Max width or height in px (default 512). */
+  /** Output square edge in px (default 512). */
   maxDim?: number
   /** JPEG quality 0–1 (default 0.72). */
   quality?: number
@@ -40,7 +40,7 @@ function canvasToJpegDataUrl(
 }
 
 /**
- * Resize + JPEG-compress a File/Blob into a data URL.
+ * Center-crop to 1:1, then JPEG-compress into a data URL.
  * Falls back to reading the original as data URL if canvas is unavailable.
  */
 export async function compressCoverToDataUrl(
@@ -56,18 +56,19 @@ export async function compressCoverToDataUrl(
   }
 
   const img = await loadImage(file)
-  const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
-  const w = Math.max(1, Math.round(img.width * scale))
-  const h = Math.max(1, Math.round(img.height * scale))
+  const side = Math.min(img.width, img.height)
+  const sx = Math.max(0, Math.floor((img.width - side) / 2))
+  const sy = Math.max(0, Math.floor((img.height - side) / 2))
+  const out = Math.max(1, Math.min(maxDim, side))
 
   const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
+  canvas.width = out
+  canvas.height = out
   const ctx = canvas.getContext('2d')
   if (!ctx) return fileToDataUrl(file)
   ctx.fillStyle = '#030a16'
-  ctx.fillRect(0, 0, w, h)
-  ctx.drawImage(img, 0, 0, w, h)
+  ctx.fillRect(0, 0, out, out)
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, out, out)
 
   let dataUrl = canvasToJpegDataUrl(canvas, quality)
   while (dataUrl.length > maxChars && quality > 0.4) {
