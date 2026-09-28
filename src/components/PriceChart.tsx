@@ -2,10 +2,11 @@ import { useMemo } from 'react'
 import type { CurveToken } from '../types'
 import type { PriceSample } from '../lib/priceHistory'
 import {
-  formatMarketCapSol,
+  formatMarketCapUsd,
   formatPriceLamports,
 } from '../lib/format'
 import { launchpadDisplayMetrics } from '../lib/solana/tokenEconomics'
+import { useSolUsdPrice } from '../hooks/useSolUsdPrice'
 import { spotPrice, velocityParams } from '../lib/solana/velocityMath'
 
 interface PriceChartProps {
@@ -73,6 +74,7 @@ function bondingShape(curve: CurveToken, basePrice: number): number[] {
 
 export function PriceChart({ curve, samples }: PriceChartProps) {
   const metrics = useMemo(() => launchpadDisplayMetrics(curve), [curve])
+  const { solUsd } = useSolUsdPrice()
 
   const liveSamples = useMemo(() => {
     if (samples.length >= 2) return samples
@@ -146,7 +148,7 @@ export function PriceChart({ curve, samples }: PriceChartProps) {
           </div>
           <div className="mt-0.5 flex flex-wrap items-center justify-end gap-2 text-xs">
             <span className="font-mono text-bcc-text">
-              Mcap {formatMarketCapSol(mcap)}
+              Mcap {formatMarketCapUsd(mcap, solUsd)}
             </span>
             {pctLabel && (
               <span className={`font-semibold ${pctClass}`}>{pctLabel}</span>

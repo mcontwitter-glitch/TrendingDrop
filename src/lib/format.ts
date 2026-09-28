@@ -117,3 +117,21 @@ export function formatMarketCapSol(sol: number): string {
   if (sol >= 0.01) return `${sol.toFixed(3)} SOL`
   return `${sol.toFixed(4)} SOL`
 }
+
+/** Compact USD label using the same magnitude thresholds as SOL market cap. */
+export function formatUsdCompact(usd: number): string {
+  if (!Number.isFinite(usd) || usd <= 0) return '$0'
+  if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(1)}M`
+  if (usd >= 10_000) return `$${(usd / 1_000).toFixed(1)}k`
+  if (usd >= 1_000) return `$${(usd / 1_000).toFixed(2)}k`
+  if (usd >= 100) return `$${usd.toFixed(1)}`
+  if (usd >= 10) return `$${usd.toFixed(1)}`
+  if (usd >= 1) return `$${usd.toFixed(2)}`
+  if (usd >= 0.01) return `$${usd.toFixed(3)}`
+  return `$${usd.toFixed(4)}`
+}
+
+/** Launchpad FDV in SOL converted to a compact USD market-cap label. */
+export function formatMarketCapUsd(solFdv: number, solUsd: number): string {
+  return formatUsdCompact(solFdv * solUsd)
+}

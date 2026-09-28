@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import type { CurveToken } from '../types'
 import {
-  formatMarketCapSol,
+  formatMarketCapUsd,
   formatPriceLamports,
   formatSol,
 } from '../lib/format'
+import { useSolUsdPrice } from '../hooks/useSolUsdPrice'
 import {
   formatSupplyMetric,
   launchpadDisplayMetrics,
@@ -24,6 +25,7 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
         : 'bg-bcc-elevated text-bcc-muted border-bcc-border'
 
   const metrics = launchpadDisplayMetrics(curve)
+  const { solUsd } = useSolUsdPrice()
 
   return (
     <Link
@@ -74,7 +76,7 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
           <Stat label="Spot" value={formatPriceLamports(metrics.effectivePriceLamports)} />
           <Stat label="Reserve" value={`${formatSol(curve.solReserveSol)} SOL`} />
           <Stat label="Supply" value={formatSupplyMetric(metrics.circulatingWhole)} />
-          <Stat label="Mcap" value={formatMarketCapSol(metrics.fdvSol)} />
+          <Stat label="Mcap" value={formatMarketCapUsd(metrics.fdvSol, solUsd)} />
         </div>
 
         <div className="mt-3 flex items-center justify-between border-t border-bcc-border/60 pt-3 text-[10px] text-bcc-muted">

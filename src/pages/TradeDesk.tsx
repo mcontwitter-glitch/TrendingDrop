@@ -9,7 +9,7 @@ import { TradePanel } from '../components/TradePanel'
 import { HolderPanel } from '../components/HolderPanel'
 import {
   formatLamportsAsSol,
-  formatMarketCapSol,
+  formatMarketCapUsd,
   formatPriceLamports,
   formatSol,
   shortAddress,
@@ -21,6 +21,7 @@ import {
   launchpadDisplayMetrics,
 } from '../lib/solana/tokenEconomics'
 import { useNow } from '../hooks/useNow'
+import { useSolUsdPrice } from '../hooks/useSolUsdPrice'
 import { TierBadge } from '../components/TierBadge'
 import { mockCreatorTiers } from '../data/mockProfiles'
 
@@ -35,6 +36,7 @@ export function TradeDesk() {
   const { publicKey } = useVelocityProgram()
   const { holder, refresh: refreshHolder } = useHolderPosition(curve, publicKey)
   const now = useNow()
+  const { solUsd } = useSolUsdPrice()
 
   if (loading && !curve) {
     return (
@@ -158,7 +160,7 @@ export function TradeDesk() {
             <Metric
               icon={<TrendingUp className="h-4 w-4 text-bcc-cyan" />}
               label="Market cap"
-              value={formatMarketCapSol(mcap)}
+              value={formatMarketCapUsd(mcap, solUsd)}
             />
             <Metric
               icon={<Droplets className="h-4 w-4 text-bcc-cyan" />}
@@ -196,7 +198,7 @@ export function TradeDesk() {
               <Row label="Merges" value={String(curve.mergeCount)} />
               <Row
                 label="Circ. value"
-                value={`${formatMarketCapSol(circValue)}`}
+                value={formatMarketCapUsd(circValue, solUsd)}
               />
               <Row
                 label="Oracle update"
