@@ -1,3 +1,8 @@
+import {
+  TOTAL_SUPPLY_WHOLE,
+  fdvMarketCapSol as fdvFromEconomics,
+} from './solana/tokenEconomics'
+
 export function formatSol(n: number): string {
   if (n >= 100) return n.toFixed(1)
   if (n >= 10) return n.toFixed(2)
@@ -53,6 +58,7 @@ export function formatLamportsAsSol(lamports: number | bigint, digits = 4): stri
 export function formatTokenAmount(n: number | bigint): string {
   const v = typeof n === 'bigint' ? Number(n) : n
   if (!Number.isFinite(v)) return '0'
+  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
   if (v >= 10_000) return `${(v / 1_000).toFixed(1)}k`
   if (v >= 100) return v.toFixed(0)
@@ -68,7 +74,10 @@ export function formatPriceLamports(lamports: number): string {
   return `${sol.toFixed(4)} SOL`
 }
 
-/** Market cap in SOL: (priceLamports * supply) / 1e9, bigint-safe for large products. */
+/**
+ * Circulating market value in SOL: (priceLamports * supply) / 1e9.
+ * Prefer `fdvMarketCapSol` for the Trade Desk "Market cap" metric (launchpad FDV).
+ */
 export function marketCapSol(priceLamports: number | bigint, supply: number | bigint): number {
   const p = typeof priceLamports === 'bigint' ? priceLamports : BigInt(Math.max(0, Math.floor(priceLamports)))
   const s = typeof supply === 'bigint' ? supply : BigInt(Math.max(0, Math.floor(supply)))
@@ -76,6 +85,25 @@ export function marketCapSol(priceLamports: number | bigint, supply: number | bi
   const scaled = (p * s * 1_000_000n) / 1_000_000_000n
   return Number(scaled) / 1_000_000
 }
+
+/**
+ * Launchpad FDV in SOL. UI treats curve price as lamports/whole token × 1B supply:
+ * (priceLamports * TOTAL_SUPPLY_WHOLE) / 1e9.
+ */
+export function fdvMarketCapSol(priceLamports: number | bigint): number {
+  return fdvFromEconomics(priceLamports)
+}
+
+/** @deprecated Prefer fdvMarketCapSol — kept for callers that still pass supply. */
+export function marketCapSolCompat(
+  priceLamports: number | bigint,
+  _supply?: number | bigint,
+): number {
+  void _supply
+  return fdvMarketCapSol(priceLamports)
+}
+
+export { TOTAL_SUPPLY_WHOLE }
 
 /** Compact market-cap label, e.g. `12.4 SOL`, `1.2k SOL`, `3.4M SOL`. */
 export function formatMarketCapSol(sol: number): string {

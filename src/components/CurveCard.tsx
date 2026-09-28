@@ -4,9 +4,11 @@ import {
   formatMarketCapSol,
   formatPriceLamports,
   formatSol,
-  formatTokenAmount,
-  marketCapSol,
 } from '../lib/format'
+import {
+  formatSupplyMetric,
+  launchpadDisplayMetrics,
+} from '../lib/solana/tokenEconomics'
 
 interface CurveCardProps {
   curve: CurveToken
@@ -21,7 +23,7 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
         ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
         : 'bg-bcc-elevated text-bcc-muted border-bcc-border'
 
-  const mcap = marketCapSol(curve.currentPriceLamports, curve.currentSupply)
+  const metrics = launchpadDisplayMetrics(curve)
 
   return (
     <Link
@@ -51,6 +53,11 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
           >
             {curve.mode}
           </span>
+          {metrics.priceCorrupt && (
+            <span className="rounded-full border border-amber-400/40 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200 backdrop-blur">
+              Price fix
+            </span>
+          )}
         </div>
         <span className="absolute right-3 top-3 z-10 rounded-full border border-white/10 bg-black/50 px-2 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
           ${curve.ticker}
@@ -64,10 +71,10 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
         <p className="mt-1 line-clamp-2 text-xs text-bcc-muted">{curve.blurb}</p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-          <Stat label="Spot" value={formatPriceLamports(curve.currentPriceLamports)} />
+          <Stat label="Spot" value={formatPriceLamports(metrics.effectivePriceLamports)} />
           <Stat label="Reserve" value={`${formatSol(curve.solReserveSol)} SOL`} />
-          <Stat label="Supply" value={formatTokenAmount(curve.currentSupply)} />
-          <Stat label="Mcap" value={formatMarketCapSol(mcap)} />
+          <Stat label="Supply" value={formatSupplyMetric(metrics.circulatingWhole)} />
+          <Stat label="Mcap" value={formatMarketCapSol(metrics.fdvSol)} />
         </div>
 
         <div className="mt-3 flex items-center justify-between border-t border-bcc-border/60 pt-3 text-[10px] text-bcc-muted">

@@ -67,7 +67,8 @@ function priceWalk(
   prices[n - 1] = endPrice
   return prices.map((priceLamports, i) => {
     const t = now - (n - 1 - i) * intervalMs
-    const mcapSol = (priceLamports * supply) / 1e9
+    // Launchpad FDV: treat price as lamports/whole × 1B supply
+    const mcapSol = (priceLamports * 1_000_000_000) / 1e9
     return { t, priceLamports, supply, mcapSol }
   })
 }
@@ -96,6 +97,7 @@ export const mockCurves: CurveToken[] = [
     mode: 'steepen',
     solReserveSol: 18.4,
     solReserveLamports: 18_400_000_000,
+    seedLiquidityLamports: 18_400_000_000,
     holderRewardsPoolLamports: 420_000_000,
     rewardIndex: 0n,
     mergeCount: 0,
@@ -120,7 +122,7 @@ export const mockCurves: CurveToken[] = [
     creator: '9zXc…2vBn',
     creatorPubkey: MOCK_CREATORS.laser,
     basePriceLamports: 1_000,
-    currentPriceLamports: 88_200,
+    currentPriceLamports: 48_200,
     currentSupply: 2_100_000,
     attentionScore: 410,
     priceVelocity: 760,
@@ -129,6 +131,7 @@ export const mockCurves: CurveToken[] = [
     mode: 'flatten',
     solReserveSol: 31.2,
     solReserveLamports: 31_200_000_000,
+    seedLiquidityLamports: 31_200_000_000,
     holderRewardsPoolLamports: 180_000_000,
     rewardIndex: 0n,
     mergeCount: 1,
@@ -137,7 +140,7 @@ export const mockCurves: CurveToken[] = [
     onChain: false,
     attentionHistory: spark(11, 24, 350, 30),
     velocityHistory: spark(5, 24, 550, 45),
-    priceHistory: priceWalk(11, 88_200, 2_100_000),
+    priceHistory: priceWalk(11, 48_200, 2_100_000),
   },
   {
     id: MOCK_CURVE_IDS.kota,
@@ -162,6 +165,7 @@ export const mockCurves: CurveToken[] = [
     mode: 'neutral',
     solReserveSol: 9.7,
     solReserveLamports: 9_700_000_000,
+    seedLiquidityLamports: 9_700_000_000,
     holderRewardsPoolLamports: 95_000_000,
     rewardIndex: 0n,
     mergeCount: 0,

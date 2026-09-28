@@ -4,8 +4,8 @@ import type { PriceSample } from '../lib/priceHistory'
 import {
   formatMarketCapSol,
   formatPriceLamports,
-  marketCapSol,
 } from '../lib/format'
+import { launchpadDisplayMetrics } from '../lib/solana/tokenEconomics'
 import { spotPrice, velocityParams } from '../lib/solana/velocityMath'
 
 interface PriceChartProps {
@@ -53,7 +53,7 @@ function mapPoints(
   })
 }
 
-function bondingShape(curve: CurveToken): number[] {
+function bondingShape(curve: CurveToken, basePrice: number): number[] {
   const { effectiveK } = velocityParams(
     curve.curveK,
     curve.attentionScore,
@@ -66,12 +66,14 @@ function bondingShape(curve: CurveToken): number[] {
   const prices: number[] = []
   for (let i = 0; i <= steps; i++) {
     const s = lo + ((hi - lo) * i) / steps
-    prices.push(Number(spotPrice(curve.basePriceLamports, effectiveK, Math.floor(s))))
+    prices.push(Number(spotPrice(basePrice, effectiveK, Math.floor(s))))
   }
   return prices
 }
 
 export function PriceChart({ curve, samples }: PriceChartProps) {
+  const metrics = useMemo(() => launchpadDisplayMetrics(curve), [curve])
+
   const liveSamples = useMemo(() => {
     if (samples.length >= 2) return samples
     if (curve.priceHistory && curve.priceHistory.length >= 2) {
@@ -82,8 +84,8 @@ export function PriceChart({ curve, samples }: PriceChartProps) {
 
   const isLive = liveSamples.length >= 2
 
-  const spot = curve.currentPriceLamports
-  const mcap = marketCapSol(spot, curve.currentSupply)
+  const spot = metrics.effectivePriceLamports
+  const mcap = metrics.fdvSol
 
   const pctChange = useMemo(() => {
     if (!isLive) return null
@@ -105,7 +107,10 @@ export function PriceChart({ curve, samples }: PriceChartProps) {
         mode: 'live' as const,
       }
     }
-    const prices = bondingShape(curve)
+    const baseForShape = metrics.priceCorrupt
+      ? metrics.effectivePriceLamports
+      : curve.basePriceLamports
+    const prices = bondingShape(curve, baseForShape)
     const pts = mapPoints(prices)
     // Current supply sits at midpoint of [0.15s, 1.85s] preview range.
     const mid = pts[Math.floor(pts.length / 2)]
@@ -115,7 +120,7 @@ export function PriceChart({ curve, samples }: PriceChartProps) {
       last: mid,
       mode: 'shape' as const,
     }
-  }, [isLive, liveSamples, curve])
+  }, [isLive, liveSamples, curve, metrics])
 
   const pctLabel =
     pctChange === null
@@ -213,6 +218,9 @@ export function PriceChart({ curve, samples }: PriceChartProps) {
       )}
       <p className="mt-2 text-[11px] leading-relaxed text-bcc-muted">
         Live samples from on-chain spot while you watch this page (stored in this browser).
+        {metrics.priceCorrupt
+          ? ' Display uses repaired spot (on-chain base_price still corrupted).'
+          : ''}
       </p>
     </div>
   )

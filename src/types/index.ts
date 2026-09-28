@@ -68,7 +68,10 @@ export interface CurveToken {
   creatorPubkey: string
   basePriceLamports: number
   currentPriceLamports: number
+  /** Raw SPL units minted so far (not whole tokens). */
   currentSupply: number
+  /** Graduation seed liquidity in lamports (for corruption detection / display repair). */
+  seedLiquidityLamports?: number
   attentionScore: number
   priceVelocity: number
   curveK: number

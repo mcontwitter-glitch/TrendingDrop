@@ -12,11 +12,14 @@ import {
   formatMarketCapSol,
   formatPriceLamports,
   formatSol,
-  formatTokenAmount,
-  marketCapSol,
   shortAddress,
   timeAgo,
 } from '../lib/format'
+import {
+  circulatingValueSol,
+  formatSupplyMetric,
+  launchpadDisplayMetrics,
+} from '../lib/solana/tokenEconomics'
 import { useNow } from '../hooks/useNow'
 import { TierBadge } from '../components/TierBadge'
 import { mockCreatorTiers } from '../data/mockProfiles'
@@ -62,8 +65,9 @@ export function TradeDesk() {
   const creatorTier = mockCreatorTiers[curve.creator]
   const taxLabel =
     curve.sellTaxBps >= 1500 ? '15% steepen' : curve.sellTaxBps <= 500 ? '5% flatten' : `${curve.sellTaxBps / 100}%`
-  const mcap =
-    latestMcapSol || marketCapSol(curve.currentPriceLamports, curve.currentSupply)
+  const metrics = launchpadDisplayMetrics(curve)
+  const mcap = latestMcapSol || metrics.fdvSol
+  const circValue = circulatingValueSol(metrics.effectivePriceLamports, metrics.circulatingWhole)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -89,6 +93,11 @@ export function TradeDesk() {
         {curve.isMerged && (
           <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-amber-200">
             Merged · trading paused
+          </span>
+        )}
+        {metrics.priceCorrupt && (
+          <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-amber-200">
+            Price repaired for display — on-chain base_price still corrupted
           </span>
         )}
       </div>
@@ -144,7 +153,7 @@ export function TradeDesk() {
             <Metric
               icon={<Zap className="h-4 w-4 text-bcc-green" />}
               label="Spot price"
-              value={formatPriceLamports(curve.currentPriceLamports)}
+              value={formatPriceLamports(metrics.effectivePriceLamports)}
             />
             <Metric
               icon={<TrendingUp className="h-4 w-4 text-bcc-cyan" />}
@@ -159,7 +168,7 @@ export function TradeDesk() {
             <Metric
               icon={<span className="text-bcc-green">Σ</span>}
               label="Supply"
-              value={formatTokenAmount(curve.currentSupply)}
+              value={formatSupplyMetric(metrics.circulatingWhole)}
             />
           </div>
 
@@ -185,6 +194,10 @@ export function TradeDesk() {
                 value={`${formatLamportsAsSol(curve.holderRewardsPoolLamports)} SOL`}
               />
               <Row label="Merges" value={String(curve.mergeCount)} />
+              <Row
+                label="Circ. value"
+                value={`${formatMarketCapSol(circValue)}`}
+              />
               <Row
                 label="Oracle update"
                 value={

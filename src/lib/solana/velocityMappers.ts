@@ -119,6 +119,7 @@ export function mapVelocityTokenToCurve(
     mode,
     solReserveSol: reserveLamports / LAMPORTS_PER_SOL,
     solReserveLamports: reserveLamports,
+    seedLiquidityLamports: bnToNumber(account.seedLiquidity),
     holderRewardsPoolLamports: bnToNumber(account.holderRewardsPool),
     rewardIndex: bnToBigInt(account.rewardIndex),
     mergeCount: account.mergeCount,

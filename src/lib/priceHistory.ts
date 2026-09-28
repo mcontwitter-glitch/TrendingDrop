@@ -1,4 +1,4 @@
-import { marketCapSol } from './format'
+import { fdvMarketCapSol } from './format'
 
 export interface PriceSample {
   t: number
@@ -53,6 +53,7 @@ function saveKey(pubkey: string, samples: PriceSample[]): void {
 /**
  * Record an on-chain spot sample. Skips if price is unchanged within ~5s;
  * always records when price moves.
+ * `mcapSol` is launchpad FDV (price × 1B / 1e9), not circ × price.
  */
 export function recordPriceSample(
   pubkey: string,
@@ -78,10 +79,10 @@ export function recordPriceSample(
   const sample: PriceSample = {
     t: now,
     priceLamports,
+    mcapSol: fdvMarketCapSol(priceLamports),
   }
   if (supply !== undefined && Number.isFinite(supply)) {
     sample.supply = supply
-    sample.mcapSol = marketCapSol(priceLamports, supply)
   }
 
   samples.push(sample)
