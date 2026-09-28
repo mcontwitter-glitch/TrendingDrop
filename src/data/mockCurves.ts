@@ -37,6 +37,41 @@ function spark(seed: number, n: number, base: number, amp: number): number[] {
   return out
 }
 
+/** Synthetic live-looking price samples ending at `endPrice` (for offline demos). */
+function priceWalk(
+  seed: number,
+  endPrice: number,
+  supply: number,
+  n = 36,
+  intervalMs = 10_000,
+): { t: number; priceLamports: number; supply: number; mcapSol: number }[] {
+  const now = Date.now()
+  const prices: number[] = new Array(n)
+  prices[n - 1] = endPrice
+  let v = endPrice
+  for (let i = n - 2; i >= 0; i--) {
+    const wobble =
+      Math.sin((seed + i) * 0.55) * (endPrice * 0.018) +
+      (((seed * (i + 3)) % 11) - 5) * (endPrice * 0.002)
+    v = Math.max(Math.floor(endPrice * 0.55), Math.round(v - wobble))
+    prices[i] = v
+  }
+  // Drift forward so the path trends toward endPrice naturally
+  const start = prices[0]!
+  for (let i = 0; i < n; i++) {
+    const blend = i / (n - 1)
+    const drifted = Math.round(start + (endPrice - start) * blend)
+    const noise = Math.round(Math.sin((seed + i) * 1.1) * endPrice * 0.012)
+    prices[i] = Math.max(1, drifted + noise)
+  }
+  prices[n - 1] = endPrice
+  return prices.map((priceLamports, i) => {
+    const t = now - (n - 1 - i) * intervalMs
+    const mcapSol = (priceLamports * supply) / 1e9
+    return { t, priceLamports, supply, mcapSol }
+  })
+}
+
 export const mockCurves: CurveToken[] = [
   {
     id: MOCK_CURVE_IDS.ddog,
@@ -69,6 +104,7 @@ export const mockCurves: CurveToken[] = [
     onChain: false,
     attentionHistory: spark(3, 24, 600, 40),
     velocityHistory: spark(7, 24, 400, 35),
+    priceHistory: priceWalk(3, 42_500, 1_250_000),
   },
   {
     id: MOCK_CURVE_IDS.laser,
@@ -101,6 +137,7 @@ export const mockCurves: CurveToken[] = [
     onChain: false,
     attentionHistory: spark(11, 24, 350, 30),
     velocityHistory: spark(5, 24, 550, 45),
+    priceHistory: priceWalk(11, 88_200, 2_100_000),
   },
   {
     id: MOCK_CURVE_IDS.kota,
@@ -133,5 +170,6 @@ export const mockCurves: CurveToken[] = [
     onChain: false,
     attentionHistory: spark(2, 24, 480, 25),
     velocityHistory: spark(9, 24, 470, 28),
+    priceHistory: priceWalk(2, 15_800, 640_000),
   },
 ]

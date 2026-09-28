@@ -1,15 +1,19 @@
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Clock, Droplets, Percent, Zap } from 'lucide-react'
+import { ArrowLeft, Clock, Droplets, Percent, TrendingUp, Zap } from 'lucide-react'
 import { useCurveDetail, useHolderPosition } from '../hooks/useCurves'
+import { usePriceHistory } from '../hooks/usePriceHistory'
 import { useVelocityProgram } from '../hooks/useVelocityProgram'
 import { VelocityChart } from '../components/VelocityChart'
+import { PriceChart } from '../components/PriceChart'
 import { TradePanel } from '../components/TradePanel'
 import { HolderPanel } from '../components/HolderPanel'
 import {
   formatLamportsAsSol,
+  formatMarketCapSol,
   formatPriceLamports,
   formatSol,
   formatTokenAmount,
+  marketCapSol,
   shortAddress,
   timeAgo,
 } from '../lib/format'
@@ -17,9 +21,14 @@ import { useNow } from '../hooks/useNow'
 import { TierBadge } from '../components/TierBadge'
 import { mockCreatorTiers } from '../data/mockProfiles'
 
+const TRADE_POLL_MS = 10_000
+
 export function TradeDesk() {
   const { curveId } = useParams<{ curveId: string }>()
-  const { curve, loading, error, source, refresh } = useCurveDetail(curveId)
+  const { curve, loading, error, source, refresh } = useCurveDetail(curveId, {
+    pollMs: TRADE_POLL_MS,
+  })
+  const { samples, latestMcapSol } = usePriceHistory(curve)
   const { publicKey } = useVelocityProgram()
   const { holder, refresh: refreshHolder } = useHolderPosition(curve, publicKey)
   const now = useNow()
@@ -53,6 +62,8 @@ export function TradeDesk() {
   const creatorTier = mockCreatorTiers[curve.creator]
   const taxLabel =
     curve.sellTaxBps >= 1500 ? '15% steepen' : curve.sellTaxBps <= 500 ? '5% flatten' : `${curve.sellTaxBps / 100}%`
+  const mcap =
+    latestMcapSol || marketCapSol(curve.currentPriceLamports, curve.currentSupply)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -136,6 +147,11 @@ export function TradeDesk() {
               value={formatPriceLamports(curve.currentPriceLamports)}
             />
             <Metric
+              icon={<TrendingUp className="h-4 w-4 text-bcc-cyan" />}
+              label="Market cap"
+              value={formatMarketCapSol(mcap)}
+            />
+            <Metric
               icon={<Droplets className="h-4 w-4 text-bcc-cyan" />}
               label="SOL reserve"
               value={`${formatSol(curve.solReserveSol)} SOL`}
@@ -145,12 +161,9 @@ export function TradeDesk() {
               label="Supply"
               value={formatTokenAmount(curve.currentSupply)}
             />
-            <Metric
-              icon={<Percent className="h-4 w-4 text-amber-300" />}
-              label="Sell tax"
-              value={taxLabel}
-            />
           </div>
+
+          <PriceChart curve={curve} samples={samples} />
 
           <VelocityChart curve={curve} />
 
@@ -161,6 +174,11 @@ export function TradeDesk() {
               <Row label="Curve k" value={String(curve.curveK)} />
               <Row label="Attention" value={String(curve.attentionScore)} />
               <Row label="Price velocity" value={String(curve.priceVelocity)} />
+              <Row
+                label="Sell tax"
+                value={taxLabel}
+                icon={<Percent className="h-3 w-3 text-amber-300" />}
+              />
               <Row label="Protocol fee" value="1.5%" />
               <Row
                 label="Holder rewards pool"
@@ -230,10 +248,21 @@ function Metric({
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  icon,
+}: {
+  label: string
+  value: string
+  icon?: React.ReactNode
+}) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg bg-bcc-bg/60 px-3 py-2">
-      <dt className="text-bcc-muted">{label}</dt>
+      <dt className="flex items-center gap-1.5 text-bcc-muted">
+        {icon}
+        {label}
+      </dt>
       <dd className="font-mono text-xs font-semibold text-bcc-text">{value}</dd>
     </div>
   )

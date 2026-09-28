@@ -78,8 +78,12 @@ function findMock(curveId: string): CurveToken | undefined {
   return mockCurves.find((c) => c.id === curveId || c.pubkey === curveId || c.storyId === curveId)
 }
 
-export function useCurveDetail(curveId: string | undefined) {
+export function useCurveDetail(
+  curveId: string | undefined,
+  opts?: { pollMs?: number },
+) {
   const { connection } = useConnection()
+  const pollMs = opts?.pollMs
   const [curve, setCurve] = useState<CurveToken | undefined>(() =>
     curveId ? findMock(curveId) : undefined,
   )
@@ -87,13 +91,13 @@ export function useCurveDetail(curveId: string | undefined) {
   const [error, setError] = useState<string | null>(null)
   const [source, setSource] = useState<CurvesSource>('mock')
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!curveId) {
       setCurve(undefined)
       setLoading(false)
       return
     }
-    setLoading(true)
+    if (!opts?.quiet) setLoading(true)
     try {
       const pk = new PublicKey(curveId)
       const program = getReadonlyVelocityProgram(connection)
@@ -123,13 +127,22 @@ export function useCurveDetail(curveId: string | undefined) {
         )
       }
     } finally {
-      setLoading(false)
+      if (!opts?.quiet) setLoading(false)
     }
   }, [connection, curveId])
 
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  // Light polling for TradeDesk live price samples — not used on list pages.
+  useEffect(() => {
+    if (!pollMs || pollMs <= 0 || !curveId) return
+    const id = window.setInterval(() => {
+      void refresh({ quiet: true })
+    }, pollMs)
+    return () => window.clearInterval(id)
+  }, [pollMs, curveId, refresh])
 
   return { curve, loading, error, source, refresh }
 }

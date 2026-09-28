@@ -86,6 +86,8 @@ export interface CurveToken {
   attentionHistory?: number[]
   /** Sparkline samples for price velocity. */
   velocityHistory?: number[]
+  /** Optional synthetic / seeded price samples for offline demos. */
+  priceHistory?: { t: number; priceLamports: number; supply?: number; mcapSol?: number }[]
 }
 
 export interface HolderPositionView {

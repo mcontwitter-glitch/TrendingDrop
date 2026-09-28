@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
 import type { CurveToken } from '../types'
-import { formatPriceLamports, formatSol, formatTokenAmount } from '../lib/format'
+import {
+  formatMarketCapSol,
+  formatPriceLamports,
+  formatSol,
+  formatTokenAmount,
+  marketCapSol,
+} from '../lib/format'
 
 interface CurveCardProps {
   curve: CurveToken
@@ -14,6 +20,8 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
       : curve.mode === 'flatten'
         ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
         : 'bg-bcc-elevated text-bcc-muted border-bcc-border'
+
+  const mcap = marketCapSol(curve.currentPriceLamports, curve.currentSupply)
 
   return (
     <Link
@@ -59,7 +67,7 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
           <Stat label="Spot" value={formatPriceLamports(curve.currentPriceLamports)} />
           <Stat label="Reserve" value={`${formatSol(curve.solReserveSol)} SOL`} />
           <Stat label="Supply" value={formatTokenAmount(curve.currentSupply)} />
-          <Stat label="Fee" value="1.5%" />
+          <Stat label="Mcap" value={formatMarketCapSol(mcap)} />
         </div>
 
         <div className="mt-3 flex items-center justify-between border-t border-bcc-border/60 pt-3 text-[10px] text-bcc-muted">

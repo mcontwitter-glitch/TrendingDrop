@@ -67,3 +67,25 @@ export function formatPriceLamports(lamports: number): string {
   if (sol < 0.001) return `${sol.toFixed(6)} SOL`
   return `${sol.toFixed(4)} SOL`
 }
+
+/** Market cap in SOL: (priceLamports * supply) / 1e9, bigint-safe for large products. */
+export function marketCapSol(priceLamports: number | bigint, supply: number | bigint): number {
+  const p = typeof priceLamports === 'bigint' ? priceLamports : BigInt(Math.max(0, Math.floor(priceLamports)))
+  const s = typeof supply === 'bigint' ? supply : BigInt(Math.max(0, Math.floor(supply)))
+  // Keep 6 decimal places of SOL precision via integer division.
+  const scaled = (p * s * 1_000_000n) / 1_000_000_000n
+  return Number(scaled) / 1_000_000
+}
+
+/** Compact market-cap label, e.g. `12.4 SOL`, `1.2k SOL`, `3.4M SOL`. */
+export function formatMarketCapSol(sol: number): string {
+  if (!Number.isFinite(sol) || sol <= 0) return '0 SOL'
+  if (sol >= 1_000_000) return `${(sol / 1_000_000).toFixed(1)}M SOL`
+  if (sol >= 10_000) return `${(sol / 1_000).toFixed(1)}k SOL`
+  if (sol >= 1_000) return `${(sol / 1_000).toFixed(2)}k SOL`
+  if (sol >= 100) return `${sol.toFixed(1)} SOL`
+  if (sol >= 10) return `${sol.toFixed(2)} SOL`
+  if (sol >= 1) return `${sol.toFixed(2)} SOL`
+  if (sol >= 0.01) return `${sol.toFixed(3)} SOL`
+  return `${sol.toFixed(4)} SOL`
+}
