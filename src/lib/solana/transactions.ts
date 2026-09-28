@@ -1,11 +1,31 @@
 import { BN, type Program } from '@coral-xyz/anchor'
-import { PublicKey, SystemProgram } from '@solana/web3.js'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from '@solana/spl-token'
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
+  SYSVAR_RENT_PUBKEY,
+} from '@solana/web3.js'
 import type { NarrativeAuction } from '../../idl/narrative_auction'
 import { CURVE_PROGRAM_ID, LAMPORTS_PER_SOL } from './constants'
-import { findConfigPda, findStakePda, findStoryPda, findUserStakeIndexPda, findVaultPda } from './pdas'
+import {
+  findConfigPda,
+  findRankingBoardPda,
+  findStakePda,
+  findStoryPda,
+  findUserStakeIndexPda,
+  findVaultPda,
+} from './pdas'
+import { findCurvePda, findCurveVaultPda } from './velocityPdas'
 import { fetchConfig } from './program'
 import { hashNarrativeContent } from './contentHash'
 import { bytesToHex, saveNarrativeMetadata, type NarrativeMetadata } from './metadata'
+import { grindMintKeypair, MINT_VANITY_SUFFIX } from './vanityMint'
 
 export class SolanaClientError extends Error {
   constructor(message: string) {
@@ -171,6 +191,98 @@ export async function stakeOnNarrative(
       })
       .rpc()
     return { signature }
+  } catch (err) {
+    throw new SolanaClientError(formatTxError(err))
+  }
+}
+
+
+export interface GraduateNarrativeParams {
+  storyPubkey: PublicKey
+  /** Wallet that pays rent / signs as payer. */
+  payer: PublicKey
+  /** King-of-the-Hill rank slot 1–5 (default 1). */
+  rank?: number
+  signal?: AbortSignal
+  /** Progress while grinding a mint ending in `drop`. */
+  onGrindProgress?: (attempts: number) => void
+}
+
+/**
+ * Graduate an ended story market: grind a vanity SPL mint (…drop), then call
+ * `graduate_narrative`. Can take a few seconds while grinding.
+ */
+export async function graduateNarrative(
+  program: Program<NarrativeAuction>,
+  params: GraduateNarrativeParams,
+): Promise<{ signature: string; mint: PublicKey; curvePda: PublicKey }> {
+  const { storyPubkey, payer, rank = 1, signal, onGrindProgress } = params
+
+  const [configPda] = findConfigPda(program.programId)
+  const config = await fetchConfig(program)
+  if (!config) {
+    throw new SolanaClientError(
+      'NarrativeConfig missing — run initialize_config (or Create Story once as authority) first',
+    )
+  }
+
+  try {
+    await program.account.storyMarket.fetch(storyPubkey)
+  } catch {
+    throw new SolanaClientError('Story market account not found on this cluster')
+  }
+
+  const [rankingBoard] = findRankingBoardPda(program.programId)
+  const [vaultPda] = findVaultPda(storyPubkey, program.programId)
+  const [curvePda] = findCurvePda(storyPubkey, CURVE_PROGRAM_ID)
+  const [curveVaultPda] = findCurveVaultPda(curvePda, CURVE_PROGRAM_ID)
+
+  // Vanity grind — expected a few seconds for 4-char suffix `drop`
+  let mint: Keypair
+  try {
+    mint = await grindMintKeypair({
+      suffix: MINT_VANITY_SUFFIX,
+      signal,
+      onProgress: onGrindProgress,
+    })
+  } catch (err) {
+    throw new SolanaClientError(
+      err instanceof Error ? err.message : `Mint vanity grind failed: ${String(err)}`,
+    )
+  }
+
+  const tokenVault = getAssociatedTokenAddressSync(
+    mint.publicKey,
+    curvePda,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )
+
+  try {
+    const signature = await program.methods
+      .graduateNarrative(rank)
+      .accountsStrict({
+        config: configPda,
+        story: storyPubkey,
+        rankingBoard,
+        vault: vaultPda,
+        curveProgram: CURVE_PROGRAM_ID,
+        tokenMint: mint.publicKey,
+        curveState: curvePda,
+        curveVault: curveVaultPda,
+        tokenVault,
+        payer,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
+        clock: SYSVAR_CLOCK_PUBKEY,
+      })
+      .signers([mint])
+      .rpc()
+
+    return { signature, mint: mint.publicKey, curvePda }
   } catch (err) {
     throw new SolanaClientError(formatTxError(err))
   }

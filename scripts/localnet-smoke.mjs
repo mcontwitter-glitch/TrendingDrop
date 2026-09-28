@@ -24,6 +24,7 @@ import {
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token'
 import BN from 'bn.js'
+import { grindMintKeypair, MINT_VANITY_SUFFIX } from './lib/vanityMint.mjs'
 
 const { AnchorProvider, Program, Wallet } = anchor
 
@@ -241,8 +242,17 @@ async function main() {
     fail('wait_auction_end', e)
   }
 
-  // 6. graduate_narrative
-  mint = Keypair.generate()
+  // 6. graduate_narrative (vanity mint …drop)
+  console.log(`Grinding vanity mint ending in "${MINT_VANITY_SUFFIX}"…`)
+  const grindStarted = Date.now()
+  mint = await grindMintKeypair({
+    onProgress: (n) => {
+      if (n % 100_000 === 0) process.stdout.write(`  grind attempts=${n}\r`)
+    },
+  })
+  console.log(
+    `  mint=${mint.publicKey.toBase58()} attempts done in ${((Date.now() - grindStarted) / 1000).toFixed(1)}s`,
+  )
   ;[curvePda] = pda(
     [Buffer.from('curve'), storyPda.toBuffer()],
     PROGRAM_IDS.velocity_curve,
