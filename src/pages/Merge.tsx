@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { GitMerge, Plus, RefreshCw, Scroll } from 'lucide-react'
 import { useMerges } from '../hooks/useMerges'
 import { formatCountdown, formatLamportsAsSol, formatTokenAmount, shortAddress } from '../lib/format'
+import { TickerCaChip } from '../components/TickerCaChip'
 import { useNow } from '../hooks/useNow'
 import type { MergeProposalView } from '../types'
 
@@ -179,7 +180,8 @@ export function Merge() {
                 )}
               </div>
               <div className="font-stat text-sm">
-                {l.title} · ${l.ticker}
+                <div className="mb-1">{l.title}</div>
+                <TickerCaChip ticker={l.ticker} address={l.pubkey} size="sm" tone="cyan" />
               </div>
               <div className="mt-2 space-y-1 text-[11px] text-bcc-muted">
                 <div>Lore power {(l.lorePowerBps / 10_000).toFixed(2)}x</div>

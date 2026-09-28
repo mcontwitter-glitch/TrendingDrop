@@ -24,6 +24,7 @@ import { useNow } from '../hooks/useNow'
 import { useSolUsdPrice } from '../hooks/useSolUsdPrice'
 import { TierBadge } from '../components/TierBadge'
 import { mockCreatorTiers } from '../data/mockProfiles'
+import { TickerCaChip } from '../components/TickerCaChip'
 
 const TRADE_POLL_MS = 10_000
 
@@ -120,13 +121,16 @@ export function TradeDesk() {
                 <span className="relative text-7xl drop-shadow-xl sm:text-8xl">{curve.emoji}</span>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-              <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
+              <div className="absolute left-4 top-4 z-10 flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-bcc-green/25 bg-bcc-green/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-bcc-green backdrop-blur">
                   Live
                 </span>
-                <span className="rounded-full border border-white/10 bg-black/50 px-2.5 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
-                  ${curve.ticker}
-                </span>
+                <TickerCaChip
+                  ticker={curve.ticker}
+                  address={curve.mint}
+                  size="md"
+                  tone="green"
+                />
               </div>
             </div>
             <div className="p-5 sm:p-6">
@@ -135,7 +139,7 @@ export function TradeDesk() {
                 <span>
                   Creator <span className="font-mono text-bcc-text">{curve.creator}</span>
                   {' · '}
-                  <span className="font-mono">{shortAddress(curve.pubkey)}</span>
+                  CA <span className="font-mono text-bcc-text">{shortAddress(curve.mint)}</span>
                 </span>
                 {creatorTier && <TierBadge tier={creatorTier} size="sm" />}
               </p>

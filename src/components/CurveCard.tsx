@@ -10,6 +10,7 @@ import {
   formatSupplyMetric,
   launchpadDisplayMetrics,
 } from '../lib/solana/tokenEconomics'
+import { TickerCaChip } from './TickerCaChip'
 
 interface CurveCardProps {
   curve: CurveToken
@@ -61,9 +62,15 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
             </span>
           )}
         </div>
-        <span className="absolute right-3 top-3 z-10 rounded-full border border-white/10 bg-black/50 px-2 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
-          ${curve.ticker}
-        </span>
+        <div className="absolute right-3 top-3 z-10 max-w-[70%]">
+          <TickerCaChip
+            ticker={curve.ticker}
+            address={curve.mint}
+            size="sm"
+            tone="green"
+            className="justify-end"
+          />
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col p-4">

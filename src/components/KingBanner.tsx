@@ -4,6 +4,7 @@ import type { Story } from '../types'
 import { formatCountdown, formatSol, fundedPct, formatPct } from '../lib/format'
 import { ProgressBar } from './ProgressBar'
 import { useNow } from '../hooks/useNow'
+import { TickerCaChip } from './TickerCaChip'
 
 interface KingBannerProps {
   story: Story
@@ -36,9 +37,12 @@ export function KingBanner({ story }: KingBannerProps) {
                 <Crown className="h-3 w-3" />
                 King of the Hill
               </span>
-              <span className="rounded-full border border-white/10 bg-black/30 px-2 py-0.5 text-[10px] font-semibold text-bcc-green">
-                ${story.ticker}
-              </span>
+              <TickerCaChip
+                ticker={story.ticker}
+                address={story.mint ?? story.pubkey}
+                size="sm"
+                tone="green"
+              />
             </div>
             <h2 className="font-display text-xl font-bold sm:text-2xl">{story.title}</h2>
             <p className="mt-1 line-clamp-2 text-sm text-white/70">{story.blurb}</p>

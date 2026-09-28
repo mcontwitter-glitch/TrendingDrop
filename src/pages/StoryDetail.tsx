@@ -15,10 +15,13 @@ import { graduateNarrative } from '../lib/solana/transactions'
 import { findCurvePda } from '../lib/solana/velocityPdas'
 import { MINT_VANITY_SUFFIX } from '../lib/solana/vanityMint'
 import { MOCK_CURVE_IDS } from '../data/mockCurves'
+import { TickerCaChip } from '../components/TickerCaChip'
+import { useCurves } from '../hooks/useCurves'
 
 export function StoryDetail() {
   const { id } = useParams<{ id: string }>()
   const { getById, loading, refresh } = useStories()
+  const { getById: getCurve } = useCurves()
   const story = id ? getById(id) : undefined
   const now = useNow()
   const { program, publicKey, connected } = useNarrativeProgram()
@@ -129,11 +132,20 @@ export function StoryDetail() {
                 <span className="relative text-7xl drop-shadow-xl sm:text-8xl">{story.emoji}</span>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-              <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
+              <div className="absolute left-4 top-4 z-10 flex flex-wrap items-center gap-2">
                 <StatusPill status={story.status} endsAt={story.endsAt} now={now} />
-                <span className="rounded-full border border-white/10 bg-black/50 px-2.5 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
-                  ${story.ticker}
-                </span>
+                <TickerCaChip
+                  ticker={story.ticker}
+                  address={
+                    graduatedResult?.mint ??
+                    story.mint ??
+                    (story.curveId ? getCurve(story.curveId)?.mint : undefined) ??
+                    (story.pubkey ? getCurve(story.pubkey)?.mint : undefined) ??
+                    story.pubkey
+                  }
+                  size="md"
+                  tone="green"
+                />
               </div>
             </div>
 

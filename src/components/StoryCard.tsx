@@ -6,6 +6,7 @@ import { ProgressBar } from './ProgressBar'
 import { useNow } from '../hooks/useNow'
 import { TierBadge } from './TierBadge'
 import { mockCreatorTiers } from '../data/mockProfiles'
+import { TickerCaChip } from './TickerCaChip'
 
 interface StoryCardProps {
   story: Story
@@ -54,9 +55,15 @@ export function StoryCard({ story, index = 0 }: StoryCardProps) {
         >
           {badge.label}
         </span>
-        <span className="absolute right-3 top-3 z-10 rounded-full border border-bcc-cyan/30 bg-black/50 px-2 py-0.5 text-[10px] font-bold text-bcc-cyan backdrop-blur">
-          ${story.ticker}
-        </span>
+        <div className="absolute right-3 top-3 z-10 max-w-[70%]">
+          <TickerCaChip
+            ticker={story.ticker}
+            address={story.mint ?? story.pubkey}
+            size="sm"
+            tone="cyan"
+            className="justify-end"
+          />
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">

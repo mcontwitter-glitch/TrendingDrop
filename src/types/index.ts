@@ -30,6 +30,8 @@ export interface Story {
   onChain?: boolean
   /** Linked VelocityCurve pubkey when graduated (chain or mock). */
   curveId?: string
+  /** SPL mint when graduated (prefer as CA); omit pre-graduate. */
+  mint?: string
 }
 
 export interface Staker {
