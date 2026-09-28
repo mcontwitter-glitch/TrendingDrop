@@ -18,7 +18,7 @@ pub struct Buy<'info> {
         bump = curve.bump,
         constraint = !curve.is_merged @ VelocityError::TradingPaused,
     )]
-    pub curve: Account<'info, VelocityToken>,
+    pub curve: Box<Account<'info, VelocityToken>>,
 
     /// CHECK: Curve SOL vault PDA.
     #[account(
@@ -32,7 +32,7 @@ pub struct Buy<'info> {
         mut,
         address = curve.mint @ VelocityError::MintMismatch,
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: Box<Account<'info, Mint>>,
 
     /// Buyer ATA — created if needed.
     #[account(
@@ -41,7 +41,7 @@ pub struct Buy<'info> {
         associated_token::mint = mint,
         associated_token::authority = buyer,
     )]
-    pub buyer_ata: Account<'info, TokenAccount>,
+    pub buyer_ata: Box<Account<'info, TokenAccount>>,
 
     #[account(
         init_if_needed,
@@ -50,7 +50,7 @@ pub struct Buy<'info> {
         seeds = [HolderPosition::SEED, curve.key().as_ref(), buyer.key().as_ref()],
         bump
     )]
-    pub holder: Account<'info, HolderPosition>,
+    pub holder: Box<Account<'info, HolderPosition>>,
 
     /// CHECK: Protocol fee destination (typically treasury).
     #[account(mut)]

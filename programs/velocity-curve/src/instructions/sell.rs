@@ -18,7 +18,7 @@ pub struct Sell<'info> {
         bump = curve.bump,
         constraint = !curve.is_merged @ VelocityError::TradingPaused,
     )]
-    pub curve: Account<'info, VelocityToken>,
+    pub curve: Box<Account<'info, VelocityToken>>,
 
     /// CHECK: Curve SOL vault PDA.
     #[account(
@@ -32,14 +32,14 @@ pub struct Sell<'info> {
         mut,
         address = curve.mint @ VelocityError::MintMismatch,
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: Box<Account<'info, Mint>>,
 
     #[account(
         mut,
         constraint = seller_ata.mint == mint.key() @ VelocityError::MintMismatch,
         constraint = seller_ata.owner == seller.key() @ VelocityError::Unauthorized,
     )]
-    pub seller_ata: Account<'info, TokenAccount>,
+    pub seller_ata: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -47,7 +47,7 @@ pub struct Sell<'info> {
         bump = holder.bump,
         constraint = holder.owner == seller.key() @ VelocityError::Unauthorized,
     )]
-    pub holder: Account<'info, HolderPosition>,
+    pub holder: Box<Account<'info, HolderPosition>>,
 
     /// CHECK: Receives 50% of sell tax + curve fee share.
     #[account(mut)]

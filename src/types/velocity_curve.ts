@@ -1,14 +1,20 @@
-{
+/**
+ * Program IDL in camelCase format in order to be used in JS/TS.
+ *
+ * Note that this is only a type helper and is not the actual IDL. The original
+ * IDL can be found at `target/idl/velocity_curve.json`.
+ */
+export type VelocityCurve = {
   "address": "5VbDjccBDNVCPLpSgxyuw7ptYekrcxH8FySBxaAXx6C",
   "metadata": {
-    "name": "velocity_curve",
+    "name": "velocityCurve",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "TrendingDrop — Phase 2 Velocity Bonding Curve"
   },
   "instructions": [
     {
-      "name": "add_oracle",
+      "name": "addOracle",
       "docs": [
         "Authority: add an authorized oracle (max 5)."
       ],
@@ -24,7 +30,7 @@
       ],
       "accounts": [
         {
-          "name": "oracle_config",
+          "name": "oracleConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -53,7 +59,7 @@
           "name": "authority",
           "signer": true,
           "relations": [
-            "oracle_config"
+            "oracleConfig"
           ]
         }
       ],
@@ -98,7 +104,7 @@
               {
                 "kind": "account",
                 "path": "curve.story_id",
-                "account": "VelocityToken"
+                "account": "velocityToken"
               }
             ]
           }
@@ -136,7 +142,7 @@
           "writable": true
         },
         {
-          "name": "buyer_ata",
+          "name": "buyerAta",
           "docs": [
             "Buyer ATA — created if needed."
           ],
@@ -265,31 +271,31 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         }
       ],
       "args": [
         {
-          "name": "sol_amount",
+          "name": "solAmount",
           "type": "u64"
         },
         {
-          "name": "min_tokens_out",
+          "name": "minTokensOut",
           "type": "u64"
         }
       ]
     },
     {
-      "name": "claim_holder_rewards",
+      "name": "claimHolderRewards",
       "docs": [
         "Claim pro-rata share of accumulated sell-tax rewards."
       ],
@@ -322,7 +328,7 @@
               {
                 "kind": "account",
                 "path": "curve.story_id",
-                "account": "VelocityToken"
+                "account": "velocityToken"
               }
             ]
           }
@@ -388,14 +394,14 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "initialize_oracle_config",
+      "name": "initializeOracleConfig",
       "docs": [
         "Bootstrap oracle config. Default quorum = 3 (pass `Some(1)` for local mock)."
       ],
@@ -411,7 +417,7 @@
       ],
       "accounts": [
         {
-          "name": "oracle_config",
+          "name": "oracleConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -442,19 +448,19 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "update_interval",
+          "name": "updateInterval",
           "type": {
             "option": "i64"
           }
         },
         {
-          "name": "authorized_oracles",
+          "name": "authorizedOracles",
           "type": {
             "option": {
               "vec": "pubkey"
@@ -470,7 +476,7 @@
       ]
     },
     {
-      "name": "initialize_token",
+      "name": "initializeToken",
       "docs": [
         "Called via CPI from NarrativeAuction::graduate_narrative.",
         "Creates SPL mint (authority = curve) + curve vault + curve ATA."
@@ -503,13 +509,13 @@
               },
               {
                 "kind": "account",
-                "path": "story_id"
+                "path": "storyId"
               }
             ]
           }
         },
         {
-          "name": "story_id"
+          "name": "storyId"
         },
         {
           "name": "mint",
@@ -545,7 +551,7 @@
           }
         },
         {
-          "name": "token_vault",
+          "name": "tokenVault",
           "writable": true
         },
         {
@@ -554,15 +560,15 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
@@ -575,14 +581,14 @@
           "name": "params",
           "type": {
             "defined": {
-              "name": "TokenParams"
+              "name": "tokenParams"
             }
           }
         }
       ]
     },
     {
-      "name": "remove_oracle",
+      "name": "removeOracle",
       "docs": [
         "Authority: remove an authorized oracle (must not drop below quorum)."
       ],
@@ -598,7 +604,7 @@
       ],
       "accounts": [
         {
-          "name": "oracle_config",
+          "name": "oracleConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -627,7 +633,7 @@
           "name": "authority",
           "signer": true,
           "relations": [
-            "oracle_config"
+            "oracleConfig"
           ]
         }
       ],
@@ -639,7 +645,7 @@
       ]
     },
     {
-      "name": "repair_curve",
+      "name": "repairCurve",
       "docs": [
         "Repair curve fields corrupted by TokenParams u64 stack-pointer bug (Devnet)."
       ],
@@ -671,13 +677,13 @@
               },
               {
                 "kind": "account",
-                "path": "story_id"
+                "path": "storyId"
               }
             ]
           }
         },
         {
-          "name": "story_id"
+          "name": "storyId"
         },
         {
           "name": "authority",
@@ -686,11 +692,11 @@
       ],
       "args": [
         {
-          "name": "base_price",
+          "name": "basePrice",
           "type": "u64"
         },
         {
-          "name": "curve_k",
+          "name": "curveK",
           "type": "u64"
         }
       ]
@@ -729,7 +735,7 @@
               {
                 "kind": "account",
                 "path": "curve.story_id",
-                "account": "VelocityToken"
+                "account": "velocityToken"
               }
             ]
           }
@@ -767,7 +773,7 @@
           "writable": true
         },
         {
-          "name": "seller_ata",
+          "name": "sellerAta",
           "writable": true
         },
         {
@@ -807,27 +813,27 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
         {
-          "name": "token_amount",
+          "name": "tokenAmount",
           "type": "u64"
         },
         {
-          "name": "min_sol_out",
+          "name": "minSolOut",
           "type": "u64"
         }
       ]
     },
     {
-      "name": "set_oracle_quorum",
+      "name": "setOracleQuorum",
       "docs": [
         "Authority: set required oracle quorum (1..=authorized_oracles.len())."
       ],
@@ -843,7 +849,7 @@
       ],
       "accounts": [
         {
-          "name": "oracle_config",
+          "name": "oracleConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -872,19 +878,19 @@
           "name": "authority",
           "signer": true,
           "relations": [
-            "oracle_config"
+            "oracleConfig"
           ]
         }
       ],
       "args": [
         {
-          "name": "new_quorum",
+          "name": "newQuorum",
           "type": "u8"
         }
       ]
     },
     {
-      "name": "settle_merge",
+      "name": "settleMerge",
       "docs": [
         "Settle LoreMerge: move fee/liquidity SOL, mark target merged, bump absorber merge_count."
       ],
@@ -900,7 +906,7 @@
       ],
       "accounts": [
         {
-          "name": "target_curve",
+          "name": "targetCurve",
           "writable": true,
           "pda": {
             "seeds": [
@@ -917,13 +923,13 @@
               {
                 "kind": "account",
                 "path": "target_curve.story_id",
-                "account": "VelocityToken"
+                "account": "velocityToken"
               }
             ]
           }
         },
         {
-          "name": "absorber_curve",
+          "name": "absorberCurve",
           "writable": true,
           "pda": {
             "seeds": [
@@ -940,13 +946,13 @@
               {
                 "kind": "account",
                 "path": "absorber_curve.story_id",
-                "account": "VelocityToken"
+                "account": "velocityToken"
               }
             ]
           }
         },
         {
-          "name": "target_vault",
+          "name": "targetVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -968,13 +974,13 @@
               },
               {
                 "kind": "account",
-                "path": "target_curve"
+                "path": "targetCurve"
               }
             ]
           }
         },
         {
-          "name": "absorber_vault",
+          "name": "absorberVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -996,7 +1002,7 @@
               },
               {
                 "kind": "account",
-                "path": "absorber_curve"
+                "path": "absorberCurve"
               }
             ]
           }
@@ -1014,23 +1020,23 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "fee_lamports",
+          "name": "feeLamports",
           "type": "u64"
         },
         {
-          "name": "liquidity_lamports",
+          "name": "liquidityLamports",
           "type": "u64"
         }
       ]
     },
     {
-      "name": "update_attention",
+      "name": "updateAttention",
       "docs": [
         "Oracle crank — EMA update. Tx-signer quorum or ed25519 proof mode."
       ],
@@ -1063,13 +1069,13 @@
               {
                 "kind": "account",
                 "path": "curve.story_id",
-                "account": "VelocityToken"
+                "account": "velocityToken"
               }
             ]
           }
         },
         {
-          "name": "oracle_config",
+          "name": "oracleConfig",
           "pda": {
             "seeds": [
               {
@@ -1101,7 +1107,7 @@
           "signer": true
         },
         {
-          "name": "instructions_sysvar",
+          "name": "instructionsSysvar",
           "docs": [
             "Pass the sysvar address always; ignored when `proof` is empty."
           ],
@@ -1110,15 +1116,15 @@
       ],
       "args": [
         {
-          "name": "twitter_delta",
+          "name": "twitterDelta",
           "type": "u64"
         },
         {
-          "name": "telegram_delta",
+          "name": "telegramDelta",
           "type": "u64"
         },
         {
-          "name": "new_holders",
+          "name": "newHolders",
           "type": "u64"
         },
         {
@@ -1130,7 +1136,7 @@
   ],
   "accounts": [
     {
-      "name": "HolderPosition",
+      "name": "holderPosition",
       "discriminator": [
         48,
         115,
@@ -1143,7 +1149,7 @@
       ]
     },
     {
-      "name": "OracleConfig",
+      "name": "oracleConfig",
       "discriminator": [
         133,
         196,
@@ -1156,7 +1162,7 @@
       ]
     },
     {
-      "name": "VelocityToken",
+      "name": "velocityToken",
       "discriminator": [
         6,
         238,
@@ -1171,7 +1177,7 @@
   ],
   "events": [
     {
-      "name": "AttentionUpdated",
+      "name": "attentionUpdated",
       "discriminator": [
         142,
         81,
@@ -1184,7 +1190,7 @@
       ]
     },
     {
-      "name": "HolderRewardsClaimed",
+      "name": "holderRewardsClaimed",
       "discriminator": [
         60,
         184,
@@ -1197,7 +1203,7 @@
       ]
     },
     {
-      "name": "MergeSettled",
+      "name": "mergeSettled",
       "discriminator": [
         40,
         227,
@@ -1210,7 +1216,7 @@
       ]
     },
     {
-      "name": "OracleAdded",
+      "name": "oracleAdded",
       "discriminator": [
         48,
         0,
@@ -1223,7 +1229,7 @@
       ]
     },
     {
-      "name": "OracleConfigInitialized",
+      "name": "oracleConfigInitialized",
       "discriminator": [
         191,
         12,
@@ -1236,7 +1242,7 @@
       ]
     },
     {
-      "name": "OracleQuorumUpdated",
+      "name": "oracleQuorumUpdated",
       "discriminator": [
         97,
         102,
@@ -1249,7 +1255,7 @@
       ]
     },
     {
-      "name": "OracleRemoved",
+      "name": "oracleRemoved",
       "discriminator": [
         62,
         112,
@@ -1262,7 +1268,7 @@
       ]
     },
     {
-      "name": "TokenInitialized",
+      "name": "tokenInitialized",
       "discriminator": [
         77,
         70,
@@ -1275,7 +1281,7 @@
       ]
     },
     {
-      "name": "TokensBought",
+      "name": "tokensBought",
       "discriminator": [
         151,
         148,
@@ -1288,7 +1294,7 @@
       ]
     },
     {
-      "name": "TokensSold",
+      "name": "tokensSold",
       "discriminator": [
         217,
         83,
@@ -1304,128 +1310,128 @@
   "errors": [
     {
       "code": 6000,
-      "name": "SlippageExceeded",
+      "name": "slippageExceeded",
       "msg": "Slippage tolerance exceeded"
     },
     {
       "code": 6001,
-      "name": "StaleOracle",
+      "name": "staleOracle",
       "msg": "Oracle data stale"
     },
     {
       "code": 6002,
-      "name": "InvalidOracleProof",
+      "name": "invalidOracleProof",
       "msg": "Invalid oracle proof / unauthorized oracle"
     },
     {
       "code": 6003,
-      "name": "Unauthorized",
-      "msg": "Unauthorized"
+      "name": "unauthorized",
+      "msg": "unauthorized"
     },
     {
       "code": 6004,
-      "name": "MathOverflow",
+      "name": "mathOverflow",
       "msg": "Arithmetic overflow"
     },
     {
       "code": 6005,
-      "name": "ZeroAmount",
+      "name": "zeroAmount",
       "msg": "Amount must be > 0"
     },
     {
       "code": 6006,
-      "name": "InsufficientBalance",
+      "name": "insufficientBalance",
       "msg": "Insufficient holder balance"
     },
     {
       "code": 6007,
-      "name": "InsufficientVault",
+      "name": "insufficientVault",
       "msg": "Insufficient vault SOL for payout"
     },
     {
       "code": 6008,
-      "name": "NothingToClaim",
+      "name": "nothingToClaim",
       "msg": "Nothing claimable"
     },
     {
       "code": 6009,
-      "name": "InvalidParams",
+      "name": "invalidParams",
       "msg": "Invalid curve parameters (base_price / curve_k)"
     },
     {
       "code": 6010,
-      "name": "TradingPaused",
+      "name": "tradingPaused",
       "msg": "Curve is merged / trading paused"
     },
     {
       "code": 6011,
-      "name": "InvalidOracleWeights",
+      "name": "invalidOracleWeights",
       "msg": "Oracle weights must sum to 10000 bps"
     },
     {
       "code": 6012,
-      "name": "TooManyOracles",
+      "name": "tooManyOracles",
       "msg": "Too many authorized oracles"
     },
     {
       "code": 6013,
-      "name": "StoryMismatch",
+      "name": "storyMismatch",
       "msg": "story_id param mismatch"
     },
     {
       "code": 6014,
-      "name": "InsufficientOracleQuorum",
+      "name": "insufficientOracleQuorum",
       "msg": "Insufficient distinct authorized oracle signers for quorum"
     },
     {
       "code": 6015,
-      "name": "DuplicateOracle",
+      "name": "duplicateOracle",
       "msg": "Duplicate oracle signer in attestation set"
     },
     {
       "code": 6016,
-      "name": "OracleNotSigner",
+      "name": "oracleNotSigner",
       "msg": "Oracle remaining account is not a signer"
     },
     {
       "code": 6017,
-      "name": "UnauthorizedOracle",
+      "name": "unauthorizedOracle",
       "msg": "Oracle not in authorized set"
     },
     {
       "code": 6018,
-      "name": "OracleAlreadyAuthorized",
+      "name": "oracleAlreadyAuthorized",
       "msg": "Oracle already authorized"
     },
     {
       "code": 6019,
-      "name": "OracleNotFound",
+      "name": "oracleNotFound",
       "msg": "Oracle not found in authorized set"
     },
     {
       "code": 6020,
-      "name": "InvalidQuorum",
+      "name": "invalidQuorum",
       "msg": "Quorum must be between 1 and authorized oracle count"
     },
     {
       "code": 6021,
-      "name": "OracleRemovalBreaksQuorum",
+      "name": "oracleRemovalBreaksQuorum",
       "msg": "Cannot remove oracle: would drop below quorum"
     },
     {
       "code": 6022,
-      "name": "MintMismatch",
+      "name": "mintMismatch",
       "msg": "Mint account does not match curve.mint"
     },
     {
       "code": 6023,
-      "name": "SettlementOverflow",
+      "name": "settlementOverflow",
       "msg": "Settlement amounts exceed target reserve / vault"
     }
   ],
   "types": [
     {
-      "name": "AttentionUpdated",
+      "name": "attentionUpdated",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1434,39 +1440,39 @@
             "type": "pubkey"
           },
           {
-            "name": "twitter_delta",
+            "name": "twitterDelta",
             "type": "u64"
           },
           {
-            "name": "telegram_delta",
+            "name": "telegramDelta",
             "type": "u64"
           },
           {
-            "name": "new_holders",
+            "name": "newHolders",
             "type": "u64"
           },
           {
-            "name": "raw_score",
+            "name": "rawScore",
             "type": "u64"
           },
           {
-            "name": "attention_score",
+            "name": "attentionScore",
             "type": "u64"
           },
           {
-            "name": "price_velocity",
+            "name": "priceVelocity",
             "type": "u64"
           },
           {
-            "name": "sell_tax_bps",
+            "name": "sellTaxBps",
             "type": "u16"
           },
           {
-            "name": "effective_k",
+            "name": "effectiveK",
             "type": "u64"
           },
           {
-            "name": "oracle_count",
+            "name": "oracleCount",
             "docs": [
               "Number of distinct authorized oracle signers that attested this update."
             ],
@@ -1484,7 +1490,7 @@
       }
     },
     {
-      "name": "HolderPosition",
+      "name": "holderPosition",
       "docs": [
         "Per-holder position — tracks reward-index / claimable alongside SPL balances.",
         "Seeds = [b\"holder\", curve, owner]"
@@ -1505,29 +1511,29 @@
             "type": "u64"
           },
           {
-            "name": "entry_price",
+            "name": "entryPrice",
             "type": "u64"
           },
           {
-            "name": "last_attention_claim",
+            "name": "lastAttentionClaim",
             "type": "i64"
           },
           {
-            "name": "lore_power",
+            "name": "lorePower",
             "docs": [
               "Governance weight for LoreMerge votes."
             ],
             "type": "u32"
           },
           {
-            "name": "reward_debt",
+            "name": "rewardDebt",
             "docs": [
               "Reward index snapshot (debt) for pro-rata sell-tax claims."
             ],
             "type": "u128"
           },
           {
-            "name": "claimable_rewards",
+            "name": "claimableRewards",
             "docs": [
               "Claimable lamports from redistributed sell tax."
             ],
@@ -1541,7 +1547,7 @@
       }
     },
     {
-      "name": "HolderRewardsClaimed",
+      "name": "holderRewardsClaimed",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1565,7 +1571,7 @@
       }
     },
     {
-      "name": "MergeSettled",
+      "name": "mergeSettled",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1578,15 +1584,15 @@
             "type": "pubkey"
           },
           {
-            "name": "fee_lamports",
+            "name": "feeLamports",
             "type": "u64"
           },
           {
-            "name": "liquidity_lamports",
+            "name": "liquidityLamports",
             "type": "u64"
           },
           {
-            "name": "absorber_merge_count",
+            "name": "absorberMergeCount",
             "type": "u8"
           },
           {
@@ -1597,7 +1603,7 @@
       }
     },
     {
-      "name": "OracleAdded",
+      "name": "oracleAdded",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1610,14 +1616,14 @@
             "type": "pubkey"
           },
           {
-            "name": "oracle_count",
+            "name": "oracleCount",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "OracleConfig",
+      "name": "oracleConfig",
       "docs": [
         "Oracle network config — Phase-1 mainnet: N-of-M multi-sig crank (default 3/5).",
         "Seeds = [b\"oracle-config\"]"
@@ -1630,25 +1636,25 @@
             "type": "pubkey"
           },
           {
-            "name": "update_interval",
+            "name": "updateInterval",
             "docs": [
               "Target update interval (e.g. 300s = 5 min)."
             ],
             "type": "i64"
           },
           {
-            "name": "twitter_weight",
+            "name": "twitterWeight",
             "docs": [
               "Weights in bps of 10_000 (default 4000 / 3000 / 3000)."
             ],
             "type": "u16"
           },
           {
-            "name": "telegram_weight",
+            "name": "telegramWeight",
             "type": "u16"
           },
           {
-            "name": "onchain_weight",
+            "name": "onchainWeight",
             "type": "u16"
           },
           {
@@ -1659,7 +1665,7 @@
             "type": "u8"
           },
           {
-            "name": "authorized_oracles",
+            "name": "authorizedOracles",
             "type": {
               "vec": "pubkey"
             }
@@ -1672,7 +1678,7 @@
       }
     },
     {
-      "name": "OracleConfigInitialized",
+      "name": "oracleConfigInitialized",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1681,7 +1687,7 @@
             "type": "pubkey"
           },
           {
-            "name": "update_interval",
+            "name": "updateInterval",
             "type": "i64"
           },
           {
@@ -1689,14 +1695,14 @@
             "type": "u8"
           },
           {
-            "name": "oracle_count",
+            "name": "oracleCount",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "OracleQuorumUpdated",
+      "name": "oracleQuorumUpdated",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1705,18 +1711,18 @@
             "type": "pubkey"
           },
           {
-            "name": "old_quorum",
+            "name": "oldQuorum",
             "type": "u8"
           },
           {
-            "name": "new_quorum",
+            "name": "newQuorum",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "OracleRemoved",
+      "name": "oracleRemoved",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1729,14 +1735,14 @@
             "type": "pubkey"
           },
           {
-            "name": "oracle_count",
+            "name": "oracleCount",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "TokenInitialized",
+      "name": "tokenInitialized",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1749,7 +1755,7 @@
             "type": "pubkey"
           },
           {
-            "name": "story_id",
+            "name": "storyId",
             "type": "pubkey"
           },
           {
@@ -1757,15 +1763,15 @@
             "type": "pubkey"
           },
           {
-            "name": "base_price",
+            "name": "basePrice",
             "type": "u64"
           },
           {
-            "name": "curve_k",
+            "name": "curveK",
             "type": "u64"
           },
           {
-            "name": "seed_liquidity",
+            "name": "seedLiquidity",
             "type": "u64"
           },
           {
@@ -1776,7 +1782,7 @@
       }
     },
     {
-      "name": "TokenParams",
+      "name": "tokenParams",
       "docs": [
         "CPI / init params — field order must stay wire-compatible with",
         "NarrativeAuction `TokenParamsWire`."
@@ -1785,11 +1791,11 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "base_price",
+            "name": "basePrice",
             "type": "u64"
           },
           {
-            "name": "initial_liquidity",
+            "name": "initialLiquidity",
             "type": "u64"
           },
           {
@@ -1797,18 +1803,18 @@
             "type": "pubkey"
           },
           {
-            "name": "story_id",
+            "name": "storyId",
             "type": "pubkey"
           },
           {
-            "name": "curve_k",
+            "name": "curveK",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "TokensBought",
+      "name": "tokensBought",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1821,7 +1827,7 @@
             "type": "pubkey"
           },
           {
-            "name": "sol_in",
+            "name": "solIn",
             "type": "u64"
           },
           {
@@ -1829,7 +1835,7 @@
             "type": "u64"
           },
           {
-            "name": "tokens_out",
+            "name": "tokensOut",
             "type": "u64"
           },
           {
@@ -1841,7 +1847,7 @@
             "type": "u64"
           },
           {
-            "name": "effective_k",
+            "name": "effectiveK",
             "type": "u64"
           },
           {
@@ -1852,7 +1858,7 @@
       }
     },
     {
-      "name": "TokensSold",
+      "name": "tokensSold",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1865,11 +1871,11 @@
             "type": "pubkey"
           },
           {
-            "name": "tokens_in",
+            "name": "tokensIn",
             "type": "u64"
           },
           {
-            "name": "sol_gross",
+            "name": "solGross",
             "type": "u64"
           },
           {
@@ -1881,7 +1887,7 @@
             "type": "u64"
           },
           {
-            "name": "sol_net",
+            "name": "solNet",
             "type": "u64"
           },
           {
@@ -1893,7 +1899,7 @@
             "type": "u64"
           },
           {
-            "name": "sell_tax_bps",
+            "name": "sellTaxBps",
             "type": "u16"
           },
           {
@@ -1904,7 +1910,7 @@
       }
     },
     {
-      "name": "VelocityToken",
+      "name": "velocityToken",
       "docs": [
         "Dual-curve token state.",
         "Seeds = [b\"curve\", story_id]"
@@ -1917,7 +1923,7 @@
             "type": "pubkey"
           },
           {
-            "name": "story_id",
+            "name": "storyId",
             "docs": [
               "Link back to NarrativeAuction StoryMarket."
             ],
@@ -1928,97 +1934,97 @@
             "type": "pubkey"
           },
           {
-            "name": "base_price",
+            "name": "basePrice",
             "type": "u64"
           },
           {
-            "name": "current_supply",
+            "name": "currentSupply",
             "type": "u64"
           },
           {
-            "name": "current_price",
+            "name": "currentPrice",
             "type": "u64"
           },
           {
-            "name": "attention_score",
+            "name": "attentionScore",
             "docs": [
               "EMA-smoothed attention score (oracle)."
             ],
             "type": "u64"
           },
           {
-            "name": "price_velocity",
+            "name": "priceVelocity",
             "docs": [
               "Moving average of price change."
             ],
             "type": "u64"
           },
           {
-            "name": "curve_k",
+            "name": "curveK",
             "docs": [
               "Base curve constant `k` (before velocity modifier)."
             ],
             "type": "u64"
           },
           {
-            "name": "sell_tax_bps",
+            "name": "sellTaxBps",
             "docs": [
               "Dynamic 500–1500 bps."
             ],
             "type": "u16"
           },
           {
-            "name": "last_oracle_update",
+            "name": "lastOracleUpdate",
             "type": "i64"
           },
           {
-            "name": "merge_count",
+            "name": "mergeCount",
             "docs": [
               "How many narratives absorbed via LoreMerge."
             ],
             "type": "u8"
           },
           {
-            "name": "is_merged",
+            "name": "isMerged",
             "type": "bool"
           },
           {
-            "name": "sol_reserve",
+            "name": "solReserve",
             "docs": [
               "Actual SOL held in the curve vault (lamports)."
             ],
             "type": "u64"
           },
           {
-            "name": "protocol_fees",
+            "name": "protocolFees",
             "docs": [
               "Accumulated protocol fees (lamports) still in vault."
             ],
             "type": "u64"
           },
           {
-            "name": "holder_rewards_pool",
+            "name": "holderRewardsPool",
             "docs": [
               "Sell-tax share reserved for holders (lamports) still in vault."
             ],
             "type": "u64"
           },
           {
-            "name": "reward_index",
+            "name": "rewardIndex",
             "docs": [
               "Cumulative reward index (scaled by REWARD_SCALE in math)."
             ],
             "type": "u128"
           },
           {
-            "name": "last_price",
+            "name": "lastPrice",
             "docs": [
               "Previous spot price for velocity MA."
             ],
             "type": "u64"
           },
           {
-            "name": "seed_liquidity",
+            "name": "seedLiquidity",
             "docs": [
               "Liquidity amount recorded at graduation (SOL moved into curve vault on graduate)."
             ],
@@ -2029,11 +2035,11 @@
             "type": "u8"
           },
           {
-            "name": "vault_bump",
+            "name": "vaultBump",
             "type": "u8"
           }
         ]
       }
     }
   ]
-}
+};

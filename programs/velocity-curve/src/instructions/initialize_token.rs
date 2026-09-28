@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{create_account, CreateAccount};
-use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::associated_token::{self, AssociatedToken, Create};
+use anchor_spl::token::{self, InitializeMint2, Mint, Token};
 
 use crate::errors::VelocityError;
 use crate::events::TokenInitialized;
@@ -19,8 +19,11 @@ use crate::state::{TokenParams, VelocityToken, FLATTEN_TAX_BPS, TOKEN_DECIMALS};
 ///   7. token_program
 ///   8. associated_token_program
 ///   9. rent
+///
+/// Mint / token_vault are UncheckedAccount so try_accounts stays under the 4KiB
+/// BPF stack limit (typed `init` for Mint+ATA was overflowing and clobbering
+/// TokenParams — Devnet bug writing SBPF stack pointers into u64 fields).
 #[derive(Accounts)]
-#[instruction(params: TokenParams)]
 pub struct InitializeToken<'info> {
     #[account(
         init,
@@ -29,21 +32,14 @@ pub struct InitializeToken<'info> {
         seeds = [VelocityToken::SEED, story_id.key().as_ref()],
         bump
     )]
-    pub curve: Account<'info, VelocityToken>,
+    pub curve: Box<Account<'info, VelocityToken>>,
 
     /// CHECK: StoryMarket PDA from NarrativeAuction (CPI authority link).
-    /// Constrained to match `params.story_id`.
-    #[account(constraint = story_id.key() == params.story_id @ VelocityError::StoryMismatch)]
     pub story_id: UncheckedAccount<'info>,
 
-    /// New SPL mint — mint authority = curve PDA.
-    #[account(
-        init,
-        payer = payer,
-        mint::decimals = TOKEN_DECIMALS,
-        mint::authority = curve,
-    )]
-    pub mint: Account<'info, Mint>,
+    /// CHECK: New SPL mint — signer; created via CPI in handler (authority = curve).
+    #[account(mut, signer)]
+    pub mint: Signer<'info>,
 
     /// CHECK: Curve SOL vault PDA (`["curve-vault", curve]`). Created if empty.
     #[account(
@@ -53,14 +49,9 @@ pub struct InitializeToken<'info> {
     )]
     pub vault: SystemAccount<'info>,
 
-    /// Curve-owned ATA holding no circulating supply (mint authority mints to buyers).
-    #[account(
-        init,
-        payer = payer,
-        associated_token::mint = mint,
-        associated_token::authority = curve,
-    )]
-    pub token_vault: Account<'info, TokenAccount>,
+    /// CHECK: Curve-owned ATA; created via associated_token CPI in handler.
+    #[account(mut)]
+    pub token_vault: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -71,22 +62,25 @@ pub struct InitializeToken<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-/// Called via CPI from NarrativeAuction::graduate_narrative.
-///
-/// Creates the VelocityToken PDA, SPL mint (authority = curve), curve SOL vault,
-/// and curve token ATA. Records `seed_liquidity` / `sol_reserve`; the graduate
-/// instruction then transfers `liquidity_reserve` lamports from the story vault
-/// into `vault` in the same transaction.
 pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenParams) -> Result<()> {
-    require!(params.base_price > 0, VelocityError::InvalidParams);
-    require!(params.curve_k > 0, VelocityError::InvalidParams);
+    // Snapshot params BEFORE any handler CPIs (mint/ATA/vault) can clobber stack.
+    let base_price = params.base_price;
+    let initial_liquidity = params.initial_liquidity;
+    let curve_k = params.curve_k;
+    let creator = params.creator;
+    let params_story = params.story_id;
+    let story_id = ctx.accounts.story_id.key();
+    require_keys_eq!(story_id, params_story, VelocityError::StoryMismatch);
+    require!(base_price > 0 && curve_k > 0, VelocityError::InvalidParams);
 
     let clock = Clock::get()?;
-    let (eff_k, _) = velocity_params(params.curve_k, 0, 0)?;
-    let price = spot_price(params.base_price, eff_k, 0)?;
+    let (eff_k, _) = velocity_params(curve_k, 0, 0)?;
+    let price = spot_price(base_price, eff_k, 0)?;
 
     let curve_key = ctx.accounts.curve.key();
     let vault_bump = ctx.bumps.vault;
+    let curve_bump = ctx.bumps.curve;
+
     ensure_curve_vault(
         &ctx.accounts.vault,
         &ctx.accounts.payer,
@@ -95,29 +89,72 @@ pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenPara
         vault_bump,
     )?;
 
+    // Create mint account (space for Mint) + initialize_mint2 (authority = curve PDA).
+    {
+        let mint_ai = ctx.accounts.mint.to_account_info();
+        let rent = Rent::get()?;
+        let lamports = rent.minimum_balance(Mint::LEN);
+        create_account(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                CreateAccount {
+                    from: ctx.accounts.payer.to_account_info(),
+                    to: mint_ai.clone(),
+                },
+            ),
+            lamports,
+            Mint::LEN as u64,
+            &token::ID,
+        )?;
+        token::initialize_mint2(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                InitializeMint2 {
+                    mint: mint_ai,
+                },
+            ),
+            TOKEN_DECIMALS,
+            &curve_key,
+            None,
+        )?;
+    }
+
+    // Create curve ATA if needed.
+    if ctx.accounts.token_vault.data_is_empty() {
+        associated_token::create(CpiContext::new(
+            ctx.accounts.associated_token_program.to_account_info(),
+            Create {
+                payer: ctx.accounts.payer.to_account_info(),
+                associated_token: ctx.accounts.token_vault.to_account_info(),
+                authority: ctx.accounts.curve.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+            },
+        ))?;
+    }
+
     let curve = &mut ctx.accounts.curve;
     curve.mint = ctx.accounts.mint.key();
-    curve.story_id = params.story_id;
-    curve.creator = params.creator;
-    curve.base_price = params.base_price;
+    curve.story_id = story_id;
+    curve.creator = creator;
+    curve.base_price = base_price;
     curve.current_supply = 0;
     curve.current_price = price;
     curve.attention_score = 0;
     curve.price_velocity = 0;
-    curve.curve_k = params.curve_k;
+    curve.curve_k = curve_k;
     curve.sell_tax_bps = FLATTEN_TAX_BPS;
     curve.last_oracle_update = clock.unix_timestamp;
     curve.merge_count = 0;
     curve.is_merged = false;
-    // Expect NarrativeAuction to fund the vault with `initial_liquidity` next
-    // in the same tx (atomic). Zero when no seed liquidity.
-    curve.sol_reserve = params.initial_liquidity;
+    curve.sol_reserve = initial_liquidity;
     curve.protocol_fees = 0;
     curve.holder_rewards_pool = 0;
     curve.reward_index = 0;
     curve.last_price = price;
-    curve.seed_liquidity = params.initial_liquidity;
-    curve.bump = ctx.bumps.curve;
+    curve.seed_liquidity = initial_liquidity;
+    curve.bump = curve_bump;
     curve.vault_bump = vault_bump;
 
     emit!(TokenInitialized {
@@ -131,10 +168,7 @@ pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenPara
         timestamp: clock.unix_timestamp,
     });
 
-    let _ = &ctx.accounts.token_vault;
     let _ = &ctx.accounts.rent;
-    let _ = &ctx.accounts.associated_token_program;
-
     Ok(())
 }
 

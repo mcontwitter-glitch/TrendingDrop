@@ -126,4 +126,9 @@ pub mod velocity_curve {
     ) -> Result<()> {
         settle_merge_handler(ctx, fee_lamports, liquidity_lamports)
     }
+
+    /// Repair curve fields corrupted by TokenParams u64 stack-pointer bug (Devnet).
+    pub fn repair_curve(ctx: Context<RepairCurve>, base_price: u64, curve_k: u64) -> Result<()> {
+        repair_curve_handler(ctx, base_price, curve_k)
+    }
 }
