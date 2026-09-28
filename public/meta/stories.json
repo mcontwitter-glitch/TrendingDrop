@@ -1,0 +1,11 @@
+{
+  "byPubkey": {
+    "9JnFcrBBJgNmgA3AkhGW7Wkai1WH5oeXHdEpKgSRVEzW": {
+      "title": "Devnet Smoke Story",
+      "ticker": "SMOKE",
+      "blurb": "Agent smoke story on Solana Devnet.",
+      "description": "Created by the Devnet smoke script for create→stake→graduate→buy→sell."
+    }
+  },
+  "byHash": {}
+}

@@ -71,7 +71,7 @@ export function StoryDetail() {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
               <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
-                <StatusPill status={story.status} />
+                <StatusPill status={story.status} endsAt={story.endsAt} now={now} />
                 <span className="rounded-full border border-white/10 bg-black/50 px-2.5 py-0.5 text-xs font-bold text-bcc-green backdrop-blur">
                   ${story.ticker}
                 </span>
@@ -238,18 +238,33 @@ export function StoryDetail() {
   )
 }
 
-function StatusPill({ status }: { status: string }) {
+function StatusPill({
+  status,
+  endsAt,
+  now,
+}: {
+  status: string
+  endsAt?: number
+  now?: number
+}) {
+  const expired =
+    (status === 'active' || status === 'graduating') &&
+    typeof endsAt === 'number' &&
+    typeof now === 'number' &&
+    endsAt <= now
+  const label = expired ? 'ended' : status
   const map: Record<string, string> = {
     active: 'bg-bcc-gold/15 text-bcc-gold border-bcc-gold/40',
     graduating: 'bg-amber-400/15 text-amber-300 border-amber-400/30',
     graduated: 'bg-cyan-400/15 text-cyan-300 border-cyan-400/30',
     failed: 'bg-red-400/10 text-red-300 border-red-400/25',
+    ended: 'bg-red-400/10 text-red-300 border-red-400/25',
   }
   return (
     <span
-      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide backdrop-blur ${map[status] ?? ''}`}
+      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide backdrop-blur ${map[label] ?? ''}`}
     >
-      {status}
+      {label}
     </span>
   )
 }

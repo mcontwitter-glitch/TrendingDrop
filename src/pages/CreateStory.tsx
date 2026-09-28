@@ -57,7 +57,10 @@ export function CreateStory() {
           'If this was the first story on this cluster, initialize_config ran automatically with your wallet as authority/treasury.',
         )
         setSubmitted(true)
-        toast.success('Story created on-chain', `${result.signature.slice(0, 16)}…`)
+        toast.success(
+          'Story created on-chain',
+          `${result.signature.slice(0, 16)}… · Name cached in this browser only (add to public/meta/stories.json for others)`,
+        )
         window.setTimeout(() => navigate(`/story/${result.storyPda.toBase58()}`), 2200)
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)

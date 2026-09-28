@@ -5,6 +5,8 @@ import {
   getMetadataByHash,
   getMetadataByPubkey,
   bytesToHex,
+  printableAsciiPrefixFromHash,
+  tickerFromAsciiPrefix,
   type NarrativeMetadata,
 } from './metadata'
 import { coverForTicker, hashCover } from '../tokenCovers'
@@ -62,7 +64,10 @@ function phaseToStatus(
   if (name === 'failed' || name === 'forfeited') return 'failed'
   if (name === 'active' || name === 'draft') {
     const now = Date.now()
-    if (endsAtMs > now && totalStakedSol >= thresholdSol * 0.75) return 'graduating'
+    // On-chain phase stays active until graduate/fail ix; treat expired as failed
+    // so cards leave the Active tab (Failed tab) and don't show ACTIVE + Ended.
+    if (endsAtMs <= now) return 'failed'
+    if (totalStakedSol >= thresholdSol * 0.75) return 'graduating'
     return 'active'
   }
   return 'active'
@@ -84,19 +89,33 @@ function bnToNumber(v: { toNumber(): number } | number): number {
   return typeof v === 'number' ? v : v.toNumber()
 }
 
-function resolveMeta(
-  pubkey: string,
-  contentHashHex: string,
-): NarrativeMetadata {
+const MISSING_META_BLURB =
+  "Metadata not shared yet — only this browser's Create Story cache has the name."
+
+function fallbackMeta(pubkey: string, contentHashHex: string): NarrativeMetadata {
+  const ascii = printableAsciiPrefixFromHash(contentHashHex)
+  if (ascii) {
+    const title = ascii.length > 48 ? `${ascii.slice(0, 45)}…` : ascii
+    return {
+      title,
+      ticker: tickerFromAsciiPrefix(ascii),
+      blurb: MISSING_META_BLURB,
+      description: MISSING_META_BLURB,
+    }
+  }
+  return {
+    title: `Story ${pubkey.slice(0, 4)}…${pubkey.slice(-4)}`,
+    ticker: pubkey.slice(0, 4).toUpperCase(),
+    blurb: MISSING_META_BLURB,
+    description: MISSING_META_BLURB,
+  }
+}
+
+function resolveMeta(pubkey: string, contentHashHex: string): NarrativeMetadata {
   return (
     getMetadataByPubkey(pubkey) ??
-    getMetadataByHash(contentHashHex) ?? {
-      title: `Narrative ${contentHashHex.slice(0, 8)}`,
-      ticker: contentHashHex.slice(0, 4).toUpperCase(),
-      blurb: 'On-chain story market (metadata not cached in this browser).',
-      description:
-        'This StoryMarket was fetched from chain. Title/ticker were not stored on-chain — only content_hash. Open Create Story from this browser to cache metadata locally.',
-    }
+    getMetadataByHash(contentHashHex) ??
+    fallbackMeta(pubkey, contentHashHex)
   )
 }
 

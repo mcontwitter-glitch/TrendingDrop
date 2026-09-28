@@ -98,9 +98,12 @@ export function mapVelocityTokenToCurve(
     pubkey,
     storyId,
     mint: account.mint.toBase58(),
-    title: meta?.title ?? `Curve ${pubkey.slice(0, 6)}`,
+    title: meta?.title ?? `Story ${pubkey.slice(0, 4)}…${pubkey.slice(-4)}`,
     ticker: meta?.ticker ?? pubkey.slice(0, 4).toUpperCase(),
-    blurb: meta?.blurb ?? meta?.description?.slice(0, 120) ?? 'Graduated velocity curve token.',
+    blurb:
+      meta?.blurb ??
+      meta?.description?.slice(0, 120) ??
+      "Metadata not shared yet — only this browser's Create Story cache has the name.",
     emoji: hashPick(seed, EMOJIS),
     imageUrl: meta?.ticker ? coverForTicker(meta.ticker) : hashCover(seed),
     gradient: hashPick(seed + 'g', GRADIENTS),

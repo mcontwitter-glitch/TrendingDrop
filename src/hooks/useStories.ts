@@ -3,6 +3,7 @@ import { useConnection } from '@solana/wallet-adapter-react'
 import { stories as mockStories } from '../data/mockStories'
 import type { Story } from '../types'
 import { fetchStoryMarkets, getReadonlyProgram } from '../lib/solana/program'
+import { loadSharedMetadata } from '../lib/solana/metadata'
 
 export type StoriesSource = 'chain' | 'mock'
 
@@ -26,6 +27,8 @@ export function useStories(): UseStoriesResult {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
+      // Shared registry first so remap uses titles/tickers from public/meta/stories.json
+      await loadSharedMetadata()
       const program = getReadonlyProgram(connection)
       const onChain = await fetchStoryMarkets(program)
       if (onChain.length > 0) {

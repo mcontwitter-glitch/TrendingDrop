@@ -9,6 +9,7 @@ import {
   getReadonlyVelocityProgram,
 } from '../lib/solana/velocityProgram'
 import { findHolderPda } from '../lib/solana/velocityPdas'
+import { loadSharedMetadata } from '../lib/solana/metadata'
 import {
   mapHolderPosition,
   type OnChainHolderPosition,
@@ -35,6 +36,7 @@ export function useCurves(): UseCurvesResult {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
+      await loadSharedMetadata()
       const program = getReadonlyVelocityProgram(connection)
       const onChain = await fetchVelocityTokens(program)
       if (onChain.length > 0) {

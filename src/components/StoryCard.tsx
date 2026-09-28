@@ -21,7 +21,12 @@ const statusBadge: Record<Story['status'], { label: string; className: string }>
 
 export function StoryCard({ story, index = 0 }: StoryCardProps) {
   const now = useNow()
-  const badge = statusBadge[story.status]
+  // Avoid ACTIVE/Graduating pill when countdown already says Ended (phase lag on-chain).
+  const expired =
+    (story.status === 'active' || story.status === 'graduating') && story.endsAt <= now
+  const badge = expired
+    ? { label: 'Ended', className: 'bg-red-400/10 text-red-300 border-red-400/20' }
+    : statusBadge[story.status]
   const pct = fundedPct(story.solStaked, story.graduationThreshold)
   const creatorTier = mockCreatorTiers[story.creator]
 
