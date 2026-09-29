@@ -175,9 +175,29 @@ async function main() {
     console.log('new mint:', mint.publicKey.toBase58(), `(…${MINT_VANITY_SUFFIX})`)
     console.log('tokenVault:', tokenVault.toBase58())
 
+    // Prefer explicit SMOKE_RANK; else first empty RankingBoard slot (never assume 1).
+    let rank = process.env.SMOKE_RANK != null && process.env.SMOKE_RANK !== ''
+      ? Number(process.env.SMOKE_RANK)
+      : null
+    if (rank == null) {
+      try {
+        const board = await narrative.account.rankingBoard.fetch(rankingPda)
+        const existing = board.ranks.findIndex((r) => r.equals(STORY))
+        if (existing >= 0) rank = existing + 1
+        else {
+          const empty = board.ranks.findIndex((r) => r.equals(PublicKey.default))
+          if (empty < 0) throw new Error('RankingBoard full (1–5 taken)')
+          rank = empty + 1
+        }
+      } catch (e) {
+        if (String(e.message || e).includes('RankingBoard full')) throw e
+        rank = 1 // board not init
+      }
+    }
+    console.log('using rank', rank)
     try {
       const sig = await narrative.methods
-        .graduateNarrative(Number(process.env.SMOKE_RANK || 1))
+        .graduateNarrative(rank)
         .accountsStrict({
           config: configPda,
           story: STORY,

@@ -18,7 +18,7 @@ airdrop** — not a SOL principal reclaim.
 | Winner SOL bonus | **20% of losing pool** (optional) | Pro-rata via `winner_bonus_pool`; often 0 if no forfeits |
 | Graduated claim | **Tokens + optional bonus SOL** | Principal claimable = **0** (already bought into the curve) |
 | Failed claim | **Full principal reclaim** | No mint / no airdrop |
-| Curve accounting | Airdrop **bumps** `VelocityToken.current_supply` | `sol_reserve` / `seed_liquidity` = seed SOL so spot & circ stay honest |
+| Curve accounting | Airdrop mints escrow ATA; `current_supply` = **seed-SOL buy size** (not notional 20% of 1B) | Keeps spot tradeable; sells are reserve-capped |
 
 ### Coherent story
 
@@ -40,7 +40,7 @@ graduate_narrative
   ├─ transfer seed SOL story vault → curve vault
   └─ CPI VelocityCurve::mint_staker_airdrop(amount)
         ├─ mint reserved raw → StakeAirdrop token vault (ATA)
-        └─ bump curve.current_supply += amount; refresh current_price
+        └─ set curve.current_supply = tokens_out(seed SOL); refresh current_price
 
 resolve_stakes (Graduated)
   └─ claimable SOL = pro-rata winner_bonus only (principal = 0)
@@ -116,6 +116,23 @@ STORY=<storyPda> node scripts/devnet-clamp-post-threshold.mjs
 ```
 
 `clamp_post_threshold` is idempotent and uses the same formula as stake.
+
+
+**Auto-graduate after the post-threshold timer:** once `ends_at` has passed and
+`total_staked >= graduation_threshold` while still `Active`, anyone can call
+permissionless `graduate_narrative`. Pass `rank = 0` to auto-pick the first free
+RankingBoard slot (1–5); explicit ranks still work. A mint keypair must sign
+(vanity `…drop` grind on UI / crank).
+
+```bash
+# crank all ready stories (vanity mint by default)
+node scripts/devnet-try-graduate.mjs
+# one story / on-chain auto rank after upgrade:
+STORY=<storyPda> RANK=0 node scripts/devnet-try-graduate.mjs
+```
+
+UI: Story detail auto-launches when the timer hits 0 (connected wallet) and
+never hardcodes rank 1 — it reads the RankingBoard for the first empty slot.
 
 Smoke: `node scripts/devnet-smoke-stake-airdrop.mjs` (set `SMOKE_VANITY=1` for …drop mint grind).
 

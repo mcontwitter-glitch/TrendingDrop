@@ -221,11 +221,40 @@ export async function clampPostThreshold(
   }
 }
 
+
+/**
+ * First empty RankingBoard slot (1–5), or an existing slot already holding this story.
+ * Returns null when the board is full (and this story is not already ranked).
+ */
+export async function findFirstFreeRank(
+  program: Program<NarrativeAuction>,
+  storyPubkey?: PublicKey,
+): Promise<number | null> {
+  const [rankingBoard] = findRankingBoardPda(program.programId)
+  try {
+    const board = await program.account.rankingBoard.fetch(rankingBoard)
+    if (storyPubkey) {
+      const existing = board.ranks.findIndex((r) => r.equals(storyPubkey))
+      if (existing >= 0) return existing + 1
+    }
+    const empty = board.ranks.findIndex((r) => r.equals(PublicKey.default))
+    return empty >= 0 ? empty + 1 : null
+  } catch {
+    // Board not initialized yet — first graduate will init_if_needed; rank 1 is free.
+    return 1
+  }
+}
+
 export interface GraduateNarrativeParams {
   storyPubkey: PublicKey
   /** Wallet that pays rent / signs as payer. */
   payer: PublicKey
-  /** King-of-the-Hill rank slot 1–5 (default 1). */
+  /**
+   * King-of-the-Hill rank slot.
+   * - omit / undefined → client picks first empty board slot (or pass 0 on-chain)
+   * - 0 → on-chain auto-select first free slot (after program upgrade)
+   * - 1–5 → explicit slot
+   */
   rank?: number
   signal?: AbortSignal
   /** Progress while grinding a mint ending in `drop`. */
@@ -239,8 +268,8 @@ export interface GraduateNarrativeParams {
 export async function graduateNarrative(
   program: Program<NarrativeAuction>,
   params: GraduateNarrativeParams,
-): Promise<{ signature: string; mint: PublicKey; curvePda: PublicKey }> {
-  const { storyPubkey, payer, rank = 1, signal, onGrindProgress } = params
+): Promise<{ signature: string; mint: PublicKey; curvePda: PublicKey; rank: number }> {
+  const { storyPubkey, payer, signal, onGrindProgress } = params
 
   const [configPda] = findConfigPda(program.programId)
   const config = await fetchConfig(program)
@@ -254,6 +283,16 @@ export async function graduateNarrative(
     await program.account.storyMarket.fetch(storyPubkey)
   } catch {
     throw new SolanaClientError('Story market account not found on this cluster')
+  }
+
+  // Never hardcode rank 1 — find first empty RankingBoard slot (or honor explicit rank / 0=auto).
+  let rank = params.rank
+  if (rank === undefined) {
+    const free = await findFirstFreeRank(program, storyPubkey)
+    if (free == null) {
+      throw new SolanaClientError('RankTaken: RankingBoard slots 1–5 are all occupied')
+    }
+    rank = free
   }
 
   const [rankingBoard] = findRankingBoardPda(program.programId)
@@ -317,7 +356,7 @@ export async function graduateNarrative(
       .signers([mint])
       .rpc()
 
-    return { signature, mint: mint.publicKey, curvePda }
+    return { signature, mint: mint.publicKey, curvePda, rank }
   } catch (err) {
     throw new SolanaClientError(formatTxError(err))
   }

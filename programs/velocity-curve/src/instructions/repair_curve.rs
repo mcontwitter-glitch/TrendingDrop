@@ -53,3 +53,31 @@ pub fn repair_curve_handler(
     );
     Ok(())
 }
+
+/// Creator-only: reset `current_supply` (e.g. after notional airdrop inflated spot).
+/// Typically set to seed-backed `tokens_out_for_sol(sol_reserve, 0, base, k)`.
+pub fn repair_curve_supply_handler(ctx: Context<RepairCurve>, current_supply: u64) -> Result<()> {
+    let curve = &mut ctx.accounts.curve;
+    require!(
+        curve.creator == ctx.accounts.authority.key(),
+        VelocityError::Unauthorized
+    );
+    require!(
+        curve.story_id == ctx.accounts.story_id.key(),
+        VelocityError::StoryMismatch
+    );
+
+    let (eff_k, _) =
+        velocity_params(curve.curve_k, curve.attention_score, curve.price_velocity)?;
+    curve.current_supply = current_supply;
+    let price = spot_price(curve.base_price, eff_k, curve.current_supply)?;
+    curve.current_price = price;
+    curve.last_price = price;
+
+    msg!(
+        "Repaired curve supply story={} supply={}",
+        curve.story_id,
+        current_supply
+    );
+    Ok(())
+}

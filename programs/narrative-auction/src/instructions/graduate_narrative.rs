@@ -129,6 +129,7 @@ pub struct GraduateNarrative<'info> {
 }
 
 /// Permissionless crank: graduate when `ends_at` has passed and threshold is met.
+/// Anyone can pay; `rank = 0` auto-selects the first free RankingBoard slot.
 ///
 /// Business rules:
 /// - Top narratives (rank 1–5) graduate; rank slot must be empty or this story
@@ -138,8 +139,10 @@ pub struct GraduateNarrative<'info> {
 /// - CPI VelocityCurve::initialize_token, transfer seed SOL → curve vault, then
 ///   mint_staker_airdrop (bumps curve.current_supply so spot/FDV stay honest)
 pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> Result<()> {
+    // rank 0 = permissionless auto: first empty slot (or this story's existing slot).
+    // rank 1..=5 = explicit King-of-the-Hill slot.
     require!(
-        (1..=RankingBoard::MAX_RANK).contains(&rank),
+        rank == 0 || (1..=RankingBoard::MAX_RANK).contains(&rank),
         NarrativeError::InvalidRank
     );
 
@@ -161,6 +164,20 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         board.bump = ctx.bumps.ranking_board;
         board.ranks = [Pubkey::default(); 5];
     }
+
+    let rank = if rank == 0 {
+        // Prefer an existing slot for this story, else first empty.
+        if let Some(i) = board.ranks.iter().position(|r| *r == story_key) {
+            (i as u8) + 1
+        } else if let Some(i) = board.ranks.iter().position(|r| *r == Pubkey::default()) {
+            (i as u8) + 1
+        } else {
+            return err!(NarrativeError::RankTaken);
+        }
+    } else {
+        rank
+    };
+
     let slot = &mut board.ranks[(rank as usize) - 1];
     require!(
         *slot == Pubkey::default() || *slot == story_key,

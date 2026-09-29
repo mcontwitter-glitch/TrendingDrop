@@ -12,7 +12,7 @@
 //! - `initialize_story` — open a new Active StoryMarket
 //! - `stake_on_narrative` — stake SOL (fee → treasury, net → vault); enforces
 //!   `max_stakes_per_user` via `UserStakeIndex` PDA `["user-stakes", user]`
-//! - `graduate_narrative` — crank: seed curve with principal+80% losing, mint airdrop
+//! - `graduate_narrative` — permissionless crank: seed curve + airdrop; `rank=0` = first free slot
 //! - `fail_story` — mark Failed when below threshold (reclaim path)
 //! - `forfeit_story` — mark Forfeited when above threshold but not top-ranked
 //! - `contribute_losing_pool` — move Forfeited vault SOL → winner winning_pool

@@ -590,8 +590,8 @@ export type VelocityCurve = {
     {
       "name": "mintStakerAirdrop",
       "docs": [
-        "Mint reserved staker-airdrop supply into an escrow ATA (CPI from graduate).",
-        "Does not increase curve.current_supply. Requires mint.supply == 0."
+        "Mint reserved staker-airdrop into escrow ATA (CPI from graduate).",
+        "Sets `current_supply` to the seed-SOL buy size (not the notional mint amount)."
       ],
       "discriminator": [
         241,
@@ -784,6 +784,59 @@ export type VelocityCurve = {
         },
         {
           "name": "curveK",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "repairCurveSupply",
+      "docs": [
+        "Creator-only: reset `current_supply` when notional airdrop inflated spot."
+      ],
+      "discriminator": [
+        61,
+        124,
+        161,
+        103,
+        113,
+        49,
+        48,
+        43
+      ],
+      "accounts": [
+        {
+          "name": "curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "storyId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "storyId"
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "currentSupply",
           "type": "u64"
         }
       ]

@@ -4,7 +4,7 @@ use anchor_spl::token::{self, Mint, MintTo, Token};
 
 use crate::errors::VelocityError;
 use crate::events::StakerAirdropMinted;
-use crate::math::{spot_price, velocity_params};
+use crate::math::{spot_price, tokens_out_for_sol, velocity_params};
 use crate::state::{VelocityToken, TOTAL_SUPPLY_RAW};
 
 /// Mint reserved staker-airdrop supply into an escrow ATA and count it as sold
@@ -89,17 +89,19 @@ pub fn mint_staker_airdrop_handler(ctx: Context<MintStakerAirdrop>, amount: u64)
         amount,
     )?;
 
-    // Count airdrop as sold supply backed by seed SOL already on sol_reserve.
+    // Pricing supply = seed-SOL buy from 0 — never the notional airdrop size (20% of 1B),
+    // which would push spot so high that ordinary buys revert ZeroAmount.
     let (eff_k, _) = velocity_params(
         ctx.accounts.curve.curve_k,
         ctx.accounts.curve.attention_score,
         ctx.accounts.curve.price_velocity,
     )?;
     let curve = &mut ctx.accounts.curve;
-    curve.current_supply = curve
-        .current_supply
-        .checked_add(amount)
-        .ok_or(VelocityError::MathOverflow)?;
+    curve.current_supply = if curve.sol_reserve > 0 && curve.base_price > 0 {
+        tokens_out_for_sol(curve.sol_reserve, 0, curve.base_price, eff_k)?
+    } else {
+        0
+    };
     curve.current_price = spot_price(curve.base_price, eff_k, curve.current_supply)?;
     curve.last_price = curve.current_price;
 

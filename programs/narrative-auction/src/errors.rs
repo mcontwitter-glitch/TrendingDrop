@@ -14,7 +14,7 @@ pub enum NarrativeError {
     ThresholdNotMet,
     #[msg("Cannot fail: graduation threshold is met (graduate or forfeit instead)")]
     ThresholdMet,
-    #[msg("Rank must be 1–5 for graduation")]
+    #[msg("Rank must be 0 (auto) or 1–5 for graduation")]
     InvalidRank,
     #[msg("Rank slot already occupied by another story")]
     RankTaken,

@@ -162,7 +162,7 @@ NarrativeAuction::stake_on_narrative
 
 NarrativeAuction critical checks encoded:
 
-- Stake only while `Active` and `now < ends_at`; 2% (`fee_bps`) → treasury, net → vault; new positions enforce `max_stakes_per_user` via `UserStakeIndex`; at/above graduation threshold, clamp `ends_at` to `now + post_threshold_secs` (default **30m**, never extends shorter windows). Permissionless `clamp_post_threshold` for stories that crossed threshold before clamp existed / without a later stake
+- Stake only while `Active` and `now < ends_at`; 2% (`fee_bps`) → treasury, net → vault; new positions enforce `max_stakes_per_user` via `UserStakeIndex`; at/above graduation threshold, clamp `ends_at` to `now + post_threshold_secs` (default **30m**, never extends shorter windows). Permissionless `clamp_post_threshold` for stories that crossed threshold before clamp existed / without a later stake; after the final window, permissionless `graduate_narrative` (`rank=0` = first free board slot) + UI/crank auto-launch
 - Graduate requires `ends_at` passed + threshold + `rank ∈ 1..=5` + unique `RankingBoard` slot
 - Below threshold → `fail_story` (reclaim); at/above threshold but not top-ranked → `forfeit_story` + `contribute_losing_pool` (20/80)
 - Resolve marks claimable: Graduated = pro-rata winner_bonus only (principal=0); Failed = principal; Forfeited = 0
@@ -178,7 +178,7 @@ VelocityCurve critical logic:
 - Protocol fee `CURVE_FEE_BPS = 150` (1.5%) on buy SOL in and sell SOL out
 - `update_attention` EMA α=0.3; **two oracle modes** (see §9): tx-signer quorum **or** ed25519 Instructions-sysvar proof; authority can `set_oracle_quorum` / `add_oracle` / `remove_oracle`
 - SPL mint created on `initialize_token` (authority = curve PDA); `buy` mints to buyer ATA; `sell` burns from seller ATA; `HolderPosition` kept for reward-index / lore_power
-- `seed_liquidity` / `sol_reserve` = staker principal + 80% losing at graduate; `mint_staker_airdrop` bumps `current_supply`
+- `seed_liquidity` / `sol_reserve` = staker principal + 80% losing at graduate; `mint_staker_airdrop` sets `current_supply` to seed-SOL buy size
 - `settle_merge(fee, liquidity)`: PDA-signed vault transfers + `target.is_merged` + absorber `merge_count++`
 
 LoreMerge critical logic:

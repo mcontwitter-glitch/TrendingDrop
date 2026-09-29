@@ -132,9 +132,17 @@ pub mod velocity_curve {
         repair_curve_handler(ctx, base_price, curve_k)
     }
 
-    /// Mint reserved staker-airdrop supply into an escrow ATA (CPI from graduate).
-    /// Does not increase curve.current_supply. Requires mint.supply == 0.
+    /// Mint reserved staker-airdrop into escrow ATA (CPI from graduate).
+    /// Sets `current_supply` to the seed-SOL buy size (not the notional mint amount).
     pub fn mint_staker_airdrop(ctx: Context<MintStakerAirdrop>, amount: u64) -> Result<()> {
         mint_staker_airdrop_handler(ctx, amount)
+    }
+
+    /// Creator-only: reset `current_supply` when notional airdrop inflated spot.
+    pub fn repair_curve_supply(
+        ctx: Context<RepairCurve>,
+        current_supply: u64,
+    ) -> Result<()> {
+        repair_curve_supply_handler(ctx, current_supply)
     }
 }

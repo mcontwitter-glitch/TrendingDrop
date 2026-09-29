@@ -1786,7 +1786,7 @@ export type NarrativeAuction = {
     {
       "code": 6006,
       "name": "invalidRank",
-      "msg": "Rank must be 1–5 for graduation"
+      "msg": "Rank must be 0 (auto) or 1–5 for graduation"
     },
     {
       "code": 6007,

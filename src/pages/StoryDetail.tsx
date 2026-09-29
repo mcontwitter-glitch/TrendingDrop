@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Clock, Users, Zap, ExternalLink, Rocket } from 'lucide-react'
 import { PublicKey } from '@solana/web3.js'
@@ -32,6 +32,80 @@ export function StoryDetail() {
   const [graduatedResult, setGraduatedResult] = useState<{ mint: string; curve: string } | null>(null)
   const [claiming, setClaiming] = useState(false)
   const [claimMsg, setClaimMsg] = useState<string | null>(null)
+  const autoGradStarted = useRef(false)
+  const graduateInFlight = useRef(false)
+
+  // Auto-launch when the post-threshold / auction timer hits 0 and threshold is met.
+  // graduate_narrative is permissionless; wallet pays rent + signs vanity mint.
+  useEffect(() => {
+    if (!story?.onChain || !story.pubkey) return
+    if (story.status === 'graduated' || graduatedResult) return
+    if (story.endsAt > now) return
+    if (story.solStaked < story.graduationThreshold) return
+    if (!connected || !program || !publicKey) return
+    if (autoGradStarted.current || graduateInFlight.current || graduating) return
+    autoGradStarted.current = true
+    void runGraduate({ auto: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once when timer elapsed
+  }, [
+    story?.pubkey,
+    story?.status,
+    story?.endsAt,
+    story?.solStaked,
+    story?.graduationThreshold,
+    story?.onChain,
+    now,
+    connected,
+    program,
+    publicKey,
+    graduating,
+    graduatedResult,
+  ])
+
+  async function runGraduate(opts?: { auto?: boolean }) {
+    if (!program || !publicKey || !story?.pubkey) {
+      if (!opts?.auto) {
+        toast.info('Connect wallet', 'Graduate needs a connected wallet on a deployed cluster')
+      }
+      return
+    }
+    if (graduateInFlight.current) return
+    graduateInFlight.current = true
+    setGraduateError(null)
+    setGrindAttempts(0)
+    setGraduating(true)
+    toast.info(
+      (opts?.auto ? 'Auto-graduating …' : 'Grinding mint …') + MINT_VANITY_SUFFIX,
+      opts?.auto
+        ? 'Post-threshold timer elapsed — grinding vanity mint & launching token…'
+        : 'Finding a vanity SPL mint (may take a few seconds)…',
+    )
+    try {
+      const { mint, curvePda, rank } = await graduateNarrative(program, {
+        storyPubkey: new PublicKey(story.pubkey),
+        payer: publicKey,
+        // omit rank → first empty RankingBoard slot (never hardcode 1)
+        onGrindProgress: (n) => setGrindAttempts(n),
+      })
+      const mintStr = mint.toBase58()
+      const curveStr = curvePda.toBase58()
+      setGraduatedResult({ mint: mintStr, curve: curveStr })
+      toast.success(
+        `Graduated rank ${rank} — mint …${MINT_VANITY_SUFFIX}`,
+        mintStr,
+      )
+      void refresh()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setGraduateError(msg)
+      toast.error(opts?.auto ? 'Auto-graduate failed' : 'Graduate failed', msg)
+      if (opts?.auto) autoGradStarted.current = false
+    } finally {
+      graduateInFlight.current = false
+      setGraduating(false)
+      setGrindAttempts(0)
+    }
+  }
 
   if (loading && !story) {
     return (
@@ -72,40 +146,7 @@ export function StoryDetail() {
     (story.status === 'active' || story.status === 'graduating') && !auctionEnded
 
   async function handleGraduate() {
-    if (!program || !publicKey || !story?.pubkey) {
-      toast.info('Connect wallet', 'Graduate needs a connected wallet on a deployed cluster')
-      return
-    }
-    setGraduateError(null)
-    setGrindAttempts(0)
-    setGraduating(true)
-    toast.info(
-      'Grinding mint …' + MINT_VANITY_SUFFIX,
-      'Finding a vanity SPL mint (may take a few seconds)…',
-    )
-    try {
-      const { mint, curvePda } = await graduateNarrative(program, {
-        storyPubkey: new PublicKey(story.pubkey),
-        payer: publicKey,
-        rank: 1,
-        onGrindProgress: (n) => setGrindAttempts(n),
-      })
-      const mintStr = mint.toBase58()
-      const curveStr = curvePda.toBase58()
-      setGraduatedResult({ mint: mintStr, curve: curveStr })
-      toast.success(
-        'Graduated — mint …' + MINT_VANITY_SUFFIX,
-        mintStr,
-      )
-      void refresh()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setGraduateError(msg)
-      toast.error('Graduate failed', msg)
-    } finally {
-      setGraduating(false)
-      setGrindAttempts(0)
-    }
+    await runGraduate({ auto: false })
   }
 
   return (
@@ -365,14 +406,18 @@ export function StoryDetail() {
             {canGraduate && (
               <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5 text-sm">
                 <div className="mb-1 font-display text-lg font-bold text-amber-300">
-                  Ready to graduate
+                  {story.solStaked >= story.graduationThreshold
+                    ? 'Launching token…'
+                    : 'Ready to graduate'}
                 </div>
                 <p className="mb-4 text-bcc-muted">
-                  Auction ended. Launch a VelocityCurve token with a vanity mint ending in{' '}
+                  {story.solStaked >= story.graduationThreshold
+                    ? 'Post-threshold window ended. Auto-launching a VelocityCurve token (first free rank) with vanity mint ending in '
+                    : 'Auction ended. Launch a VelocityCurve token with a vanity mint ending in '}
                   <span className="font-mono text-amber-200">…{MINT_VANITY_SUFFIX}</span>.
                   {story.solStaked < story.graduationThreshold
                     ? ' Chain will reject if the stake threshold is not met.'
-                    : ''}
+                    : ' Confirm in wallet when prompted.'}
                 </p>
                 {graduateError && (
                   <div className="mb-3 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-xs text-red-200">
@@ -397,7 +442,7 @@ export function StoryDetail() {
                     ? 'Connect wallet on a deployed cluster to graduate'
                     : graduating
                       ? 'Mint grind can take a few seconds — then confirm in wallet'
-                      : `Permissionless crank · mint ends with ${MINT_VANITY_SUFFIX}`}
+                      : `Auto-launches when timer hits 0 · first free rank · mint …${MINT_VANITY_SUFFIX}`}
                 </p>
                 {graduatedResult && (
                   <div className="mt-4 rounded-xl border border-cyan-400/30 bg-cyan-400/10 p-3 text-xs">
