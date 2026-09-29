@@ -1,15 +1,15 @@
 /**
  * Launchpad FDV display layer for VelocityCurve tokens.
  *
- * On-chain `current_price` / `base_price` are u64 lamports fields used by the
- * bonding curve. For market-cap UI we treat that price as **lamports per whole
- * token** × TOTAL_SUPPLY_WHOLE (1B), matching launchpad FDV expectations —
- * not price × circulating raw supply (which showed 0 mcap / "0.0000" supply).
+ * On-chain `current_price` / `base_price` are **lamports per whole token**.
+ * FDV_SOL = price × TOTAL_SUPPLY_WHOLE / 1e9 (numerically ≈ price).
  *
- * Correct graduate formula: `base_price = seed_lamports / TOTAL_SUPPLY_WHOLE`
- * so initial FDV_SOL ≈ seed SOL (liquidity-backed). Legacy curves used
- * `seed / 1000`, which made FDV ≈ seed_SOL × 1e6; the display layer detects
- * that scale and falls back to liquidity-backed spot/FDV.
+ * Product economics (PRICE_SCALE=1e9, base=27, k=365):
+ *   empty curve → ~$4k FDV; ~12 SOL seed buy of ~20% supply → ~$15k FDV.
+ * `current_supply` is whole tokens (SPL raw = whole × 10^6).
+ *
+ * Legacy curves (seed/1000 or corrupt stack prices) still fall back to
+ * liquidity-backed spot when FDV ≫ reserve.
  */
 
 export const TOKEN_DECIMALS = 6
@@ -56,7 +56,7 @@ export function isCorruptCurvePrice(params: {
 
 /**
  * Liquidity-backed spot (lamports / whole token): seed_or_reserve / 1B.
- * Mirrors correct graduate `base_price = seed / TOTAL_SUPPLY_WHOLE`.
+ * Fallback for legacy/corrupt curves only — new graduates use LAUNCH_BASE_PRICE.
  */
 export function repairedDisplayPriceLamports(seedOrReserveLamports: number): number {
   return Math.max(1, Math.floor(seedOrReserveLamports / TOTAL_SUPPLY_WHOLE))
@@ -122,7 +122,8 @@ export function launchpadDisplayMetrics(curve: {
     effectivePriceLamports,
     priceCorrupt: useLiquidityBacked,
     fdvSol,
-    circulatingWhole: rawToWhole(curve.currentSupply),
+    // On-chain current_supply is whole tokens (not SPL raw).
+    circulatingWhole: Math.max(0, curve.currentSupply),
     totalSupplyWhole: TOTAL_SUPPLY_WHOLE,
   }
 }

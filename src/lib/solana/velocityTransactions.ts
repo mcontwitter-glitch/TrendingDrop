@@ -116,7 +116,7 @@ export async function buyOnCurve(
 
 export interface SellParams {
   curvePubkey: PublicKey
-  /** Token amount (SPL / internal ledger units). */
+  /** Token amount in whole tokens (curve ledger; SPL burn uses ×10^decimals). */
   tokenAmount: number
   seller: PublicKey
   slippageBps?: number

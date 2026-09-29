@@ -9,6 +9,7 @@
 //! On-chain implementation uses the linearized form (see `math` module):
 //! ```text
 //! P(s) = base_price + (effective_k * s) / PRICE_SCALE
+//! (`PRICE_SCALE = 1e9`; `s` = whole tokens; launch base≈27, k≈365 → ~$4k→~$15k FDV)
 //! ```
 //! Buy/sell use closed-form integrals of P(s) with u128 checked arithmetic.
 //!

@@ -13,6 +13,14 @@ pub const TOKEN_DECIMALS: u8 = 6;
 pub const TOTAL_SUPPLY_WHOLE: u64 = 1_000_000_000;
 /// Raw units = 1B * 10^TOKEN_DECIMALS.
 pub const TOTAL_SUPPLY_RAW: u64 = TOTAL_SUPPLY_WHOLE * 1_000_000;
+/// 10^TOKEN_DECIMALS — curve math uses whole tokens; SPL mint/burn uses raw.
+pub const DECIMALS_FACTOR: u64 = 1_000_000;
+
+/// Launch spot in lamports per whole token. FDV_SOL ≈ this value (price × 1B / 1e9).
+/// ~$4k at $150/SOL → 27.
+pub const LAUNCH_BASE_PRICE: u64 = 27;
+/// Bonding slope with PRICE_SCALE=1e9: ~12 SOL seed buys ~20% of 1B → spot ~100 (~$15k FDV).
+pub const DEFAULT_CURVE_K: u64 = 365;
 
 
 /// Sell tax when attention outpaces price (steepen).

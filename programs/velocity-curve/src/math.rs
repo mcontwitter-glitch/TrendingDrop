@@ -6,7 +6,7 @@
 //! ```text
 //! P(s) = base_price + (effective_k * s) / PRICE_SCALE
 //! ```
-//! with `PRICE_SCALE = 1_000_000`. This is constant-product–adjacent in spirit
+//! with `PRICE_SCALE = 1_000_000_000`. This is constant-product–adjacent in spirit
 //! (integral cost grows quadratically in supply) while matching the PDF's `k`.
 //!
 //! ## Attention score
@@ -37,7 +37,7 @@ use crate::state::{
 use anchor_lang::prelude::*;
 
 pub const BPS: u128 = 10_000;
-pub const PRICE_SCALE: u128 = 1_000_000;
+pub const PRICE_SCALE: u128 = 1_000_000_000;
 /// Reward index scale for pro-rata holder claims.
 pub const REWARD_SCALE: u128 = 1_000_000_000_000;
 

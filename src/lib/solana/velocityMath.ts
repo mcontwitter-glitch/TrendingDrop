@@ -10,7 +10,7 @@ import {
 } from './constants'
 
 export const BPS = 10_000n
-export const PRICE_SCALE = 1_000_000n
+export const PRICE_SCALE = 1_000_000_000n
 export const REWARD_SCALE = 1_000_000_000_000n
 export const MAX_K_ADJUST_BPS = 2_500n
 export const EMA_ALPHA_BPS = 3_000n

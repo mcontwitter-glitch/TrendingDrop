@@ -189,7 +189,7 @@ export function TradeDesk() {
           <div className="bcc-card rounded-2xl p-5 text-sm">
             <h2 className="mb-3 font-display text-lg font-bold">Curve stats</h2>
             <dl className="grid gap-2 sm:grid-cols-2">
-              <Row label="Base price" value={`${curve.basePriceLamports} lamports`} />
+              <Row label="Base price" value={formatPriceUsd(curve.basePriceLamports, solUsd)} />
               <Row label="Curve k" value={String(curve.curveK)} />
               <Row label="Attention" value={String(curve.attentionScore)} />
               <Row label="Price velocity" value={String(curve.priceVelocity)} />

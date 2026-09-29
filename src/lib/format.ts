@@ -70,7 +70,7 @@ export function formatTokenAmount(n: number | bigint): string {
 export function formatPriceLamports(lamports: number): string {
   const sol = lamports / 1_000_000_000
   if (sol === 0) return '0'
-  if (sol < 0.000001) return `${lamports} lamports`
+  if (sol < 0.000001) return sol.toExponential(2)
   if (sol < 0.001) return sol.toFixed(6)
   return sol.toFixed(4)
 }

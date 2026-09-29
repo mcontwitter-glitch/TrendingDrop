@@ -8,7 +8,7 @@ use crate::math::{
     accrue_holder_rewards, apply_bps, curve_fee, ema_update, settle_holder_rewards,
     sol_out_for_tokens, spot_price, velocity_params,
 };
-use crate::state::{HolderPosition, VelocityToken, CURVE_FEE_BPS, EMA_ALPHA_BPS};
+use crate::state::{HolderPosition, VelocityToken, CURVE_FEE_BPS, DECIMALS_FACTOR, EMA_ALPHA_BPS};
 
 #[derive(Accounts)]
 pub struct Sell<'info> {
@@ -66,13 +66,17 @@ pub struct Sell<'info> {
 /// attention-steepened, else 5%. Of tax: 50% → holders, 50% → treasury.
 /// Additional 1.5% protocol fee on post-tax SOL. HolderPosition stays in sync.
 pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> Result<()> {
+    // `token_amount` is whole tokens (curve / holder ledger). SPL burn uses raw.
     require!(token_amount > 0, VelocityError::ZeroAmount);
+    let raw_amount = token_amount
+        .checked_mul(DECIMALS_FACTOR)
+        .ok_or(VelocityError::MathOverflow)?;
     require!(
         ctx.accounts.holder.balance >= token_amount,
         VelocityError::InsufficientBalance
     );
     require!(
-        ctx.accounts.seller_ata.amount >= token_amount,
+        ctx.accounts.seller_ata.amount >= raw_amount,
         VelocityError::InsufficientBalance
     );
 
@@ -119,7 +123,7 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
         holder.claimable_rewards = claimable;
     }
 
-    // Burn SPL before updating ledger.
+    // Burn SPL raw before updating whole-token ledger.
     token::burn(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -129,7 +133,7 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
                 authority: ctx.accounts.seller.to_account_info(),
             },
         ),
-        token_amount,
+        raw_amount,
     )?;
 
     let curve = &mut ctx.accounts.curve;

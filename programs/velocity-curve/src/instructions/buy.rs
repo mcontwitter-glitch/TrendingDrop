@@ -8,7 +8,7 @@ use crate::events::TokensBought;
 use crate::math::{
     curve_fee, ema_update, settle_holder_rewards, spot_price, tokens_out_for_sol, velocity_params,
 };
-use crate::state::{HolderPosition, VelocityToken, CURVE_FEE_BPS, EMA_ALPHA_BPS};
+use crate::state::{HolderPosition, VelocityToken, CURVE_FEE_BPS, DECIMALS_FACTOR, EMA_ALPHA_BPS};
 
 #[derive(Accounts)]
 pub struct Buy<'info> {
@@ -126,7 +126,10 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
         sol_net,
     )?;
 
-    // Mint SPL tokens to buyer (authority = curve PDA).
+    // Curve math is whole tokens; SPL uses raw = whole * 10^decimals.
+    let raw_out = tokens_out
+        .checked_mul(DECIMALS_FACTOR)
+        .ok_or(VelocityError::MathOverflow)?;
     let signer_seeds: &[&[u8]] = &[VelocityToken::SEED, story_id.as_ref(), &[curve_bump]];
     token::mint_to(
         CpiContext::new_with_signer(
@@ -138,7 +141,7 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
             },
             &[signer_seeds],
         ),
-        tokens_out,
+        raw_out,
     )?;
 
     let curve = &mut ctx.accounts.curve;

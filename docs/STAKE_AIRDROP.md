@@ -18,8 +18,9 @@ airdrop** — not a SOL principal reclaim.
 | Winner SOL bonus | **20% of losing pool** (optional) | Pro-rata via `winner_bonus_pool`; often 0 if no forfeits |
 | Graduated claim | **Tokens + optional bonus SOL** | Principal claimable = **0** (already bought into the curve) |
 | Failed claim | **Full principal reclaim** | No mint / no airdrop |
-| Curve accounting | Airdrop mints escrow ATA; `current_supply` = **seed-SOL buy size** (not notional 20% of 1B) | Keeps spot tradeable; sells are reserve-capped |
-| Initial `base_price` | `seed_sol / 1_000_000_000` (lamports per whole) | So spot × 1B / 1e9 ≈ seed SOL FDV |
+| Curve accounting | Airdrop mints escrow ATA; `current_supply` = **seed-SOL buy size in whole tokens** (≈20% of 1B at ~12 SOL) | Sells are reserve-capped |
+| Initial `base_price` | **27** lamports / whole (`LAUNCH_BASE_PRICE`) | Empty curve FDV ≈ $4k at $150/SOL |
+| `curve_k` / `PRICE_SCALE` | **365** / **1e9** | After ~12 SOL seed buy → spot ≈ 100 → FDV ≈ $15k |
 
 ### Coherent story
 

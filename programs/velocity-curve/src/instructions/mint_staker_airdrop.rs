@@ -89,8 +89,9 @@ pub fn mint_staker_airdrop_handler(ctx: Context<MintStakerAirdrop>, amount: u64)
         amount,
     )?;
 
-    // Pricing supply = seed-SOL buy from 0 — never the notional airdrop size (20% of 1B),
-    // which would push spot so high that ordinary buys revert ZeroAmount.
+    // Pricing supply (whole tokens) = seed-SOL buy from 0 along the calibrated curve.
+    // With LAUNCH_BASE_PRICE=27, DEFAULT_CURVE_K=365, PRICE_SCALE=1e9: ~12 SOL → ~200M (~20%).
+    // Notional airdrop mint (`amount` raw) may differ slightly; sells stay reserve-capped.
     let (eff_k, _) = velocity_params(
         ctx.accounts.curve.curve_k,
         ctx.accounts.curve.attention_score,

@@ -15,8 +15,12 @@ pub const WINNER_BONUS_BPS: u64 = 2000;
 /// Initial curve liquidity share of the losing-stake pool (80%).
 pub const LIQUIDITY_BPS: u64 = 8000;
 
-/// Default curve_k passed to VelocityCurve::initialize_token when CPI is enabled.
-pub const DEFAULT_CURVE_K: u64 = 1_000;
+/// Launch spot (lamports / whole token). FDV_SOL ≈ this (~$4k at $150/SOL).
+/// Must match velocity_curve::LAUNCH_BASE_PRICE.
+pub const LAUNCH_BASE_PRICE: u64 = 27;
+/// Default curve_k with velocity PRICE_SCALE=1e9: ~12 SOL → ~20% supply → ~$15k FDV.
+/// Must match velocity_curve::DEFAULT_CURVE_K.
+pub const DEFAULT_CURVE_K: u64 = 365;
 
 /// Notional 1B whole tokens × 10^6 decimals (must match velocity_curve::TOTAL_SUPPLY_RAW).
 pub const TOTAL_SUPPLY_RAW: u64 = 1_000_000_000 * 1_000_000;
@@ -204,9 +208,9 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         .checked_add(liquidity)
         .ok_or(NarrativeError::MathOverflow)?;
 
-    // Launchpad FDV model: spot (lamports/whole) × 1B / 1e9 ≈ seed SOL.
-    // base_price = seed_lamports / TOTAL_SUPPLY_WHOLE so initial FDV reflects curve liquidity.
-    let base_price = seed_sol.saturating_div(1_000_000_000).max(1);
+    // Product economics: empty curve launches at ~$4k FDV (base_price = LAUNCH_BASE_PRICE).
+    // Seed SOL (~12) then buys ~20% supply along the curve → spot ~$15k FDV (see DEFAULT_CURVE_K).
+    let base_price = LAUNCH_BASE_PRICE;
     let creator = ctx.accounts.story.creator;
 
     let mut airdrop_bps = ctx.accounts.config.staker_airdrop_bps;
