@@ -9,6 +9,7 @@ pub mod add_oracle;
 pub mod remove_oracle;
 pub mod settle_merge;
 pub mod repair_curve;
+pub mod mint_staker_airdrop;
 
 pub use initialize_oracle_config::*;
 pub use initialize_token::*;
@@ -21,3 +22,4 @@ pub use add_oracle::*;
 pub use remove_oracle::*;
 pub use settle_merge::*;
 pub use repair_curve::*;
+pub use mint_staker_airdrop::*;

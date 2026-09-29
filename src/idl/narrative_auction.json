@@ -132,9 +132,6 @@
         },
         {
           "name": "user_stake_index",
-          "docs": [
-            "Decrement open-stake counter when this position closes."
-          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -162,6 +159,89 @@
           }
         },
         {
+          "name": "stake_airdrop",
+          "docs": [
+            "Graduated + airdrop path (omit / pass none on Failed)."
+          ],
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  45,
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "airdrop_token_vault",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "mint",
+          "optional": true
+        },
+        {
+          "name": "staker_token_ata",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "airdrop_claim",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112,
+                  45,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              },
+              {
+                "kind": "account",
+                "path": "staker"
+              }
+            ]
+          }
+        },
+        {
           "name": "staker",
           "writable": true,
           "signer": true,
@@ -172,6 +252,16 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "optional": true,
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "optional": true,
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         }
       ],
       "args": []
@@ -629,6 +719,43 @@
               }
             ]
           }
+        },
+        {
+          "name": "stake_airdrop",
+          "docs": [
+            "Staker airdrop escrow metadata (created at graduate)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  45,
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "airdrop_token_vault",
+          "writable": true
         },
         {
           "name": "curve_program"
@@ -1186,6 +1313,9 @@
       "accounts": [
         {
           "name": "config",
+          "docs": [
+            "(staker_airdrop_bps appended after bump). Realloc'd in handler."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -1215,10 +1345,12 @@
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "config"
-          ]
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1245,11 +1377,30 @@
           "type": {
             "option": "pubkey"
           }
+        },
+        {
+          "name": "staker_airdrop_bps",
+          "type": {
+            "option": "u16"
+          }
         }
       ]
     }
   ],
   "accounts": [
+    {
+      "name": "AirdropClaim",
+      "discriminator": [
+        231,
+        12,
+        74,
+        54,
+        245,
+        181,
+        248,
+        38
+      ]
+    },
     {
       "name": "NarrativeConfig",
       "discriminator": [
@@ -1274,6 +1425,19 @@
         242,
         21,
         212
+      ]
+    },
+    {
+      "name": "StakeAirdrop",
+      "discriminator": [
+        122,
+        87,
+        179,
+        108,
+        216,
+        45,
+        56,
+        55
       ]
     },
     {
@@ -1380,6 +1544,32 @@
         204,
         64,
         88
+      ]
+    },
+    {
+      "name": "StakeAirdropClaimed",
+      "discriminator": [
+        153,
+        137,
+        174,
+        250,
+        139,
+        44,
+        132,
+        199
+      ]
+    },
+    {
+      "name": "StakeAirdropCreated",
+      "discriminator": [
+        115,
+        205,
+        82,
+        195,
+        192,
+        55,
+        53,
+        242
       ]
     },
     {
@@ -1581,9 +1771,65 @@
       "code": 6023,
       "name": "StakeIndexMismatch",
       "msg": "UserStakeIndex user mismatch"
+    },
+    {
+      "code": 6024,
+      "name": "InvalidAirdropBps",
+      "msg": "Invalid staker airdrop bps (max 5000 = 50%)"
+    },
+    {
+      "code": 6025,
+      "name": "AirdropAlreadyInitialized",
+      "msg": "Stake airdrop already initialized for this story"
+    },
+    {
+      "code": 6026,
+      "name": "AirdropVaultMismatch",
+      "msg": "Stake airdrop token vault mismatch"
+    },
+    {
+      "code": 6027,
+      "name": "AirdropAlreadyClaimed",
+      "msg": "Airdrop claim receipt already exists"
+    },
+    {
+      "code": 6028,
+      "name": "NothingToAirdrop",
+      "msg": "Airdrop share is zero"
     }
   ],
   "types": [
+    {
+      "name": "AirdropClaim",
+      "docs": [
+        "Per-staker receipt that token airdrop share was claimed.",
+        "Seeds = [b\"airdrop-claim\", story, staker]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "docs": [
+              "Raw token units transferred to the staker."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
     {
       "name": "ConfigInitialized",
       "type": {
@@ -1628,6 +1874,10 @@
           {
             "name": "curve_program",
             "type": "pubkey"
+          },
+          {
+            "name": "staker_airdrop_bps",
+            "type": "u16"
           }
         ]
       }
@@ -1738,6 +1988,16 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "staker_airdrop_bps",
+            "docs": [
+              "Share of notional 1B supply reserved for staker airdrop at graduate (bps).",
+              "Default 2000 = 20%. Tunable via update_config. Max 5000 (50%).",
+              "Appended after bump so existing Devnet configs deserialize (prefix-compatible);",
+              "realloc + zero-fill yields 0 → update_config applies default."
+            ],
+            "type": "u16"
           }
         ]
       }
@@ -1770,6 +2030,14 @@
           {
             "name": "winning_pool",
             "type": "u64"
+          },
+          {
+            "name": "airdrop_amount",
+            "type": "u64"
+          },
+          {
+            "name": "airdrop_bps",
+            "type": "u16"
           },
           {
             "name": "timestamp",
@@ -1839,6 +2107,102 @@
       }
     },
     {
+      "name": "StakeAirdrop",
+      "docs": [
+        "Escrow metadata for the staker token airdrop at graduation.",
+        "Seeds = [b\"stake-airdrop\", story]",
+        "",
+        "Token vault = ATA(mint, this PDA). Separate from StoryMarket so existing",
+        "story accounts keep their layout after program upgrade."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_amount",
+            "docs": [
+              "Total raw token units reserved for stakers."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "claimed_amount",
+            "docs": [
+              "Raw units already transferred out via claim_stake."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bps",
+            "docs": [
+              "Snapshot of config.staker_airdrop_bps at graduate."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakeAirdropClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_amount",
+            "type": "u64"
+          },
+          {
+            "name": "airdrop_claimed_total",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakeAirdropCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_amount",
+            "type": "u64"
+          },
+          {
+            "name": "bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
       "name": "StakeClaimed",
       "type": {
         "kind": "struct",
@@ -1857,6 +2221,10 @@
           },
           {
             "name": "claimed_total",
+            "type": "u64"
+          },
+          {
+            "name": "token_amount",
             "type": "u64"
           }
         ]

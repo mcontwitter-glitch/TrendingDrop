@@ -9,6 +9,8 @@ import { PROGRAM_ID } from './constants'
  * - StakePosition:    [b"stake", story_pubkey, staker]
  * - RankingBoard:     [b"ranking-board"]
  * - UserStakeIndex:   [b"user-stakes", user]
+ * - StakeAirdrop:     [b"stake-airdrop", story]
+ * - AirdropClaim:     [b"airdrop-claim", story, staker]
  */
 
 export const CONFIG_SEED = Buffer.from('narrative-config')
@@ -17,6 +19,8 @@ export const VAULT_SEED = Buffer.from('story-vault')
 export const STAKE_SEED = Buffer.from('stake')
 export const RANKING_BOARD_SEED = Buffer.from('ranking-board')
 export const USER_STAKES_SEED = Buffer.from('user-stakes')
+export const STAKE_AIRDROP_SEED = Buffer.from('stake-airdrop')
+export const AIRDROP_CLAIM_SEED = Buffer.from('airdrop-claim')
 
 export function findConfigPda(programId: PublicKey = PROGRAM_ID): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([CONFIG_SEED], programId)
@@ -62,4 +66,22 @@ export function findUserStakeIndexPda(
   programId: PublicKey = PROGRAM_ID,
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([USER_STAKES_SEED, user.toBuffer()], programId)
+}
+
+export function findStakeAirdropPda(
+  story: PublicKey,
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync([STAKE_AIRDROP_SEED, story.toBuffer()], programId)
+}
+
+export function findAirdropClaimPda(
+  story: PublicKey,
+  staker: PublicKey,
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [AIRDROP_CLAIM_SEED, story.toBuffer(), staker.toBuffer()],
+    programId,
+  )
 }

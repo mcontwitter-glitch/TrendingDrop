@@ -138,13 +138,24 @@ async function main() {
     mintPubkey = curve.mint
     ok('graduate_narrative', `ALREADY graduated mint=${mintPubkey.toBase58()} curve=${curvePda.toBase58()}`)
   } else {
-    console.log(`Grinding vanity mint ending in "${MINT_VANITY_SUFFIX}"…`)
-    const grindStarted = Date.now()
-    const mint = await grindMintKeypair({
-      onProgress: (n) => {
-        if (n % 100_000 === 0) process.stdout.write(`  grind attempts=${n}\r`)
-      },
-    })
+    let mint
+    if (process.env.SMOKE_MINT_KEYPAIR) {
+      const secret = JSON.parse(fs.readFileSync(process.env.SMOKE_MINT_KEYPAIR, 'utf8'))
+      mint = Keypair.fromSecretKey(Uint8Array.from(secret))
+      console.log(`Using precomputed mint ${mint.publicKey.toBase58()}`)
+      if (!mint.publicKey.toBase58().endsWith(MINT_VANITY_SUFFIX)) {
+        throw new Error(`Precomputed mint does not end in ${MINT_VANITY_SUFFIX}`)
+      }
+    } else {
+      console.log(`Grinding vanity mint ending in "${MINT_VANITY_SUFFIX}"…`)
+      const grindStarted = Date.now()
+      mint = await grindMintKeypair({
+        onProgress: (n) => {
+          if (n % 100_000 === 0) process.stdout.write(`  grind attempts=${n}\r`)
+        },
+      })
+      console.log(`\nVanity mint found in ${((Date.now()-grindStarted)/1000).toFixed(1)}s: ${mint.publicKey.toBase58()}`)
+    }
     mintPubkey = mint.publicKey
     const tokenVault = getAssociatedTokenAddressSync(
       mint.publicKey,
@@ -153,21 +164,27 @@ async function main() {
       TOKEN_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID,
     )
-    console.log(
-      'new mint:',
-      mint.publicKey.toBase58(),
-      `(…${MINT_VANITY_SUFFIX}) in ${((Date.now() - grindStarted) / 1000).toFixed(1)}s`,
+    const [stakeAirdrop] = pda([Buffer.from('stake-airdrop'), STORY.toBuffer()], PROGRAM_IDS.narrative_auction)
+    const airdropTokenVault = getAssociatedTokenAddressSync(
+      mint.publicKey,
+      stakeAirdrop,
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     )
+    console.log('new mint:', mint.publicKey.toBase58(), `(…${MINT_VANITY_SUFFIX})`)
     console.log('tokenVault:', tokenVault.toBase58())
 
     try {
       const sig = await narrative.methods
-        .graduateNarrative(1)
+        .graduateNarrative(Number(process.env.SMOKE_RANK || 1))
         .accountsStrict({
           config: configPda,
           story: STORY,
           rankingBoard: rankingPda,
           vault: vaultPda,
+          stakeAirdrop,
+          airdropTokenVault,
           curveProgram: PROGRAM_IDS.velocity_curve,
           tokenMint: mint.publicKey,
           curveState: curvePda,

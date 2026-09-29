@@ -14,13 +14,17 @@ import {
 import type { NarrativeAuction } from '../../idl/narrative_auction'
 import { CURVE_PROGRAM_ID, LAMPORTS_PER_SOL } from './constants'
 import {
+  findAirdropClaimPda,
   findConfigPda,
   findRankingBoardPda,
+  findStakeAirdropPda,
   findStakePda,
   findStoryPda,
   findUserStakeIndexPda,
   findVaultPda,
 } from './pdas'
+import { DEFAULT_STAKER_AIRDROP_BPS } from './constants'
+import { TOTAL_SUPPLY_WHOLE } from './tokenEconomics'
 import { findCurvePda, findCurveVaultPda } from './velocityPdas'
 import { fetchConfig } from './program'
 import { hashNarrativeContent } from './contentHash'
@@ -251,6 +255,15 @@ export async function graduateNarrative(
     )
   }
 
+  const [stakeAirdrop] = findStakeAirdropPda(storyPubkey, program.programId)
+  const airdropTokenVault = getAssociatedTokenAddressSync(
+    mint.publicKey,
+    stakeAirdrop,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )
+
   const tokenVault = getAssociatedTokenAddressSync(
     mint.publicKey,
     curvePda,
@@ -267,6 +280,8 @@ export async function graduateNarrative(
         story: storyPubkey,
         rankingBoard,
         vault: vaultPda,
+        stakeAirdrop,
+        airdropTokenVault,
         curveProgram: CURVE_PROGRAM_ID,
         tokenMint: mint.publicKey,
         curveState: curvePda,
@@ -283,6 +298,146 @@ export async function graduateNarrative(
       .rpc()
 
     return { signature, mint: mint.publicKey, curvePda }
+  } catch (err) {
+    throw new SolanaClientError(formatTxError(err))
+  }
+}
+
+
+export interface ResolveStakeParams {
+  storyPubkey: PublicKey
+  staker: PublicKey
+}
+
+export async function resolveStakes(
+  program: Program<NarrativeAuction>,
+  params: ResolveStakeParams,
+): Promise<{ signature: string }> {
+  const { storyPubkey, staker } = params
+  const [configPda] = findConfigPda(program.programId)
+  const [stakePda] = findStakePda(storyPubkey, staker, program.programId)
+  const [userStakeIndexPda] = findUserStakeIndexPda(staker, program.programId)
+
+  try {
+    const signature = await program.methods
+      .resolveStakes()
+      .accountsStrict({
+        config: configPda,
+        story: storyPubkey,
+        stakePosition: stakePda,
+        userStakeIndex: userStakeIndexPda,
+      })
+      .rpc()
+    return { signature }
+  } catch (err) {
+    throw new SolanaClientError(formatTxError(err))
+  }
+}
+
+export interface ClaimStakeParams {
+  storyPubkey: PublicKey
+  staker: PublicKey
+  /** When true (graduated), include airdrop token accounts. */
+  withTokenAirdrop?: boolean
+  mint?: PublicKey
+}
+
+export async function claimStake(
+  program: Program<NarrativeAuction>,
+  params: ClaimStakeParams,
+): Promise<{ signature: string }> {
+  const { storyPubkey, staker, withTokenAirdrop, mint } = params
+  const [configPda] = findConfigPda(program.programId)
+  const [vaultPda] = findVaultPda(storyPubkey, program.programId)
+  const [stakePda] = findStakePda(storyPubkey, staker, program.programId)
+  const [userStakeIndexPda] = findUserStakeIndexPda(staker, program.programId)
+
+  let stakeAirdrop: PublicKey | null = null
+  let airdropTokenVault: PublicKey | null = null
+  let stakerTokenAta: PublicKey | null = null
+  let airdropClaim: PublicKey | null = null
+  let mintKey: PublicKey | null = mint ?? null
+
+  if (withTokenAirdrop) {
+    ;[stakeAirdrop] = findStakeAirdropPda(storyPubkey, program.programId)
+    try {
+      const airdropAcc = await (program.account as any).stakeAirdrop.fetch(stakeAirdrop)
+      mintKey = airdropAcc.mint as PublicKey
+    } catch {
+      /* no airdrop account — SOL-only claim */
+    }
+    if (mintKey) {
+      airdropTokenVault = getAssociatedTokenAddressSync(
+        mintKey,
+        stakeAirdrop!,
+        true,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      )
+      stakerTokenAta = getAssociatedTokenAddressSync(
+        mintKey,
+        staker,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      )
+      ;[airdropClaim] = findAirdropClaimPda(storyPubkey, staker, program.programId)
+    }
+  }
+
+  try {
+    const signature = await program.methods
+      .claimStake()
+      .accountsStrict({
+        config: configPda,
+        story: storyPubkey,
+        vault: vaultPda,
+        stakePosition: stakePda,
+        userStakeIndex: userStakeIndexPda,
+        stakeAirdrop: mintKey ? stakeAirdrop : null,
+        airdropTokenVault: mintKey ? airdropTokenVault : null,
+        mint: mintKey,
+        stakerTokenAta: mintKey ? stakerTokenAta : null,
+        airdropClaim: mintKey ? airdropClaim : null,
+        staker,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: mintKey ? TOKEN_PROGRAM_ID : null,
+        associatedTokenProgram: mintKey ? ASSOCIATED_TOKEN_PROGRAM_ID : null,
+      })
+      .rpc()
+    return { signature }
+  } catch (err) {
+    throw new SolanaClientError(formatTxError(err))
+  }
+}
+
+/** Estimate whole-token airdrop for a stake share of total. */
+export function estimateAirdropWholeTokens(
+  userStakeLamports: number,
+  totalStakedLamports: number,
+  stakerAirdropBps: number = DEFAULT_STAKER_AIRDROP_BPS,
+): number {
+  if (totalStakedLamports <= 0 || userStakeLamports <= 0) return 0
+  const poolWhole = (TOTAL_SUPPLY_WHOLE * stakerAirdropBps) / 10_000
+  return (poolWhole * userStakeLamports) / totalStakedLamports
+}
+
+export async function updateConfigAirdropBps(
+  program: Program<NarrativeAuction>,
+  authority: PublicKey,
+  stakerAirdropBps: number = DEFAULT_STAKER_AIRDROP_BPS,
+): Promise<{ signature: string }> {
+  const [configPda] = findConfigPda(program.programId)
+  try {
+    const signature = await program.methods
+      .updateConfig(null, null, null, null, stakerAirdropBps)
+      .accountsStrict({
+        config: configPda,
+        authority,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc()
+    return { signature }
   } catch (err) {
     throw new SolanaClientError(formatTxError(err))
   }

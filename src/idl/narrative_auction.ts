@@ -138,9 +138,6 @@ export type NarrativeAuction = {
         },
         {
           "name": "userStakeIndex",
-          "docs": [
-            "Decrement open-stake counter when this position closes."
-          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -168,6 +165,89 @@ export type NarrativeAuction = {
           }
         },
         {
+          "name": "stakeAirdrop",
+          "docs": [
+            "Graduated + airdrop path (omit / pass none on Failed)."
+          ],
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  45,
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "airdropTokenVault",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "mint",
+          "optional": true
+        },
+        {
+          "name": "stakerTokenAta",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "airdropClaim",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112,
+                  45,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              },
+              {
+                "kind": "account",
+                "path": "staker"
+              }
+            ]
+          }
+        },
+        {
           "name": "staker",
           "writable": true,
           "signer": true,
@@ -178,6 +258,16 @@ export type NarrativeAuction = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "optional": true,
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "optional": true,
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         }
       ],
       "args": []
@@ -635,6 +725,43 @@ export type NarrativeAuction = {
               }
             ]
           }
+        },
+        {
+          "name": "stakeAirdrop",
+          "docs": [
+            "Staker airdrop escrow metadata (created at graduate)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  45,
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story"
+              }
+            ]
+          }
+        },
+        {
+          "name": "airdropTokenVault",
+          "writable": true
         },
         {
           "name": "curveProgram"
@@ -1192,6 +1319,9 @@ export type NarrativeAuction = {
       "accounts": [
         {
           "name": "config",
+          "docs": [
+            "(staker_airdrop_bps appended after bump). Realloc'd in handler."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -1221,10 +1351,12 @@ export type NarrativeAuction = {
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "config"
-          ]
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1251,11 +1383,30 @@ export type NarrativeAuction = {
           "type": {
             "option": "pubkey"
           }
+        },
+        {
+          "name": "stakerAirdropBps",
+          "type": {
+            "option": "u16"
+          }
         }
       ]
     }
   ],
   "accounts": [
+    {
+      "name": "airdropClaim",
+      "discriminator": [
+        231,
+        12,
+        74,
+        54,
+        245,
+        181,
+        248,
+        38
+      ]
+    },
     {
       "name": "narrativeConfig",
       "discriminator": [
@@ -1280,6 +1431,19 @@ export type NarrativeAuction = {
         242,
         21,
         212
+      ]
+    },
+    {
+      "name": "stakeAirdrop",
+      "discriminator": [
+        122,
+        87,
+        179,
+        108,
+        216,
+        45,
+        56,
+        55
       ]
     },
     {
@@ -1386,6 +1550,32 @@ export type NarrativeAuction = {
         204,
         64,
         88
+      ]
+    },
+    {
+      "name": "stakeAirdropClaimed",
+      "discriminator": [
+        153,
+        137,
+        174,
+        250,
+        139,
+        44,
+        132,
+        199
+      ]
+    },
+    {
+      "name": "stakeAirdropCreated",
+      "discriminator": [
+        115,
+        205,
+        82,
+        195,
+        192,
+        55,
+        53,
+        242
       ]
     },
     {
@@ -1587,9 +1777,65 @@ export type NarrativeAuction = {
       "code": 6023,
       "name": "stakeIndexMismatch",
       "msg": "UserStakeIndex user mismatch"
+    },
+    {
+      "code": 6024,
+      "name": "invalidAirdropBps",
+      "msg": "Invalid staker airdrop bps (max 5000 = 50%)"
+    },
+    {
+      "code": 6025,
+      "name": "airdropAlreadyInitialized",
+      "msg": "Stake airdrop already initialized for this story"
+    },
+    {
+      "code": 6026,
+      "name": "airdropVaultMismatch",
+      "msg": "Stake airdrop token vault mismatch"
+    },
+    {
+      "code": 6027,
+      "name": "airdropAlreadyClaimed",
+      "msg": "Airdrop claim receipt already exists"
+    },
+    {
+      "code": 6028,
+      "name": "nothingToAirdrop",
+      "msg": "Airdrop share is zero"
     }
   ],
   "types": [
+    {
+      "name": "airdropClaim",
+      "docs": [
+        "Per-staker receipt that token airdrop share was claimed.",
+        "Seeds = [b\"airdrop-claim\", story, staker]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "docs": [
+              "Raw token units transferred to the staker."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
     {
       "name": "configInitialized",
       "type": {
@@ -1634,6 +1880,10 @@ export type NarrativeAuction = {
           {
             "name": "curveProgram",
             "type": "pubkey"
+          },
+          {
+            "name": "stakerAirdropBps",
+            "type": "u16"
           }
         ]
       }
@@ -1744,6 +1994,16 @@ export type NarrativeAuction = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "stakerAirdropBps",
+            "docs": [
+              "Share of notional 1B supply reserved for staker airdrop at graduate (bps).",
+              "Default 2000 = 20%. Tunable via update_config. Max 5000 (50%).",
+              "Appended after bump so existing Devnet configs deserialize (prefix-compatible);",
+              "realloc + zero-fill yields 0 → update_config applies default."
+            ],
+            "type": "u16"
           }
         ]
       }
@@ -1776,6 +2036,14 @@ export type NarrativeAuction = {
           {
             "name": "winningPool",
             "type": "u64"
+          },
+          {
+            "name": "airdropAmount",
+            "type": "u64"
+          },
+          {
+            "name": "airdropBps",
+            "type": "u16"
           },
           {
             "name": "timestamp",
@@ -1845,6 +2113,102 @@ export type NarrativeAuction = {
       }
     },
     {
+      "name": "stakeAirdrop",
+      "docs": [
+        "Escrow metadata for the staker token airdrop at graduation.",
+        "Seeds = [b\"stake-airdrop\", story]",
+        "",
+        "Token vault = ATA(mint, this PDA). Separate from StoryMarket so existing",
+        "story accounts keep their layout after program upgrade."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "totalAmount",
+            "docs": [
+              "Total raw token units reserved for stakers."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "claimedAmount",
+            "docs": [
+              "Raw units already transferred out via claim_stake."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bps",
+            "docs": [
+              "Snapshot of config.staker_airdrop_bps at graduate."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "stakeAirdropClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker",
+            "type": "pubkey"
+          },
+          {
+            "name": "tokenAmount",
+            "type": "u64"
+          },
+          {
+            "name": "airdropClaimedTotal",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "stakeAirdropCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "totalAmount",
+            "type": "u64"
+          },
+          {
+            "name": "bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
       "name": "stakeClaimed",
       "type": {
         "kind": "struct",
@@ -1863,6 +2227,10 @@ export type NarrativeAuction = {
           },
           {
             "name": "claimedTotal",
+            "type": "u64"
+          },
+          {
+            "name": "tokenAmount",
             "type": "u64"
           }
         ]

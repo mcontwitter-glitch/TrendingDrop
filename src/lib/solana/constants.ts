@@ -61,3 +61,6 @@ export function clusterLabel(rpcUrl: string = RPC_URL): 'Localnet' | 'Devnet' | 
   if (u.includes('mainnet')) return 'Mainnet'
   return 'Custom'
 }
+
+/** Default staker airdrop share of notional 1B supply (20%). */
+export const DEFAULT_STAKER_AIRDROP_BPS = 2000

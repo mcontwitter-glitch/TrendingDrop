@@ -103,3 +103,13 @@ pub struct MergeSettled {
     pub absorber_merge_count: u8,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct StakerAirdropMinted {
+    pub curve: Pubkey,
+    pub mint: Pubkey,
+    pub story_id: Pubkey,
+    pub airdrop_vault: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}

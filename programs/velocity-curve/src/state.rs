@@ -9,6 +9,12 @@ pub const CURVE_FEE_BPS: u16 = 150;
 /// SPL mint decimals for VelocityCurve tokens.
 pub const TOKEN_DECIMALS: u8 = 6;
 
+/// Notional total supply (whole tokens) for FDV / staker airdrop math.
+pub const TOTAL_SUPPLY_WHOLE: u64 = 1_000_000_000;
+/// Raw units = 1B * 10^TOKEN_DECIMALS.
+pub const TOTAL_SUPPLY_RAW: u64 = TOTAL_SUPPLY_WHOLE * 1_000_000;
+
+
 /// Sell tax when attention outpaces price (steepen).
 pub const STEEPEN_TAX_BPS: u16 = 1_500;
 /// Sell tax when price outpaces attention (flatten).

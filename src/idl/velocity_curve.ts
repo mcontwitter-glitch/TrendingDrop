@@ -515,16 +515,10 @@ export type VelocityCurve = {
           }
         },
         {
-          "name": "storyId",
-          "docs": [
-            "Constrained to match `params.story_id`."
-          ]
+          "name": "storyId"
         },
         {
           "name": "mint",
-          "docs": [
-            "New SPL mint — mint authority = curve PDA."
-          ],
           "writable": true,
           "signer": true
         },
@@ -558,96 +552,7 @@ export type VelocityCurve = {
         },
         {
           "name": "tokenVault",
-          "docs": [
-            "Curve-owned ATA holding no circulating supply (mint authority mints to buyers)."
-          ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "curve"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "payer",
@@ -679,6 +584,92 @@ export type VelocityCurve = {
               "name": "tokenParams"
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "mintStakerAirdrop",
+      "docs": [
+        "Mint reserved staker-airdrop supply into an escrow ATA (CPI from graduate).",
+        "Does not increase curve.current_supply. Requires mint.supply == 0."
+      ],
+      "discriminator": [
+        241,
+        167,
+        107,
+        99,
+        158,
+        89,
+        12,
+        141
+      ],
+      "accounts": [
+        {
+          "name": "curve",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "curve.story_id",
+                "account": "velocityToken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "storyId"
+        },
+        {
+          "name": "airdropVault",
+          "docs": [
+            "Destination ATA (typically owned by NarrativeAuction StakeAirdrop PDA).",
+            "Created if empty."
+          ],
+          "writable": true
+        },
+        {
+          "name": "airdropAuthority"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
         }
       ]
     },
@@ -736,6 +727,63 @@ export type VelocityCurve = {
         {
           "name": "oracle",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "repairCurve",
+      "docs": [
+        "Repair curve fields corrupted by TokenParams u64 stack-pointer bug (Devnet)."
+      ],
+      "discriminator": [
+        145,
+        76,
+        205,
+        149,
+        24,
+        194,
+        247,
+        186
+      ],
+      "accounts": [
+        {
+          "name": "curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "storyId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "storyId"
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "basePrice",
+          "type": "u64"
+        },
+        {
+          "name": "curveK",
+          "type": "u64"
         }
       ]
     },
@@ -1306,6 +1354,19 @@ export type VelocityCurve = {
       ]
     },
     {
+      "name": "stakerAirdropMinted",
+      "discriminator": [
+        57,
+        12,
+        92,
+        33,
+        57,
+        208,
+        118,
+        177
+      ]
+    },
+    {
       "name": "tokenInitialized",
       "discriminator": [
         77,
@@ -1465,6 +1526,16 @@ export type VelocityCurve = {
       "code": 6023,
       "name": "settlementOverflow",
       "msg": "Settlement amounts exceed target reserve / vault"
+    },
+    {
+      "code": 6024,
+      "name": "airdropSupplyNotZero",
+      "msg": "Staker airdrop requires mint.supply == 0 (call right after initialize_token)"
+    },
+    {
+      "code": 6025,
+      "name": "airdropTooLarge",
+      "msg": "Airdrop amount exceeds notional total supply"
     }
   ],
   "types": [
@@ -1775,6 +1846,38 @@ export type VelocityCurve = {
           {
             "name": "oracleCount",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "stakerAirdropMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "curve",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "storyId",
+            "type": "pubkey"
+          },
+          {
+            "name": "airdropVault",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

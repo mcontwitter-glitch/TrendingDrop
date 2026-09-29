@@ -131,4 +131,10 @@ pub mod velocity_curve {
     pub fn repair_curve(ctx: Context<RepairCurve>, base_price: u64, curve_k: u64) -> Result<()> {
         repair_curve_handler(ctx, base_price, curve_k)
     }
+
+    /// Mint reserved staker-airdrop supply into an escrow ATA (CPI from graduate).
+    /// Does not increase curve.current_supply. Requires mint.supply == 0.
+    pub fn mint_staker_airdrop(ctx: Context<MintStakerAirdrop>, amount: u64) -> Result<()> {
+        mint_staker_airdrop_handler(ctx, amount)
+    }
 }

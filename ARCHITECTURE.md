@@ -3,6 +3,8 @@
 Founder overview of the Solana / Anchor programs that back the Story Markets UI.
 
 > **Product insight:** traders bet on *narrative velocity* before tokens exist. Phase 1 is a prediction market on stories; Phase 2 tokenizes winners on a dual bonding curve; Phase 3 lets winners absorb failed lore.
+>
+> **Staker airdrop:** on graduate, **20%** of notional 1B supply is minted into a `StakeAirdrop` vault and claimed pro-rata with SOL — see [`docs/STAKE_AIRDROP.md`](docs/STAKE_AIRDROP.md).
 
 ---
 
@@ -76,6 +78,8 @@ flowchart TB
 | `StakePosition` | `["stake", story, staker]` |
 | `UserStakeIndex` | `["user-stakes", user]` — distinct open story stakes; enforces `max_stakes_per_user` |
 | `RankingBoard` | `["ranking-board"]` |
+| `StakeAirdrop` | `["stake-airdrop", story]` — escrow metadata for staker token airdrop at graduate |
+| `AirdropClaim` | `["airdrop-claim", story, staker]` — idempotent token-claim receipt |
 
 ### PDA seeds (Phase 2 — VelocityCurve)
 

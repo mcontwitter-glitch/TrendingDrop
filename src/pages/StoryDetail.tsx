@@ -11,7 +11,7 @@ import { useToast } from '../components/Toast'
 import { formatCountdown, formatSol, timeAgo, fundedPct, formatPct } from '../lib/format'
 import { useNow } from '../hooks/useNow'
 import { useNarrativeProgram } from '../hooks/useNarrativeProgram'
-import { graduateNarrative } from '../lib/solana/transactions'
+import { claimStake, graduateNarrative, resolveStakes } from '../lib/solana/transactions'
 import { findCurvePda } from '../lib/solana/velocityPdas'
 import { MINT_VANITY_SUFFIX } from '../lib/solana/vanityMint'
 import { MOCK_CURVE_IDS } from '../data/mockCurves'
@@ -30,6 +30,8 @@ export function StoryDetail() {
   const [grindAttempts, setGrindAttempts] = useState(0)
   const [graduateError, setGraduateError] = useState<string | null>(null)
   const [graduatedResult, setGraduatedResult] = useState<{ mint: string; curve: string } | null>(null)
+  const [claiming, setClaiming] = useState(false)
+  const [claimMsg, setClaimMsg] = useState<string | null>(null)
 
   if (loading && !story) {
     return (
@@ -259,6 +261,7 @@ export function StoryDetail() {
                 storyTitle={story.title}
                 storyPubkey={story.pubkey}
                 onChain={story.onChain}
+                totalStakedSol={story.solStaked}
                 onStaked={() => void refresh()}
               />
             )}
@@ -298,6 +301,61 @@ export function StoryDetail() {
                 })()}
               </div>
             )}
+
+            {(story.status === 'graduated' || story.status === 'failed') && story.onChain && story.pubkey && (
+              <div className="rounded-2xl border border-bcc-green/30 bg-bcc-green/10 p-5 text-sm">
+                <div className="mb-1 font-display text-lg font-bold text-bcc-green">
+                  Claim stake rewards
+                </div>
+                <p className="mb-4 text-bcc-muted">
+                  {story.status === 'graduated'
+                    ? 'Resolve then claim SOL (principal + bonus) and your pro-rata token airdrop share.'
+                    : 'Resolve then reclaim your SOL principal.'}
+                </p>
+                {claimMsg && (
+                  <div className="mb-3 rounded-lg border border-bcc-border bg-bcc-bg px-3 py-2 text-xs text-bcc-muted">
+                    {claimMsg}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  disabled={claiming || !connected || !program || !publicKey}
+                  onClick={() => {
+                    void (async () => {
+                      if (!program || !publicKey || !story.pubkey) return
+                      setClaiming(true)
+                      setClaimMsg(null)
+                      try {
+                        const storyPk = new PublicKey(story.pubkey)
+                        await resolveStakes(program, { storyPubkey: storyPk, staker: publicKey })
+                        const { signature } = await claimStake(program, {
+                          storyPubkey: storyPk,
+                          staker: publicKey,
+                          withTokenAirdrop: story.status === 'graduated',
+                        })
+                        setClaimMsg(`Claimed · ${signature.slice(0, 16)}…`)
+                        toast.success('Claim confirmed', signature.slice(0, 20) + '…')
+                        void refresh()
+                      } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err)
+                        setClaimMsg(msg)
+                        toast.error('Claim failed', msg)
+                      } finally {
+                        setClaiming(false)
+                      }
+                    })()
+                  }}
+                  className="bcc-glow-btn flex w-full items-center justify-center gap-2 rounded-xl py-3 font-display text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {claiming
+                    ? 'Confirm in wallet…'
+                    : story.status === 'graduated'
+                      ? 'Claim SOL + tokens'
+                      : 'Claim SOL'}
+                </button>
+              </div>
+            )}
+
             {canGraduate && (
               <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5 text-sm">
                 <div className="mb-1 font-display text-lg font-bold text-amber-300">

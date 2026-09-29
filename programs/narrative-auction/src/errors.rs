@@ -50,4 +50,15 @@ pub enum NarrativeError {
     MaxStakesExceeded,
     #[msg("UserStakeIndex user mismatch")]
     StakeIndexMismatch,
+    #[msg("Invalid staker airdrop bps (max 5000 = 50%)")]
+    InvalidAirdropBps,
+    #[msg("Stake airdrop already initialized for this story")]
+    AirdropAlreadyInitialized,
+    #[msg("Stake airdrop token vault mismatch")]
+    AirdropVaultMismatch,
+    #[msg("Airdrop claim receipt already exists")]
+    AirdropAlreadyClaimed,
+    #[msg("Airdrop share is zero")]
+    NothingToAirdrop,
 }
+

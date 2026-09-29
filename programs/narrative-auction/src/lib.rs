@@ -16,7 +16,7 @@
 //! - `forfeit_story` — mark Forfeited when above threshold but not top-ranked
 //! - `contribute_losing_pool` — move Forfeited vault SOL → winner winning_pool
 //! - `resolve_stakes` — mark a StakePosition claimable (20/80 / reclaim / forfeit)
-//! - `claim_stake` — withdraw claimable from vault (preserves liquidity_reserve)
+//! - `claim_stake` — withdraw claimable SOL (+ staker token airdrop share when graduated)
 
 use anchor_lang::prelude::*;
 
@@ -47,8 +47,9 @@ pub mod narrative_auction {
         min_stake: Option<u64>,
         treasury: Option<Pubkey>,
         curve_program: Option<Pubkey>,
+        staker_airdrop_bps: Option<u16>,
     ) -> Result<()> {
-        update_config_handler(ctx, fee_bps, min_stake, treasury, curve_program)
+        update_config_handler(ctx, fee_bps, min_stake, treasury, curve_program, staker_airdrop_bps)
     }
 
     pub fn initialize_story(

@@ -582,6 +582,92 @@
       ]
     },
     {
+      "name": "mint_staker_airdrop",
+      "docs": [
+        "Mint reserved staker-airdrop supply into an escrow ATA (CPI from graduate).",
+        "Does not increase curve.current_supply. Requires mint.supply == 0."
+      ],
+      "discriminator": [
+        241,
+        167,
+        107,
+        99,
+        158,
+        89,
+        12,
+        141
+      ],
+      "accounts": [
+        {
+          "name": "curve",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "curve.story_id",
+                "account": "VelocityToken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "story_id"
+        },
+        {
+          "name": "airdrop_vault",
+          "docs": [
+            "Destination ATA (typically owned by NarrativeAuction StakeAirdrop PDA).",
+            "Created if empty."
+          ],
+          "writable": true
+        },
+        {
+          "name": "airdrop_authority"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "remove_oracle",
       "docs": [
         "Authority: remove an authorized oracle (must not drop below quorum)."
@@ -1262,6 +1348,19 @@
       ]
     },
     {
+      "name": "StakerAirdropMinted",
+      "discriminator": [
+        57,
+        12,
+        92,
+        33,
+        57,
+        208,
+        118,
+        177
+      ]
+    },
+    {
       "name": "TokenInitialized",
       "discriminator": [
         77,
@@ -1421,6 +1520,16 @@
       "code": 6023,
       "name": "SettlementOverflow",
       "msg": "Settlement amounts exceed target reserve / vault"
+    },
+    {
+      "code": 6024,
+      "name": "AirdropSupplyNotZero",
+      "msg": "Staker airdrop requires mint.supply == 0 (call right after initialize_token)"
+    },
+    {
+      "code": 6025,
+      "name": "AirdropTooLarge",
+      "msg": "Airdrop amount exceeds notional total supply"
     }
   ],
   "types": [
@@ -1731,6 +1840,38 @@
           {
             "name": "oracle_count",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakerAirdropMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "curve",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "story_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "airdrop_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

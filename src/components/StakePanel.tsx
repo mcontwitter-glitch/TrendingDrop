@@ -3,7 +3,8 @@ import { PublicKey } from '@solana/web3.js'
 import { Zap, AlertCircle } from 'lucide-react'
 import { formatSol } from '../lib/format'
 import { useNarrativeProgram } from '../hooks/useNarrativeProgram'
-import { stakeOnNarrative } from '../lib/solana/transactions'
+import { estimateAirdropWholeTokens, stakeOnNarrative } from '../lib/solana/transactions'
+import { DEFAULT_STAKER_AIRDROP_BPS, LAMPORTS_PER_SOL } from '../lib/solana/constants'
 import { useToast } from './Toast'
 
 const QUICK = [0.1, 0.5, 1, 5]
@@ -13,6 +14,10 @@ interface StakePanelProps {
   storyPubkey?: string
   onChain?: boolean
   minStake?: number
+  /** Current story total stake in SOL (for est. airdrop share). */
+  totalStakedSol?: number
+  /** Config staker airdrop bps (default 2000 = 20%). */
+  stakerAirdropBps?: number
   onStaked?: () => void
 }
 
@@ -21,6 +26,8 @@ export function StakePanel({
   storyPubkey,
   onChain,
   minStake = 0.01,
+  totalStakedSol = 0,
+  stakerAirdropBps = DEFAULT_STAKER_AIRDROP_BPS,
   onStaked,
 }: StakePanelProps) {
   const { program, publicKey, connected } = useNarrativeProgram()
@@ -34,6 +41,18 @@ export function StakePanel({
   const num = parseFloat(amount) || 0
   const valid = num >= minStake
   const canOnChain = Boolean(connected && program && publicKey && onChain && storyPubkey)
+  const projectedTotal = totalStakedSol + (valid ? num * 0.98 : 0) // approx after 2% fee
+  const estAirdropWhole = estimateAirdropWholeTokens(
+    Math.round((valid ? num * 0.98 : 0) * LAMPORTS_PER_SOL),
+    Math.round(Math.max(projectedTotal, 1e-9) * LAMPORTS_PER_SOL),
+    stakerAirdropBps,
+  )
+  const estAirdropLabel =
+    estAirdropWhole >= 1_000_000
+      ? `${(estAirdropWhole / 1_000_000).toFixed(2)}M`
+      : estAirdropWhole >= 1_000
+        ? `${(estAirdropWhole / 1_000).toFixed(1)}k`
+        : estAirdropWhole.toFixed(0)
 
   async function handleStake() {
     if (!valid) return
@@ -88,7 +107,8 @@ export function StakePanel({
       </div>
       <p className="mb-4 text-sm text-bcc-muted">
         Back <span className="text-bcc-text">{storyTitle}</span> with SOL. Top narratives graduate to
-        tokenization.
+        tokenization — stakers share {(stakerAirdropBps / 100).toFixed(0)}% of supply as a token
+        airdrop.
       </p>
 
       {error && (
@@ -151,6 +171,13 @@ export function StakePanel({
             : `Stake ${formatSol(num)} SOL`}
       </button>
 
+      {valid && (
+        <p className="mt-3 rounded-lg border border-bcc-cyan/25 bg-bcc-cyan/5 px-3 py-2 text-center text-[11px] text-bcc-cyan">
+          Est. airdrop share if this story graduates:{' '}
+          <span className="font-semibold text-bcc-text">~{estAirdropLabel} tokens</span>
+          <span className="text-bcc-muted"> · {(stakerAirdropBps / 100).toFixed(0)}% of 1B pro-rata</span>
+        </p>
+      )}
       <p className="mt-3 text-center text-[11px] text-bcc-muted">
         Min stake {minStake} SOL
         {canOnChain ? ' · Real stake_on_narrative tx' : ' · Connect wallet + on-chain story for live stake'}

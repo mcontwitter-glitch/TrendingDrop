@@ -50,5 +50,10 @@ pub enum VelocityError {
     MintMismatch,
     #[msg("Settlement amounts exceed target reserve / vault")]
     SettlementOverflow,
+    #[msg("Staker airdrop requires mint.supply == 0 (call right after initialize_token)")]
+    AirdropSupplyNotZero,
+    #[msg("Airdrop amount exceeds notional total supply")]
+    AirdropTooLarge,
 }
+
 

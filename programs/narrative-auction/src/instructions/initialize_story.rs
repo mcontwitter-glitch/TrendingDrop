@@ -43,9 +43,9 @@ pub fn initialize_story_handler(
     );
 
     let config = &ctx.accounts.config;
-    // Allow 1h .. graduation_window (default 48h).
+    // Allow 60s .. graduation_window (default 48h). Short floor enables Devnet smoke.
     require!(
-        duration >= 3600 && duration <= config.graduation_window,
+        duration >= 60 && duration <= config.graduation_window,
         NarrativeError::InvalidDuration
     );
 

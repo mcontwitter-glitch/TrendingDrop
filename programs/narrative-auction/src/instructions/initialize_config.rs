@@ -12,6 +12,10 @@ pub const DEFAULT_MIN_STAKE: u64 = 10_000_000;
 pub const DEFAULT_MAX_STAKES_PER_USER: u8 = 20;
 /// Default auction window: 48 hours.
 pub const DEFAULT_GRADUATION_WINDOW: i64 = 48 * 60 * 60;
+/// Default staker airdrop at graduate: 20% of notional 1B supply.
+pub const DEFAULT_STAKER_AIRDROP_BPS: u16 = 2_000;
+/// Cap staker airdrop at 50% of notional supply.
+pub const MAX_STAKER_AIRDROP_BPS: u16 = 5_000;
 
 #[derive(Accounts)]
 pub struct InitializeConfig<'info> {
@@ -52,6 +56,7 @@ pub fn initialize_config_handler(
     config.graduation_window = DEFAULT_GRADUATION_WINDOW;
     config.treasury = ctx.accounts.treasury.key();
     config.curve_program = ctx.accounts.curve_program.key();
+    config.staker_airdrop_bps = DEFAULT_STAKER_AIRDROP_BPS;
     config.bump = ctx.bumps.config;
 
     emit!(ConfigInitialized {

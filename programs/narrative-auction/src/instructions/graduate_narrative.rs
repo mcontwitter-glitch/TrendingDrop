@@ -6,8 +6,9 @@ use anchor_lang::solana_program::system_instruction;
 use anchor_lang::solana_program::sysvar::rent::ID as RENT_ID;
 
 use crate::errors::NarrativeError;
-use crate::events::NarrativeGraduated;
-use crate::state::{MarketPhase, NarrativeConfig, RankingBoard, StoryMarket};
+use crate::events::{NarrativeGraduated, StakeAirdropCreated};
+use crate::instructions::initialize_config::DEFAULT_STAKER_AIRDROP_BPS;
+use crate::state::{MarketPhase, NarrativeConfig, RankingBoard, StakeAirdrop, StoryMarket};
 
 /// Winner bonus share of the losing-stake pool (20%).
 pub const WINNER_BONUS_BPS: u64 = 2000;
@@ -16,6 +17,9 @@ pub const LIQUIDITY_BPS: u64 = 8000;
 
 /// Default curve_k passed to VelocityCurve::initialize_token when CPI is enabled.
 pub const DEFAULT_CURVE_K: u64 = 1_000;
+
+/// Notional 1B whole tokens × 10^6 decimals (must match velocity_curve::TOTAL_SUPPLY_RAW).
+pub const TOTAL_SUPPLY_RAW: u64 = 1_000_000_000 * 1_000_000;
 
 fn token_program_id() -> Pubkey {
     Pubkey::new_from_array([
@@ -65,6 +69,20 @@ pub struct GraduateNarrative<'info> {
     )]
     /// CHECK: PDA vault; liquidity_reserve transferred to curve_vault after CPI.
     pub vault: SystemAccount<'info>,
+
+    /// Staker airdrop escrow metadata (created at graduate).
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + StakeAirdrop::INIT_SPACE,
+        seeds = [StakeAirdrop::SEED, story.key().as_ref()],
+        bump
+    )]
+    pub stake_airdrop: Account<'info, StakeAirdrop>,
+
+    /// CHECK: ATA(mint, stake_airdrop) — created inside VelocityCurve mint_staker_airdrop CPI.
+    #[account(mut)]
+    pub airdrop_token_vault: UncheckedAccount<'info>,
 
     /// CHECK: VelocityCurve program — must match config.curve_program.
     #[account(
@@ -118,6 +136,7 @@ pub struct GraduateNarrative<'info> {
 ///   80% → liquidity_reserve
 /// - CPI invokes VelocityCurve::initialize_token (SPL mint + vaults)
 /// - Then transfers `liquidity_reserve` lamports story vault → curve vault
+/// - Then CPI mint_staker_airdrop → StakeAirdrop token vault (pro-rata claim later)
 pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> Result<()> {
     require!(
         (1..=RankingBoard::MAX_RANK).contains(&rank),
@@ -166,6 +185,16 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
     let creator = ctx.accounts.story.creator;
     let total_staked = ctx.accounts.story.total_staked;
 
+    let mut airdrop_bps = ctx.accounts.config.staker_airdrop_bps;
+    if airdrop_bps == 0 {
+        airdrop_bps = DEFAULT_STAKER_AIRDROP_BPS;
+    }
+    let airdrop_amount = (TOTAL_SUPPLY_RAW as u128)
+        .checked_mul(airdrop_bps as u128)
+        .ok_or(NarrativeError::MathOverflow)?
+        .checked_div(10_000)
+        .ok_or(NarrativeError::MathOverflow)? as u64;
+
     {
         let story = &mut ctx.accounts.story;
         story.winner_bonus_pool = winner_bonus;
@@ -176,9 +205,6 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
 
     // -----------------------------------------------------------------------
     // CPI — VelocityCurve::initialize_token
-    // Account layout matches velocity_curve::InitializeToken:
-    //   0.curve 1.story_id 2.mint 3.vault 4.token_vault 5.payer
-    //   6.system 7.token_program 8.ata_program 9.rent
     // -----------------------------------------------------------------------
     let ix = build_initialize_token_ix(
         ctx.accounts.curve_program.key(),
@@ -214,7 +240,7 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
     )?;
 
     // -----------------------------------------------------------------------
-    // A. Seed liquidity — move SOL from story vault → curve vault
+    // Seed liquidity — move SOL from story vault → curve vault
     // -----------------------------------------------------------------------
     if liquidity > 0 {
         let rent_min = Rent::get()?.minimum_balance(0);
@@ -241,16 +267,66 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
             &[seeds],
         )?;
 
-        // Liquidity has left the story vault — claims must not reserve it.
         ctx.accounts.story.liquidity_reserve = 0;
     }
 
+    // -----------------------------------------------------------------------
+    // CPI — VelocityCurve::mint_staker_airdrop → StakeAirdrop ATA
+    // -----------------------------------------------------------------------
+    if airdrop_amount > 0 {
+        let mint_ix = build_mint_staker_airdrop_ix(
+            ctx.accounts.curve_program.key(),
+            ctx.accounts.curve_state.key(),
+            ctx.accounts.token_mint.key(),
+            story_key,
+            ctx.accounts.airdrop_token_vault.key(),
+            ctx.accounts.stake_airdrop.key(),
+            ctx.accounts.payer.key(),
+            airdrop_amount,
+        );
+
+        invoke(
+            &mint_ix,
+            &[
+                ctx.accounts.curve_state.to_account_info(),
+                ctx.accounts.token_mint.to_account_info(),
+                ctx.accounts.story.to_account_info(),
+                ctx.accounts.airdrop_token_vault.to_account_info(),
+                ctx.accounts.stake_airdrop.to_account_info(),
+                ctx.accounts.payer.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.associated_token_program.to_account_info(),
+                ctx.accounts.rent.to_account_info(),
+            ],
+        )?;
+    }
+
+    {
+        let airdrop = &mut ctx.accounts.stake_airdrop;
+        airdrop.story = story_key;
+        airdrop.mint = ctx.accounts.token_mint.key();
+        airdrop.total_amount = airdrop_amount;
+        airdrop.claimed_amount = 0;
+        airdrop.bps = airdrop_bps;
+        airdrop.bump = ctx.bumps.stake_airdrop;
+    }
+
+    emit!(StakeAirdropCreated {
+        story: story_key,
+        mint: ctx.accounts.token_mint.key(),
+        total_amount: airdrop_amount,
+        bps: airdrop_bps,
+    });
+
     msg!(
-        "Narrative graduated rank={} pool={} liq={} bonus={} (VelocityCurve CPI + seed transfer)",
+        "Narrative graduated rank={} pool={} liq={} bonus={} airdrop={} ({} bps)",
         rank,
         pool,
         liquidity,
-        winner_bonus
+        winner_bonus,
+        airdrop_amount,
+        airdrop_bps
     );
 
     emit!(NarrativeGraduated {
@@ -260,6 +336,8 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         liquidity_reserve: liquidity,
         winner_bonus_pool: winner_bonus,
         winning_pool: pool,
+        airdrop_amount,
+        airdrop_bps,
         timestamp: clock.unix_timestamp,
     });
 
@@ -286,7 +364,6 @@ fn build_initialize_token_ix(
     payer: Pubkey,
     params: TokenParamsWire,
 ) -> Instruction {
-    // Anchor discriminator = sha256("global:initialize_token")[0..8]
     let mut disc = [0u8; 8];
     let h = hash(b"global:initialize_token");
     disc.copy_from_slice(&h.to_bytes()[..8]);
@@ -304,9 +381,45 @@ fn build_initialize_token_ix(
         accounts: vec![
             AccountMeta::new(curve_state, false),
             AccountMeta::new_readonly(story_id, false),
-            AccountMeta::new(mint, true), // mint must sign for init
+            AccountMeta::new(mint, true),
             AccountMeta::new(curve_vault, false),
             AccountMeta::new(token_vault, false),
+            AccountMeta::new(payer, true),
+            AccountMeta::new_readonly(anchor_lang::system_program::ID, false),
+            AccountMeta::new_readonly(token_program_id(), false),
+            AccountMeta::new_readonly(associated_token_program_id(), false),
+            AccountMeta::new_readonly(RENT_ID, false),
+        ],
+        data,
+    }
+}
+
+fn build_mint_staker_airdrop_ix(
+    curve_program: Pubkey,
+    curve_state: Pubkey,
+    mint: Pubkey,
+    story_id: Pubkey,
+    airdrop_vault: Pubkey,
+    airdrop_authority: Pubkey,
+    payer: Pubkey,
+    amount: u64,
+) -> Instruction {
+    let mut disc = [0u8; 8];
+    let h = hash(b"global:mint_staker_airdrop");
+    disc.copy_from_slice(&h.to_bytes()[..8]);
+
+    let mut data = Vec::with_capacity(8 + 8);
+    data.extend_from_slice(&disc);
+    data.extend_from_slice(&amount.to_le_bytes());
+
+    Instruction {
+        program_id: curve_program,
+        accounts: vec![
+            AccountMeta::new_readonly(curve_state, false),
+            AccountMeta::new(mint, false),
+            AccountMeta::new_readonly(story_id, false),
+            AccountMeta::new(airdrop_vault, false),
+            AccountMeta::new_readonly(airdrop_authority, false),
             AccountMeta::new(payer, true),
             AccountMeta::new_readonly(anchor_lang::system_program::ID, false),
             AccountMeta::new_readonly(token_program_id(), false),

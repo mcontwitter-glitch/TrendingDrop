@@ -30,6 +30,11 @@ pub struct NarrativeConfig {
     /// VelocityCurve program id for graduation CPI.
     pub curve_program: Pubkey,
     pub bump: u8,
+    /// Share of notional 1B supply reserved for staker airdrop at graduate (bps).
+    /// Default 2000 = 20%. Tunable via update_config. Max 5000 (50%).
+    /// Appended after bump so existing Devnet configs deserialize (prefix-compatible);
+    /// realloc + zero-fill yields 0 → update_config applies default.
+    pub staker_airdrop_bps: u16,
 }
 
 impl NarrativeConfig {
@@ -131,4 +136,43 @@ pub struct UserStakeIndex {
 
 impl UserStakeIndex {
     pub const SEED: &'static [u8] = b"user-stakes";
+}
+
+/// Escrow metadata for the staker token airdrop at graduation.
+/// Seeds = [b"stake-airdrop", story]
+///
+/// Token vault = ATA(mint, this PDA). Separate from StoryMarket so existing
+/// story accounts keep their layout after program upgrade.
+#[account]
+#[derive(InitSpace)]
+pub struct StakeAirdrop {
+    pub story: Pubkey,
+    pub mint: Pubkey,
+    /// Total raw token units reserved for stakers.
+    pub total_amount: u64,
+    /// Raw units already transferred out via claim_stake.
+    pub claimed_amount: u64,
+    /// Snapshot of config.staker_airdrop_bps at graduate.
+    pub bps: u16,
+    pub bump: u8,
+}
+
+impl StakeAirdrop {
+    pub const SEED: &'static [u8] = b"stake-airdrop";
+}
+
+/// Per-staker receipt that token airdrop share was claimed.
+/// Seeds = [b"airdrop-claim", story, staker]
+#[account]
+#[derive(InitSpace)]
+pub struct AirdropClaim {
+    pub story: Pubkey,
+    pub staker: Pubkey,
+    /// Raw token units transferred to the staker.
+    pub amount: u64,
+    pub bump: u8,
+}
+
+impl AirdropClaim {
+    pub const SEED: &'static [u8] = b"airdrop-claim";
 }

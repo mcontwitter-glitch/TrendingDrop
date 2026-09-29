@@ -14,6 +14,7 @@ pub struct ConfigUpdated {
     pub min_stake: u64,
     pub treasury: Pubkey,
     pub curve_program: Pubkey,
+    pub staker_airdrop_bps: u16,
 }
 
 #[event]
@@ -43,6 +44,8 @@ pub struct NarrativeGraduated {
     pub liquidity_reserve: u64,
     pub winner_bonus_pool: u64,
     pub winning_pool: u64,
+    pub airdrop_amount: u64,
+    pub airdrop_bps: u16,
     pub timestamp: i64,
 }
 
@@ -87,6 +90,7 @@ pub struct StakeClaimed {
     pub staker: Pubkey,
     pub amount: u64,
     pub claimed_total: u64,
+    pub token_amount: u64,
 }
 
 #[event]
@@ -96,4 +100,20 @@ pub struct UserStakeIndexUpdated {
     pub active_stakes: u8,
     /// +1 on open, -1 on close (claim / forfeited resolve).
     pub delta: i8,
+}
+
+#[event]
+pub struct StakeAirdropCreated {
+    pub story: Pubkey,
+    pub mint: Pubkey,
+    pub total_amount: u64,
+    pub bps: u16,
+}
+
+#[event]
+pub struct StakeAirdropClaimed {
+    pub story: Pubkey,
+    pub staker: Pubkey,
+    pub token_amount: u64,
+    pub airdrop_claimed_total: u64,
 }
