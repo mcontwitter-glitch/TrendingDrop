@@ -204,7 +204,9 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         .checked_add(liquidity)
         .ok_or(NarrativeError::MathOverflow)?;
 
-    let base_price = total_staked.saturating_div(1000).max(1);
+    // Launchpad FDV model: spot (lamports/whole) × 1B / 1e9 ≈ seed SOL.
+    // base_price = seed_lamports / TOTAL_SUPPLY_WHOLE so initial FDV reflects curve liquidity.
+    let base_price = seed_sol.saturating_div(1_000_000_000).max(1);
     let creator = ctx.accounts.story.creator;
 
     let mut airdrop_bps = ctx.accounts.config.staker_airdrop_bps;

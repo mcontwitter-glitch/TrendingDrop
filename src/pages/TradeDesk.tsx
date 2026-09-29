@@ -10,7 +10,7 @@ import { HolderPanel } from '../components/HolderPanel'
 import {
   formatLamportsAsSol,
   formatMarketCapUsd,
-  formatPriceLamports,
+  formatPriceUsd,
   formatSol,
   shortAddress,
   timeAgo,
@@ -100,7 +100,7 @@ export function TradeDesk() {
         )}
         {metrics.priceCorrupt && (
           <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-amber-200">
-            Price repaired for display — on-chain base_price still corrupted
+            Display price uses liquidity-backed spot (on-chain scale legacy or corrupt)
           </span>
         )}
       </div>
@@ -163,7 +163,7 @@ export function TradeDesk() {
             <Metric
               icon={<Zap className="h-4 w-4 text-bcc-green" />}
               label="Spot price"
-              value={formatPriceLamports(metrics.effectivePriceLamports)}
+              value={formatPriceUsd(metrics.effectivePriceLamports, solUsd)}
             />
             <Metric
               icon={<TrendingUp className="h-4 w-4 text-bcc-cyan" />}

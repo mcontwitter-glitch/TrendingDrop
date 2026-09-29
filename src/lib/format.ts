@@ -66,12 +66,29 @@ export function formatTokenAmount(n: number | bigint): string {
   return v.toFixed(4)
 }
 
+/** @deprecated Prefer formatPriceUsd for trade/UI spot — kept for debug/raw views. */
 export function formatPriceLamports(lamports: number): string {
   const sol = lamports / 1_000_000_000
-  if (sol === 0) return '0 SOL'
+  if (sol === 0) return '0'
   if (sol < 0.000001) return `${lamports} lamports`
-  if (sol < 0.001) return `${sol.toFixed(6)} SOL`
-  return `${sol.toFixed(4)} SOL`
+  if (sol < 0.001) return sol.toFixed(6)
+  return sol.toFixed(4)
+}
+
+/**
+ * Spot price in USD from lamports-per-whole-token × SOL/USD.
+ * Live price chart / trade desk must use this (not a "SOL" label).
+ */
+export function formatPriceUsd(priceLamports: number, solUsd: number): string {
+  const rate = Number.isFinite(solUsd) && solUsd > 0 ? solUsd : 0
+  const usd = (priceLamports / 1_000_000_000) * rate
+  if (!Number.isFinite(usd) || usd <= 0) return '$0'
+  if (usd >= 1000) return formatUsdCompact(usd)
+  if (usd >= 1) return `$${usd.toFixed(2)}`
+  if (usd >= 0.01) return `$${usd.toFixed(4)}`
+  if (usd >= 0.0001) return `$${usd.toFixed(6)}`
+  if (usd >= 1e-8) return `$${usd.toFixed(10).replace(/0+$/, '').replace(/\.$/, '')}`
+  return `$${usd.toExponential(2)}`
 }
 
 /**

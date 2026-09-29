@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { CurveToken } from '../types'
 import {
   formatMarketCapUsd,
-  formatPriceLamports,
+  formatPriceUsd,
   formatSol,
 } from '../lib/format'
 import { useSolUsdPrice } from '../hooks/useSolUsdPrice'
@@ -82,7 +82,7 @@ export function CurveCard({ curve, index = 0 }: CurveCardProps) {
         <p className="mt-1 line-clamp-2 text-xs text-bcc-muted">{curve.blurb}</p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-          <Stat label="Spot" value={formatPriceLamports(metrics.effectivePriceLamports)} />
+          <Stat label="Spot" value={formatPriceUsd(metrics.effectivePriceLamports, solUsd)} />
           <Stat label="Reserve" value={`${formatSol(curve.solReserveSol)} SOL`} />
           <Stat label="Supply" value={formatSupplyMetric(metrics.circulatingWhole)} />
           <Stat label="Mcap" value={formatMarketCapUsd(metrics.fdvSol, solUsd)} />

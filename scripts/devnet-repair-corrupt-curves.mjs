@@ -2,7 +2,7 @@
  * Repair two Devnet curves corrupted by the TokenParams stack bug
  * (liquidity written into base_price / curve_k, and story_id last bytes clobbered).
  *
- * base_price = max(1, seedLiquidity / 1000)
+ * base_price = max(1, seedLiquidity / 1e9)  // FDV ≈ seed SOL with 1B supply
  * curve_k    = 1000
  * story_id   = recovered from create-tx account keys (PDA seed)
  *
@@ -87,13 +87,14 @@ async function repairOne(velocity, provider, payer, { curve: curvePk, story: sto
   console.log('true story seed', storyPk)
 
   const seed = BigInt(curve.seedLiquidity.toString())
-  const basePrice = seed / 1000n < 1n ? 1n : seed / 1000n
+  const basePrice = seed / 1_000_000_000n < 1n ? 1n : seed / 1_000_000_000n
   const curveK = 1000n
 
   const currentBase = BigInt(curve.basePrice.toString())
   const currentK = BigInt(curve.curveK.toString())
   const storyOk = curve.storyId.toBase58() === storyPk
-  if (storyOk && currentK === 1000n && currentBase > 0n && currentBase < seed / 10n) {
+  // Healthy = FDV≈seed SOL scale (base ≈ seed/1e9), not legacy seed/1000.
+  if (storyOk && currentK === 1000n && currentBase > 0n && currentBase <= seed / 1_000_000_000n + 1n) {
     console.log('SKIP already looks healthy')
     return { curve: curvePk, status: 'SKIP', before, after: before }
   }

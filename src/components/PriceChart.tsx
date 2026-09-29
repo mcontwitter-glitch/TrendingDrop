@@ -3,7 +3,7 @@ import type { CurveToken } from '../types'
 import type { PriceSample } from '../lib/priceHistory'
 import {
   formatMarketCapUsd,
-  formatPriceLamports,
+  formatPriceUsd,
 } from '../lib/format'
 import { launchpadDisplayMetrics } from '../lib/solana/tokenEconomics'
 import { useSolUsdPrice } from '../hooks/useSolUsdPrice'
@@ -144,7 +144,7 @@ export function PriceChart({ curve, samples }: PriceChartProps) {
         </div>
         <div className="text-right">
           <div className="font-stat text-xl font-bold text-bcc-green sm:text-2xl">
-            {formatPriceLamports(spot)}
+            {formatPriceUsd(spot, solUsd)}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center justify-end gap-2 text-xs">
             <span className="font-mono text-bcc-text">
@@ -221,7 +221,7 @@ export function PriceChart({ curve, samples }: PriceChartProps) {
       <p className="mt-2 text-[11px] leading-relaxed text-bcc-muted">
         Live samples from on-chain spot while you watch this page (stored in this browser).
         {metrics.priceCorrupt
-          ? ' Display uses repaired spot (on-chain base_price still corrupted).'
+          ? ' Display uses liquidity-backed spot (legacy or corrupt on-chain scale).'
           : ''}
       </p>
     </div>

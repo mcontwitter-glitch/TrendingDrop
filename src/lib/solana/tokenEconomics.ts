@@ -5,11 +5,18 @@
  * bonding curve. For market-cap UI we treat that price as **lamports per whole
  * token** × TOTAL_SUPPLY_WHOLE (1B), matching launchpad FDV expectations —
  * not price × circulating raw supply (which showed 0 mcap / "0.0000" supply).
+ *
+ * Correct graduate formula: `base_price = seed_lamports / TOTAL_SUPPLY_WHOLE`
+ * so initial FDV_SOL ≈ seed SOL (liquidity-backed). Legacy curves used
+ * `seed / 1000`, which made FDV ≈ seed_SOL × 1e6; the display layer detects
+ * that scale and falls back to liquidity-backed spot/FDV.
  */
 
 export const TOKEN_DECIMALS = 6
 export const TOTAL_SUPPLY_WHOLE = 1_000_000_000 // 1B whole tokens for FDV / supply label
 const LAMPORTS_PER_SOL = 1_000_000_000
+/** If chain FDV / reserve exceeds this, treat price as legacy seed/1000 scale. */
+const LEGACY_FDV_RESERVE_RATIO = 10_000
 
 /** Raw mint units → whole tokens. */
 export function rawToWhole(raw: number | bigint, decimals = TOKEN_DECIMALS): number {
@@ -47,17 +54,20 @@ export function isCorruptCurvePrice(params: {
   )
 }
 
-/** Mirrors graduate `total_staked/1000` when repairing corrupt base_price for display. */
+/**
+ * Liquidity-backed spot (lamports / whole token): seed_or_reserve / 1B.
+ * Mirrors correct graduate `base_price = seed / TOTAL_SUPPLY_WHOLE`.
+ */
 export function repairedDisplayPriceLamports(seedOrReserveLamports: number): number {
-  return Math.max(1, Math.floor(seedOrReserveLamports / 1000))
+  return Math.max(1, Math.floor(seedOrReserveLamports / TOTAL_SUPPLY_WHOLE))
 }
 
 export interface LaunchpadDisplayMetrics {
-  /** Effective spot used for UI (corruption-guarded). */
+  /** Effective spot used for UI (corruption / legacy-scale guarded). */
   effectivePriceLamports: number
-  /** True when on-chain price matched seed/reserve (display repair applied). */
+  /** True when display used liquidity-backed spot instead of raw chain price. */
   priceCorrupt: boolean
-  /** FDV in SOL: effectivePrice × 1B / 1e9. */
+  /** FDV in SOL: effectivePrice × 1B / 1e9 (≈ reserve when liquidity-backed). */
   fdvSol: number
   /** Circulating supply in whole tokens (raw / 10^decimals). */
   circulatingWhole: number
@@ -68,6 +78,7 @@ export interface LaunchpadDisplayMetrics {
 /**
  * Compute launchpad spot / FDV / supply display metrics.
  * UI FDV treats curve price as lamports/whole token × 1B supply.
+ * Falls back to liquidity-backed spot when chain price is corrupt or legacy-scaled.
  */
 export function launchpadDisplayMetrics(curve: {
   currentPriceLamports: number
@@ -81,6 +92,10 @@ export function launchpadDisplayMetrics(curve: {
       ? curve.seedLiquidityLamports
       : curve.solReserveLamports ?? 0
 
+  const reserveSol = seedOrReserve / LAMPORTS_PER_SOL
+  const chainPrice = Math.max(0, Math.floor(curve.currentPriceLamports))
+  const chainFdv = fdvMarketCapSol(chainPrice)
+
   const priceCorrupt = isCorruptCurvePrice({
     basePriceLamports: curve.basePriceLamports,
     currentPriceLamports: curve.currentPriceLamports,
@@ -88,14 +103,25 @@ export function launchpadDisplayMetrics(curve: {
     solReserveLamports: curve.solReserveLamports,
   })
 
-  const effectivePriceLamports = priceCorrupt
+  // Legacy graduate used seed/1000 → FDV ≈ seed_SOL × 1e6. Prefer liquidity.
+  const legacyScale =
+    reserveSol > 0 && Number.isFinite(chainFdv) && chainFdv > reserveSol * LEGACY_FDV_RESERVE_RATIO
+
+  const useLiquidityBacked = priceCorrupt || legacyScale
+  const effectivePriceLamports = useLiquidityBacked
     ? repairedDisplayPriceLamports(seedOrReserve)
-    : Math.max(0, Math.floor(curve.currentPriceLamports))
+    : chainPrice
+
+  const fdvSol = useLiquidityBacked
+    ? reserveSol > 0
+      ? reserveSol
+      : fdvMarketCapSol(effectivePriceLamports)
+    : chainFdv
 
   return {
     effectivePriceLamports,
-    priceCorrupt,
-    fdvSol: fdvMarketCapSol(effectivePriceLamports),
+    priceCorrupt: useLiquidityBacked,
+    fdvSol,
     circulatingWhole: rawToWhole(curve.currentSupply),
     totalSupplyWhole: TOTAL_SUPPLY_WHOLE,
   }
