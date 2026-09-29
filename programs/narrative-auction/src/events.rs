@@ -40,6 +40,15 @@ pub struct NarrativeStaked {
 }
 
 #[event]
+pub struct AuctionEndClamped {
+    pub story: Pubkey,
+    pub previous_ends_at: i64,
+    pub ends_at: i64,
+    pub total_staked: u64,
+    pub timestamp: i64,
+}
+
+#[event]
 pub struct NarrativeGraduated {
     pub story: Pubkey,
     pub rank: u8,

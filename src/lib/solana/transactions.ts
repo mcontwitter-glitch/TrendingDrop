@@ -201,6 +201,26 @@ export async function stakeOnNarrative(
 }
 
 
+export async function clampPostThreshold(
+  program: Program<NarrativeAuction>,
+  storyPubkey: PublicKey,
+): Promise<{ signature: string }> {
+  const [configPda] = findConfigPda(program.programId)
+  try {
+    const signature = await program.methods
+      .clampPostThreshold()
+      .accountsStrict({
+        config: configPda,
+        story: storyPubkey,
+        clock: SYSVAR_CLOCK_PUBKEY,
+      })
+      .rpc()
+    return { signature }
+  } catch (err) {
+    throw new SolanaClientError(formatTxError(err))
+  }
+}
+
 export interface GraduateNarrativeParams {
   storyPubkey: PublicKey
   /** Wallet that pays rent / signs as payer. */

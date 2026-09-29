@@ -8,6 +8,7 @@ pub mod fail_story;
 pub mod forfeit_story;
 pub mod contribute_losing_pool;
 pub mod claim_stake;
+pub mod clamp_post_threshold;
 
 pub use initialize_config::*;
 pub use update_config::*;
@@ -19,3 +20,4 @@ pub use fail_story::*;
 pub use forfeit_story::*;
 pub use contribute_losing_pool::*;
 pub use claim_stake::*;
+pub use clamp_post_threshold::*;

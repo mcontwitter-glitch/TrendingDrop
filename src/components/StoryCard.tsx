@@ -100,7 +100,9 @@ export function StoryCard({ story, index = 0 }: StoryCardProps) {
 
           <div className="flex items-center justify-between text-[11px] text-bcc-muted">
             <span className="inline-flex items-center gap-1.5 font-medium text-bcc-text/80">
-              {Math.round(pct)}% to graduate
+              {story.status === 'graduating' || pct >= 100
+                ? 'Threshold met · final window'
+                : `${Math.round(pct)}% funded (auction end)`}
               {creatorTier && <TierBadge tier={creatorTier} size="sm" />}
             </span>
             <span className="inline-flex items-center gap-1">

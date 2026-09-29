@@ -273,6 +273,82 @@ export type NarrativeAuction = {
       "args": []
     },
     {
+      "name": "clampPostThreshold",
+      "discriminator": [
+        162,
+        162,
+        170,
+        119,
+        62,
+        183,
+        154,
+        235
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "storyMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "storyMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "contributeLosingPool",
       "discriminator": [
         141,
@@ -1494,6 +1570,19 @@ export type NarrativeAuction = {
   ],
   "events": [
     {
+      "name": "auctionEndClamped",
+      "discriminator": [
+        105,
+        39,
+        241,
+        0,
+        241,
+        165,
+        211,
+        64
+      ]
+    },
+    {
       "name": "configInitialized",
       "discriminator": [
         181,
@@ -1838,6 +1927,34 @@ export type NarrativeAuction = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "auctionEndClamped",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "previousEndsAt",
+            "type": "i64"
+          },
+          {
+            "name": "endsAt",
+            "type": "i64"
+          },
+          {
+            "name": "totalStaked",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

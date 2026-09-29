@@ -18,6 +18,7 @@
 //! - `contribute_losing_pool` — move Forfeited vault SOL → winner winning_pool
 //! - `resolve_stakes` — Graduated: claimable = bonus only; Failed: principal; Forfeited: 0
 //! - `claim_stake` — Graduated: token airdrop (+ optional bonus SOL); Failed: reclaim SOL
+//! - `clamp_post_threshold` — permissionless: clamp ends_at for threshold-met Active stories
 
 use anchor_lang::prelude::*;
 
@@ -73,6 +74,10 @@ pub mod narrative_auction {
 
     pub fn stake_on_narrative(ctx: Context<StakeOnNarrative>, amount: u64) -> Result<()> {
         stake_on_narrative_handler(ctx, amount)
+    }
+
+    pub fn clamp_post_threshold(ctx: Context<ClampPostThreshold>) -> Result<()> {
+        clamp_post_threshold_handler(ctx)
     }
 
     pub fn graduate_narrative(ctx: Context<GraduateNarrative>, rank: u8) -> Result<()> {

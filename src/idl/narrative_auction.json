@@ -267,6 +267,82 @@
       "args": []
     },
     {
+      "name": "clamp_post_threshold",
+      "discriminator": [
+        162,
+        162,
+        170,
+        119,
+        62,
+        183,
+        154,
+        235
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  97,
+                  114,
+                  114,
+                  97,
+                  116,
+                  105,
+                  118,
+                  101,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "story",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  111,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "story.creator",
+                "account": "StoryMarket"
+              },
+              {
+                "kind": "account",
+                "path": "story.content_hash",
+                "account": "StoryMarket"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "contribute_losing_pool",
       "discriminator": [
         141,
@@ -1488,6 +1564,19 @@
   ],
   "events": [
     {
+      "name": "AuctionEndClamped",
+      "discriminator": [
+        105,
+        39,
+        241,
+        0,
+        241,
+        165,
+        211,
+        64
+      ]
+    },
+    {
       "name": "ConfigInitialized",
       "discriminator": [
         181,
@@ -1832,6 +1921,34 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionEndClamped",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "story",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous_ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "total_staked",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

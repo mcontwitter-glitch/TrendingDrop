@@ -191,7 +191,11 @@ export function StoryDetail() {
             />
             <Metric
               icon={<Clock className="h-4 w-4 text-bcc-green" />}
-              label="Time left"
+              label={
+                story.solStaked >= story.graduationThreshold
+                  ? 'Time left (final window)'
+                  : 'Time left (auction end)'
+              }
               value={formatCountdown(story.endsAt, now)}
             />
             <Metric

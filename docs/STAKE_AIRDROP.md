@@ -105,6 +105,18 @@ node scripts/devnet-migrate-post-threshold.mjs
 # reallocs config (+8 bytes) and sets post_threshold_secs = 1800
 ```
 
+Stories that already met the threshold **before** the clamp shipped (or with no
+stake after migrate) keep the create-time `ends_at` until cranked. Permissionless:
+
+```bash
+# all Active threshold-met stories with long ends_at
+node scripts/devnet-clamp-post-threshold.mjs
+# or one story:
+STORY=<storyPda> node scripts/devnet-clamp-post-threshold.mjs
+```
+
+`clamp_post_threshold` is idempotent and uses the same formula as stake.
+
 Smoke: `node scripts/devnet-smoke-stake-airdrop.mjs` (set `SMOKE_VANITY=1` for …drop mint grind).
 
 Asserts: staker ATA > 0, `curve.sol_reserve ≈` net stake (+ 80% losing if any),
