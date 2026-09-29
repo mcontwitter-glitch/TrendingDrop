@@ -698,7 +698,7 @@ export type NarrativeAuction = {
         {
           "name": "vault",
           "docs": [
-            "Story SOL vault — retains winner principals; seed liquidity moves to curve vault."
+            "Story SOL vault — seed (principal + 80% losing) moves to curve; bonus stays."
           ],
           "writable": true,
           "pda": {
@@ -2278,7 +2278,7 @@ export type NarrativeAuction = {
           {
             "name": "claimable",
             "docs": [
-              "Claimable lamports after resolve (winner bonus and/or principal)."
+              "Claimable lamports after resolve: Graduated = bonus only; Failed = principal."
             ],
             "type": "u64"
           },
@@ -2488,14 +2488,16 @@ export type NarrativeAuction = {
           {
             "name": "liquidityReserve",
             "docs": [
-              "SOL reserved for initial VelocityCurve liquidity (80% of winning_pool)."
+              "Transient: 80% of winning_pool at graduate; zeroed after seed transfer to curve.",
+              "Curve seed also includes `total_staked` (staker principal buy)."
             ],
             "type": "u64"
           },
           {
             "name": "winnerBonusPool",
             "docs": [
-              "SOL reserved for proportional winner payouts (20% of winning_pool)."
+              "SOL reserved for proportional winner bonus payouts (20% of winning_pool).",
+              "Principal is NOT reclaimable on Graduated — it seeded the curve."
             ],
             "type": "u64"
           },

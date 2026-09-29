@@ -1,6 +1,9 @@
 /**
  * Devnet smoke: create → stake → wait → graduate → resolve → claim
- * Asserts staker ATA receives pro-rata share of 20% of 1B supply.
+ * Asserts:
+ *  - staker ATA receives pro-rata share of 20% of 1B supply
+ *  - curve.sol_reserve ≈ net stake SOL (seed buy)
+ *  - stake claimable principal ≈ 0 (bonus only; tokens are the payout)
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -202,6 +205,27 @@ async function main() {
   const vaultBal = await getAccount(connection, airdropTokenVault)
   console.log('airdrop vault balance', vaultBal.amount.toString())
 
+  const curveAcc = await velocity.account.velocityToken.fetch(curvePda)
+  const storyGrad = await narrative.account.storyMarket.fetch(storyPda)
+  const netStaked = BigInt(storyGrad.totalStaked.toString())
+  const solReserve = BigInt(curveAcc.solReserve.toString())
+  const currentSupply = BigInt(curveAcc.currentSupply.toString())
+  console.log('curve sol_reserve', solReserve.toString(), 'seed_liquidity', curveAcc.seedLiquidity.toString())
+  console.log('curve current_supply', currentSupply.toString(), 'netStaked', netStaked.toString())
+  // No losing pool in smoke → seed ≈ net stake
+  if (solReserve < netStaked) {
+    throw new Error(`sol_reserve ${solReserve} < net stake ${netStaked}`)
+  }
+  // Allow small rent slack: reserve should be ~ stake (seed_liquidity accounting)
+  const seedLiq = BigInt(curveAcc.seedLiquidity.toString())
+  if (seedLiq !== netStaked && seedLiq < netStaked) {
+    throw new Error(`seed_liquidity ${seedLiq} < net stake ${netStaked}`)
+  }
+  if (currentSupply !== expectedPool) {
+    throw new Error(`current_supply ${currentSupply} != airdrop pool ${expectedPool}`)
+  }
+  console.log('PASS curve sol_reserve/seed backed by stake; supply == airdrop')
+
   // --- resolve ---
   const resolveSig = await narrative.methods
     .resolveStakes()
@@ -213,6 +237,18 @@ async function main() {
     })
     .rpc()
   console.log('PASS resolve', resolveSig)
+
+  const pos = await narrative.account.stakePosition.fetch(stakePda)
+  const claimable = BigInt(pos.claimable.toString())
+  console.log('claimable SOL (should be bonus-only, ~0 without losing pool)', claimable.toString())
+  if (claimable !== 0n) {
+    // smoke has no forfeits → expect 0; fail loud if principal wrongly included
+    const principal = BigInt(pos.amount.toString())
+    if (claimable >= principal) {
+      throw new Error(`claimable ${claimable} looks like principal reclaim; expected bonus-only (~0)`)
+    }
+  }
+  console.log('PASS claimable principal ≈ 0 (tokens-only graduate path)')
 
   // --- claim ---
   const stakerAta = getAssociatedTokenAddressSync(mint.publicKey, payer.publicKey, false)
@@ -254,6 +290,7 @@ async function main() {
   }
   console.log('PASS staker received full 20% airdrop (sole staker)')
 
+  const curveAfter = await velocity.account.velocityToken.fetch(curvePda)
   const out = {
     storyPda: storyPda.toBase58(),
     mint: mint.publicKey.toBase58(),
@@ -266,6 +303,11 @@ async function main() {
     claimSig,
     stakerTokenBalance: stakerTok.amount.toString(),
     airdropPool: expectedPool.toString(),
+    solReserve: curveAfter.solReserve.toString(),
+    seedLiquidity: curveAfter.seedLiquidity.toString(),
+    currentSupply: curveAfter.currentSupply.toString(),
+    claimableSol: claimable.toString(),
+    rank: freeRank,
   }
   fs.writeFileSync(path.join(ROOT, '.smoke-airdrop.json'), JSON.stringify(out, null, 2))
   console.log('=== ALL PASS ===')

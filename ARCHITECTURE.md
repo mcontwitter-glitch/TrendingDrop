@@ -4,7 +4,7 @@ Founder overview of the Solana / Anchor programs that back the Story Markets UI.
 
 > **Product insight:** traders bet on *narrative velocity* before tokens exist. Phase 1 is a prediction market on stories; Phase 2 tokenizes winners on a dual bonding curve; Phase 3 lets winners absorb failed lore.
 >
-> **Staker airdrop:** on graduate, **20%** of notional 1B supply is minted into a `StakeAirdrop` vault and claimed pro-rata with SOL — see [`docs/STAKE_AIRDROP.md`](docs/STAKE_AIRDROP.md).
+> **Staker airdrop:** on graduate, staker SOL **seeds the bonding curve** as the buy that backs a **20%** pro-rata token airdrop (no principal reclaim) — see [`docs/STAKE_AIRDROP.md`](docs/STAKE_AIRDROP.md).
 
 ---
 
@@ -133,10 +133,11 @@ NarrativeAuction::stake_on_narrative
                     ReputationNFT::update_profile (later)
 ```
 
-**Graduate redistribution (losers → winner narrative):**
+**Graduate redistribution:**
 
-- **20%** of losing stakes → winner stakers (pro-rata) via `winner_bonus_pool`
-- **80%** → `liquidity_reserve` for VelocityCurve initial liquidity
+- **Winning stake principal** (`total_staked`) → curve vault as seed buy backing the staker airdrop
+- Losing pool: **20%** → `winner_bonus_pool` (optional SOL bonus); **80%** → curve seed with principal
+- Stakers claim **tokens** (+ bonus SOL if any); principal is **not** reclaimable on Graduated
 
 ---
 
@@ -164,10 +165,10 @@ NarrativeAuction critical checks encoded:
 - Stake only while `Active` and `now < ends_at`; 2% (`fee_bps`) → treasury, net → vault; new positions enforce `max_stakes_per_user` via `UserStakeIndex`
 - Graduate requires `ends_at` passed + threshold + `rank ∈ 1..=5` + unique `RankingBoard` slot
 - Below threshold → `fail_story` (reclaim); at/above threshold but not top-ranked → `forfeit_story` + `contribute_losing_pool` (20/80)
-- Resolve marks claimable: winners get principal + pro-rata 20% bonus; failed reclaim; forfeited claimable=0
-- Claim preserves rent-exempt + `liquidity_reserve` on Graduated vaults
-- **VelocityCurve CPI is invoked** on graduate (`initialize_token` with matching account metas incl. mint/vault/ATA)
-- After CPI, **seed liquidity** (`liquidity_reserve`) is transferred story vault → curve vault; `liquidity_reserve` zeroed so claims stay correct
+- Resolve marks claimable: Graduated = pro-rata winner_bonus only (principal=0); Failed = principal; Forfeited = 0
+- Claim on Graduated: token airdrop (+ optional bonus SOL); Failed: SOL reclaim; rent-exempt preserved
+- **VelocityCurve CPI is invoked** on graduate (`initialize_token` + `mint_staker_airdrop`)
+- Seed SOL = `total_staked` + 80% losing → curve vault; `sol_reserve` / `current_supply` reflect the seed buy
 
 VelocityCurve critical logic:
 
@@ -177,7 +178,7 @@ VelocityCurve critical logic:
 - Protocol fee `CURVE_FEE_BPS = 150` (1.5%) on buy SOL in and sell SOL out
 - `update_attention` EMA α=0.3; **two oracle modes** (see §9): tx-signer quorum **or** ed25519 Instructions-sysvar proof; authority can `set_oracle_quorum` / `add_oracle` / `remove_oracle`
 - SPL mint created on `initialize_token` (authority = curve PDA); `buy` mints to buyer ATA; `sell` burns from seller ATA; `HolderPosition` kept for reward-index / lore_power
-- `seed_liquidity` recorded at init; SOL actually moved by NarrativeAuction graduate into curve vault; `sol_reserve` seeded accordingly
+- `seed_liquidity` / `sol_reserve` = staker principal + 80% losing at graduate; `mint_staker_airdrop` bumps `current_supply`
 - `settle_merge(fee, liquidity)`: PDA-signed vault transfers + `target.is_merged` + absorber `merge_count++`
 
 LoreMerge critical logic:

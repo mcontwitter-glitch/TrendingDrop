@@ -106,9 +106,9 @@ export function StakePanel({
         </span>
       </div>
       <p className="mb-4 text-sm text-bcc-muted">
-        Back <span className="text-bcc-text">{storyTitle}</span> with SOL. Top narratives graduate to
-        tokenization — stakers share {(stakerAirdropBps / 100).toFixed(0)}% of supply as a token
-        airdrop.
+        Back <span className="text-bcc-text">{storyTitle}</span> with SOL. If this story graduates,
+        your stake buys into the bonding curve — you receive a pro-rata share of{' '}
+        {(stakerAirdropBps / 100).toFixed(0)}% of supply as tokens (not a SOL refund).
       </p>
 
       {error && (
@@ -173,9 +173,12 @@ export function StakePanel({
 
       {valid && (
         <p className="mt-3 rounded-lg border border-bcc-cyan/25 bg-bcc-cyan/5 px-3 py-2 text-center text-[11px] text-bcc-cyan">
-          Est. airdrop share if this story graduates:{' '}
+          Est. tokens if this story graduates:{' '}
           <span className="font-semibold text-bcc-text">~{estAirdropLabel} tokens</span>
-          <span className="text-bcc-muted"> · {(stakerAirdropBps / 100).toFixed(0)}% of 1B pro-rata</span>
+          <span className="text-bcc-muted">
+            {' '}
+            · stake SOL seeds the curve · {(stakerAirdropBps / 100).toFixed(0)}% of 1B pro-rata
+          </span>
         </p>
       )}
       <p className="mt-3 text-center text-[11px] text-bcc-muted">

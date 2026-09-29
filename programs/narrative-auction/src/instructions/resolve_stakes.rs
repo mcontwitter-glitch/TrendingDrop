@@ -49,10 +49,9 @@ pub struct ResolveStakes<'info> {
 /// Redistribution math (per-position crank):
 ///
 /// **Graduated (winner narrative):**
-/// - Staker keeps 100% of their net principal (`amount`)
-/// - Plus pro-rata share of `winner_bonus_pool` (20% of losing stakes):
-///     bonus = winner_bonus_pool * position.amount / story.total_staked
-/// - 80% (`liquidity_reserve`) stays locked for VelocityCurve initial liquidity
+/// - Principal SOL already seeded the bonding curve as the airdrop "buy"
+/// - claimable SOL = only pro-rata `winner_bonus_pool` (20% of losing stakes), may be 0
+/// - Tokens claimed separately via claim_stake airdrop path (no principal reclaim)
 ///
 /// **Failed (below threshold):**
 /// - Staker reclaim = 100% of net principal (`amount`)
@@ -71,7 +70,8 @@ pub fn resolve_stakes_handler(ctx: Context<ResolveStakes>) -> Result<()> {
             position.is_winner = true;
             position.accuracy_score = 10_000;
 
-            let bonus = if story.total_staked > 0 && story.winner_bonus_pool > 0 {
+            // Principal → curve; only optional losing-pool bonus is claimable as SOL.
+            if story.total_staked > 0 && story.winner_bonus_pool > 0 {
                 (story.winner_bonus_pool as u128)
                     .checked_mul(position.amount as u128)
                     .ok_or(NarrativeError::MathOverflow)?
@@ -79,12 +79,7 @@ pub fn resolve_stakes_handler(ctx: Context<ResolveStakes>) -> Result<()> {
                     .ok_or(NarrativeError::MathOverflow)? as u64
             } else {
                 0
-            };
-
-            position
-                .amount
-                .checked_add(bonus)
-                .ok_or(NarrativeError::MathOverflow)?
+            }
         }
         MarketPhase::Failed => {
             position.is_winner = false;

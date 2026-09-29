@@ -43,7 +43,7 @@ pub struct ClaimStake<'info> {
         constraint = stake_position.story == story.key() @ NarrativeError::Unauthorized,
         constraint = stake_position.resolved @ NarrativeError::NothingToClaim,
         constraint = !stake_position.claimed @ NarrativeError::AlreadyClaimed,
-        constraint = stake_position.claimable > 0 @ NarrativeError::NothingToClaim,
+        // claimable may be 0 on Graduated (principal seeded curve; tokens-only claim)
     )]
     pub stake_position: Account<'info, StakePosition>,
 
@@ -90,7 +90,10 @@ pub struct ClaimStake<'info> {
     pub associated_token_program: Option<Program<'info, AssociatedToken>>,
 }
 
-/// Transfer claimable SOL; on Graduated also pay pro-rata staker token airdrop.
+/// Transfer claimable SOL (bonus / failed reclaim); on Graduated pay token airdrop.
+///
+/// Graduated winners: principal already seeded the curve — claimable SOL is only
+/// optional winner_bonus (often 0). Tokens are the primary payout.
 pub fn claim_stake_handler(ctx: Context<ClaimStake>) -> Result<()> {
     let amount = ctx.accounts.stake_position.claimable;
     let story_key = ctx.accounts.story.key();
@@ -100,16 +103,15 @@ pub fn claim_stake_handler(ctx: Context<ClaimStake>) -> Result<()> {
     let total_staked = ctx.accounts.story.total_staked;
     let phase = ctx.accounts.story.phase;
 
+    // Graduated may claim tokens with 0 SOL; Failed must have SOL reclaim.
+    require!(
+        amount > 0 || phase == MarketPhase::Graduated,
+        NarrativeError::NothingToClaim
+    );
+
     let rent_min = Rent::get()?.minimum_balance(0);
-    let reserved = if phase == MarketPhase::Graduated {
-        ctx.accounts
-            .story
-            .liquidity_reserve
-            .checked_add(rent_min)
-            .ok_or(NarrativeError::MathOverflow)?
-    } else {
-        rent_min
-    };
+    // Principal + 80% losing already moved to curve at graduate; only bonus may remain.
+    let reserved = rent_min;
 
     let vault_lamports = ctx.accounts.vault.lamports();
     let available = vault_lamports.saturating_sub(reserved);
@@ -117,17 +119,19 @@ pub fn claim_stake_handler(ctx: Context<ClaimStake>) -> Result<()> {
 
     let seeds: &[&[u8]] = &[StoryMarket::VAULT_SEED, story_key.as_ref(), &[bump]];
 
-    transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.system_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.vault.to_account_info(),
-                to: ctx.accounts.staker.to_account_info(),
-            },
-            &[seeds],
-        ),
-        amount,
-    )?;
+    if amount > 0 {
+        transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.vault.to_account_info(),
+                    to: ctx.accounts.staker.to_account_info(),
+                },
+                &[seeds],
+            ),
+            amount,
+        )?;
+    }
 
     let mut token_amount: u64 = 0;
 

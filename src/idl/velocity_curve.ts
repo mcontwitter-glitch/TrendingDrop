@@ -606,6 +606,7 @@ export type VelocityCurve = {
       "accounts": [
         {
           "name": "curve",
+          "writable": true,
           "pda": {
             "seeds": [
               {

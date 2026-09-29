@@ -1,22 +1,23 @@
 //! # NarrativeAuction — Phase 1 of TrendingDrop
 //!
 //! Story Markets where users stake SOL on narratives before tokens exist.
-//! Top narratives graduate to VelocityCurve; competitive losers forfeit and
-//! feed winners (20% bonus) + initial curve liquidity (80%). Protocol takes
-//! `fee_bps` (default 2%) on stake. Below-threshold stories fail with full
-//! principal reclaim.
+//! Top narratives graduate to VelocityCurve: staker principal seeds the bonding
+//! curve as the buy that backs their token airdrop (tokens only — no principal
+//! reclaim). Losing stakes still split 20% winner SOL bonus / 80% curve liquidity.
+//! Protocol takes `fee_bps` (default 2%) on stake. Below-threshold stories fail
+//! with full principal reclaim.
 //!
 //! ## Instructions
 //! - `initialize_config` / `update_config` — singleton protocol config
 //! - `initialize_story` — open a new Active StoryMarket
 //! - `stake_on_narrative` — stake SOL (fee → treasury, net → vault); enforces
 //!   `max_stakes_per_user` via `UserStakeIndex` PDA `["user-stakes", user]`
-//! - `graduate_narrative` — permissionless crank when ended + threshold + rank 1–5
+//! - `graduate_narrative` — crank: seed curve with principal+80% losing, mint airdrop
 //! - `fail_story` — mark Failed when below threshold (reclaim path)
 //! - `forfeit_story` — mark Forfeited when above threshold but not top-ranked
 //! - `contribute_losing_pool` — move Forfeited vault SOL → winner winning_pool
-//! - `resolve_stakes` — mark a StakePosition claimable (20/80 / reclaim / forfeit)
-//! - `claim_stake` — withdraw claimable SOL (+ staker token airdrop share when graduated)
+//! - `resolve_stakes` — Graduated: claimable = bonus only; Failed: principal; Forfeited: 0
+//! - `claim_stake` — Graduated: token airdrop (+ optional bonus SOL); Failed: reclaim SOL
 
 use anchor_lang::prelude::*;
 

@@ -1,12 +1,18 @@
 {
-  "storyPda": "Frsanb1tsdj9tHh6MS8RyyieidCsXEK747ipGcGNBsPK",
-  "mint": "AToa1LCgDp8ETviWarUKq5WqR3XY9m5F9pRi8Tg4sfMC",
-  "curvePda": "CY738GKUQWfSW1ViwEDg98LrbMAaRctpZuYvPtxVfnPZ",
-  "stakeAirdrop": "Gj5NvEHWChSc1X3V1boMWfjfGZnB6KiUfPvja3yjQWnX",
-  "gradSig": "db1rp7HUz2D6w2RzHHzRN2XbqdiE9LreMa9EnVEbS9udBseG8t8XVAZarNfJcs8p4S96pQpGzq39TunPg73uY9U",
-  "resolveSig": "35BypLvXJL7z1So6rGmv4Lfo7SDFZYgnVZEKDVHjEuEQ3Y9Fu9pUFCUd8Q2h8c4VEeJzLv6SBjUsp6tRvrAsAUQY",
-  "claimSig": "K1RbR3NMiqt7rrDjLCYGoyYYf2PnJR8VxzfMApzMKJN5Nmyw5VwrfEmrB4fRM2aFghqFSW4RtvoEw25K8n1pjq8",
+  "storyPda": "AH469qZsJf1ELVTBdSWtgzLHPFmDGAZ7PXDaViHwSf4B",
+  "mint": "F4CmR7dc9TSGz7fF6oQjp7nyxtvhyfDeX2rn9gfTaL2n",
+  "curvePda": "WtnS2kEySfP1pnqhMEGcd7t837EUMX2mg9cxqpJ9u1A",
+  "stakeAirdrop": "3nLjDzgN2YR2tGg2RMzteMUYnrCw7ycK6W3PfowLXZDi",
+  "initSig": "26DPoBV6rb1RmYJ6w3NMdPMiZATrUTBwpSE3nCgT2Ju95GhmuR6yL8ot6aymX2MzhAY1y2Z4FeeiBahrLY6avjGA",
+  "stakeSig": "5VcPzgnTxMeDA8VPBu18KCscFESqUUYyNtVVLbM8eyB8CNtiiHGLRBMpqDso3u7VM652H1aqxyMomRHjsoA2aP3a",
+  "gradSig": "2Hn9txsbZVDX3HcKC3ns4bVer82H4ro2LqgYoWjsu3bA8NJFZv1kDVHr42WYmiUkpc5vJjjnpcwMFFSfsfVy3Fre",
+  "resolveSig": "SWuPHaLXHpwCnPAnBqpyJszL98FDLhjLQhCwgwJCHbUEPPMdbfoega3ioiPRETPBtRapHMd7jnDqhMF8dspuM2o",
+  "claimSig": "3GxkPBWrp8wGE1t8oV8aRcCwxVLP2f6Mht4UN9NyZ8cQN6aomUg2rR2jcDGkUpU44cMA5y2ciZ8WoF2oFgZTFqWY",
   "stakerTokenBalance": "200000000000000",
   "airdropPool": "200000000000000",
-  "rank": 3
+  "solReserve": "49000000",
+  "seedLiquidity": "49000000",
+  "currentSupply": "200000000000000",
+  "claimableSol": "0",
+  "rank": 4
 }

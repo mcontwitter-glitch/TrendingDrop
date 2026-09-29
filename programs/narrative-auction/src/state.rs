@@ -61,9 +61,11 @@ pub struct StoryMarket {
     pub winning_pool: u64,
     /// Rank assigned at graduation (1..=5). 0 = unranked.
     pub rank: u8,
-    /// SOL reserved for initial VelocityCurve liquidity (80% of winning_pool).
+    /// Transient: 80% of winning_pool at graduate; zeroed after seed transfer to curve.
+    /// Curve seed also includes `total_staked` (staker principal buy).
     pub liquidity_reserve: u64,
-    /// SOL reserved for proportional winner payouts (20% of winning_pool).
+    /// SOL reserved for proportional winner bonus payouts (20% of winning_pool).
+    /// Principal is NOT reclaimable on Graduated — it seeded the curve.
     pub winner_bonus_pool: u64,
     /// Lamports already transferred out of this vault via contribute (Forfeited).
     pub contributed_out: u64,
@@ -90,7 +92,7 @@ pub struct StakePosition {
     pub claimed: bool,
     /// Updated post-resolution (0–10000 bps accuracy).
     pub accuracy_score: u16,
-    /// Claimable lamports after resolve (winner bonus and/or principal).
+    /// Claimable lamports after resolve: Graduated = bonus only; Failed = principal.
     pub claimable: u64,
     /// True if this stake is on a Graduated narrative.
     pub is_winner: bool,

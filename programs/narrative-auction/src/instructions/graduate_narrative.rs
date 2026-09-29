@@ -61,7 +61,7 @@ pub struct GraduateNarrative<'info> {
     )]
     pub ranking_board: Account<'info, RankingBoard>,
 
-    /// Story SOL vault — retains winner principals; seed liquidity moves to curve vault.
+    /// Story SOL vault — seed (principal + 80% losing) moves to curve; bonus stays.
     #[account(
         mut,
         seeds = [StoryMarket::VAULT_SEED, story.key().as_ref()],
@@ -132,11 +132,11 @@ pub struct GraduateNarrative<'info> {
 ///
 /// Business rules:
 /// - Top narratives (rank 1–5) graduate; rank slot must be empty or this story
-/// - `winning_pool` (fed by `contribute_losing_pool`) splits 20% → winner_bonus_pool,
-///   80% → liquidity_reserve
-/// - CPI invokes VelocityCurve::initialize_token (SPL mint + vaults)
-/// - Then transfers `liquidity_reserve` lamports story vault → curve vault
-/// - Then CPI mint_staker_airdrop → StakeAirdrop token vault (pro-rata claim later)
+/// - Staker principal (`total_staked`) + 80% of `winning_pool` seed the bonding curve
+///   as the initial buy that backs the staker token airdrop (no SOL principal reclaim)
+/// - `winning_pool` 20% → `winner_bonus_pool` (optional small SOL bonus for winners)
+/// - CPI VelocityCurve::initialize_token, transfer seed SOL → curve vault, then
+///   mint_staker_airdrop (bumps curve.current_supply so spot/FDV stay honest)
 pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> Result<()> {
     require!(
         (1..=RankingBoard::MAX_RANK).contains(&rank),
@@ -168,7 +168,7 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
     );
     *slot = story_key;
 
-    // --- Redistribution accounting (20% winners / 80% liquidity) ---
+    // --- Redistribution: principal → curve seed; losing pool 20% bonus / 80% curve ---
     let pool = ctx.accounts.story.winning_pool;
     let winner_bonus = pool
         .checked_mul(WINNER_BONUS_BPS)
@@ -181,9 +181,14 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         .checked_div(10_000)
         .ok_or(NarrativeError::MathOverflow)?;
 
-    let base_price = ctx.accounts.story.total_staked.saturating_div(1000).max(1);
-    let creator = ctx.accounts.story.creator;
     let total_staked = ctx.accounts.story.total_staked;
+    // Seed liquidity = winning stake principal + 80% losing pool (backs airdrop "buy").
+    let seed_sol = total_staked
+        .checked_add(liquidity)
+        .ok_or(NarrativeError::MathOverflow)?;
+
+    let base_price = total_staked.saturating_div(1000).max(1);
+    let creator = ctx.accounts.story.creator;
 
     let mut airdrop_bps = ctx.accounts.config.staker_airdrop_bps;
     if airdrop_bps == 0 {
@@ -216,7 +221,7 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         ctx.accounts.payer.key(),
         TokenParamsWire {
             base_price,
-            initial_liquidity: liquidity,
+            initial_liquidity: seed_sol,
             creator,
             story_id: story_key,
             curve_k: DEFAULT_CURVE_K,
@@ -240,13 +245,18 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
     )?;
 
     // -----------------------------------------------------------------------
-    // Seed liquidity — move SOL from story vault → curve vault
+    // Seed curve buy — move staker principal (+ 80% losing) story vault → curve vault
+    // Winner bonus (20% losing) remains in vault for optional SOL claim.
     // -----------------------------------------------------------------------
-    if liquidity > 0 {
+    if seed_sol > 0 {
         let rent_min = Rent::get()?.minimum_balance(0);
         let vault_lamports = ctx.accounts.vault.lamports();
+        // Leave rent + winner_bonus in the story vault for bonus claims.
+        let must_remain = rent_min
+            .checked_add(winner_bonus)
+            .ok_or(NarrativeError::MathOverflow)?;
         require!(
-            vault_lamports >= liquidity.saturating_add(rent_min),
+            vault_lamports >= seed_sol.saturating_add(must_remain),
             NarrativeError::InsufficientVault
         );
 
@@ -257,7 +267,7 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
             &system_instruction::transfer(
                 ctx.accounts.vault.key,
                 ctx.accounts.curve_vault.key,
-                liquidity,
+                seed_sol,
             ),
             &[
                 ctx.accounts.vault.to_account_info(),
@@ -320,10 +330,10 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
     });
 
     msg!(
-        "Narrative graduated rank={} pool={} liq={} bonus={} airdrop={} ({} bps)",
+        "Narrative graduated rank={} pool={} seed={} bonus={} airdrop={} ({} bps)",
         rank,
         pool,
-        liquidity,
+        seed_sol,
         winner_bonus,
         airdrop_amount,
         airdrop_bps
@@ -333,7 +343,8 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         story: story_key,
         rank,
         total_staked,
-        liquidity_reserve: liquidity,
+        // Event field = SOL seeded into curve (principal + 80% losing).
+        liquidity_reserve: seed_sol,
         winner_bonus_pool: winner_bonus,
         winning_pool: pool,
         airdrop_amount,
@@ -415,7 +426,7 @@ fn build_mint_staker_airdrop_ix(
     Instruction {
         program_id: curve_program,
         accounts: vec![
-            AccountMeta::new_readonly(curve_state, false),
+            AccountMeta::new(curve_state, false),
             AccountMeta::new(mint, false),
             AccountMeta::new_readonly(story_id, false),
             AccountMeta::new(airdrop_vault, false),

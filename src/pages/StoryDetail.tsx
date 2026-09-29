@@ -309,7 +309,7 @@ export function StoryDetail() {
                 </div>
                 <p className="mb-4 text-bcc-muted">
                   {story.status === 'graduated'
-                    ? 'Resolve then claim SOL (principal + bonus) and your pro-rata token airdrop share.'
+                    ? 'Resolve then claim your pro-rata token airdrop (stake SOL already seeded the curve). Optional winner-bonus SOL if losing pools contributed.'
                     : 'Resolve then reclaim your SOL principal.'}
                 </p>
                 {claimMsg && (
@@ -350,7 +350,7 @@ export function StoryDetail() {
                   {claiming
                     ? 'Confirm in wallet…'
                     : story.status === 'graduated'
-                      ? 'Claim SOL + tokens'
+                      ? 'Claim tokens'
                       : 'Claim SOL'}
                 </button>
               </div>

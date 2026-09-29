@@ -600,6 +600,7 @@
       "accounts": [
         {
           "name": "curve",
+          "writable": true,
           "pda": {
             "seeds": [
               {

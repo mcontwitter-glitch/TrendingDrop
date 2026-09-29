@@ -4,16 +4,19 @@ use anchor_spl::token::{self, Mint, MintTo, Token};
 
 use crate::errors::VelocityError;
 use crate::events::StakerAirdropMinted;
+use crate::math::{spot_price, velocity_params};
 use crate::state::{VelocityToken, TOTAL_SUPPLY_RAW};
 
-/// Mint reserved staker-airdrop supply into an escrow ATA.
+/// Mint reserved staker-airdrop supply into an escrow ATA and count it as sold
+/// curve supply so spot / FDV stay honest with the seed SOL buy.
 ///
 /// Called via CPI from NarrativeAuction::graduate_narrative immediately after
-/// `initialize_token`. Requires `mint.supply == 0` so this runs before any buy.
-/// Does **not** increase `VelocityToken.current_supply` (off-curve reserve).
+/// `initialize_token` (and after seed SOL is recorded on `sol_reserve`).
+/// Requires `mint.supply == 0` so this runs before any public buy.
 #[derive(Accounts)]
 pub struct MintStakerAirdrop<'info> {
     #[account(
+        mut,
         seeds = [VelocityToken::SEED, curve.story_id.as_ref()],
         bump = curve.bump,
     )]
@@ -86,8 +89,22 @@ pub fn mint_staker_airdrop_handler(ctx: Context<MintStakerAirdrop>, amount: u64)
         amount,
     )?;
 
+    // Count airdrop as sold supply backed by seed SOL already on sol_reserve.
+    let (eff_k, _) = velocity_params(
+        ctx.accounts.curve.curve_k,
+        ctx.accounts.curve.attention_score,
+        ctx.accounts.curve.price_velocity,
+    )?;
+    let curve = &mut ctx.accounts.curve;
+    curve.current_supply = curve
+        .current_supply
+        .checked_add(amount)
+        .ok_or(VelocityError::MathOverflow)?;
+    curve.current_price = spot_price(curve.base_price, eff_k, curve.current_supply)?;
+    curve.last_price = curve.current_price;
+
     emit!(StakerAirdropMinted {
-        curve: ctx.accounts.curve.key(),
+        curve: curve.key(),
         mint: ctx.accounts.mint.key(),
         story_id,
         airdrop_vault: ctx.accounts.airdrop_vault.key(),
