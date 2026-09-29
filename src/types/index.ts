@@ -68,15 +68,25 @@ export interface CurveToken {
   gradient: string
   creator: string
   creatorPubkey: string
+  /** Virtual SOL reserves (lamports). Legacy alias: basePriceLamports. */
+  virtualSolLamports: number
+  /** @deprecated Use virtualSolLamports (Pump CPMM). */
   basePriceLamports: number
   currentPriceLamports: number
-  /** Raw SPL units minted so far (not whole tokens). */
+  /** Whole tokens sold / circulating from the curve. */
   currentSupply: number
   /** Graduation seed liquidity in lamports (for corruption detection / display repair). */
   seedLiquidityLamports?: number
   attentionScore: number
   priceVelocity: number
+  /** Virtual token reserves (whole). Legacy alias: curveK. */
+  virtualToken: number
+  /** @deprecated Use virtualToken (Pump CPMM). */
   curveK: number
+  /** Remaining real tokens available on the curve (whole). */
+  realToken?: number
+  /** Bonding curve complete (ready for Raydium migrate stub). */
+  complete?: boolean
   sellTaxBps: number
   mode: VelocityMode
   solReserveSol: number

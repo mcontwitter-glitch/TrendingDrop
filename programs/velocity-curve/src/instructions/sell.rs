@@ -5,8 +5,8 @@ use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount};
 use crate::errors::VelocityError;
 use crate::events::TokensSold;
 use crate::math::{
-    accrue_holder_rewards, apply_bps, curve_fee, ema_update, settle_holder_rewards,
-    sol_out_for_tokens, spot_price, velocity_params,
+    accrue_holder_rewards, apply_bps, apply_sell, curve_fee, ema_update, settle_holder_rewards,
+    sol_out_for_tokens, velocity_params,
 };
 use crate::state::{HolderPosition, VelocityToken, CURVE_FEE_BPS, DECIMALS_FACTOR, EMA_ALPHA_BPS};
 
@@ -17,6 +17,7 @@ pub struct Sell<'info> {
         seeds = [VelocityToken::SEED, curve.story_id.as_ref()],
         bump = curve.bump,
         constraint = !curve.is_merged @ VelocityError::TradingPaused,
+        constraint = !curve.complete @ VelocityError::CurveComplete,
     )]
     pub curve: Box<Account<'info, VelocityToken>>,
 
@@ -60,13 +61,8 @@ pub struct Sell<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-/// Sell tokens with velocity-dependent tax.
-///
-/// Burns SPL from seller ATA; pays SOL from curve vault. Tax: 15% when
-/// attention-steepened, else 5%. Of tax: 50% → holders, 50% → treasury.
-/// Additional 1.5% protocol fee on post-tax SOL. HolderPosition stays in sync.
+/// Sell tokens on the constant-product AMM with attention-dependent tax.
 pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> Result<()> {
-    // `token_amount` is whole tokens (curve / holder ledger). SPL burn uses raw.
     require!(token_amount > 0, VelocityError::ZeroAmount);
     let raw_amount = token_amount
         .checked_mul(DECIMALS_FACTOR)
@@ -85,17 +81,16 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
     let seller_key = ctx.accounts.seller.key();
     let vault_bump = ctx.accounts.curve.vault_bump;
 
-    let (eff_k, sell_tax_bps) = velocity_params(
-        ctx.accounts.curve.curve_k,
+    let (_, sell_tax_bps) = velocity_params(
+        ctx.accounts.curve.virtual_token,
         ctx.accounts.curve.attention_score,
         ctx.accounts.curve.price_velocity,
     )?;
 
     let sol_gross = sol_out_for_tokens(
         token_amount,
-        ctx.accounts.curve.current_supply,
-        ctx.accounts.curve.base_price,
-        eff_k,
+        ctx.accounts.curve.virtual_sol,
+        ctx.accounts.curve.virtual_token,
     )?;
 
     let tax = apply_bps(sol_gross, sell_tax_bps)?;
@@ -123,7 +118,6 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
         holder.claimable_rewards = claimable;
     }
 
-    // Burn SPL raw before updating whole-token ledger.
     token::burn(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -145,10 +139,22 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
         .ok_or(VelocityError::MathOverflow)?;
 
     let old_price = curve.current_price;
-    curve.current_supply = curve
-        .current_supply
-        .checked_sub(token_amount)
-        .ok_or(VelocityError::MathOverflow)?;
+    // Apply full gross to AMM reserves; fee+tax leave the vault separately.
+    let (vs, vt, rs, rt, supply, price) = apply_sell(
+        curve.virtual_sol,
+        curve.virtual_token,
+        curve.real_sol,
+        curve.real_token,
+        curve.current_supply,
+        sol_gross,
+        token_amount,
+    )?;
+    curve.virtual_sol = vs;
+    curve.virtual_token = vt;
+    curve.real_sol = rs;
+    curve.real_token = rt;
+    curve.current_supply = supply;
+    curve.current_price = price;
     curve.sell_tax_bps = sell_tax_bps;
 
     if holder_share > 0 && curve.current_supply > 0 {
@@ -162,30 +168,20 @@ pub fn sell_handler(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> 
         treasury_pay = treasury_pay
             .checked_add(holder_share)
             .ok_or(VelocityError::MathOverflow)?;
-        holder_share = 0;
+        // holder_share stays in treasury_pay; zero for clarity in later accounting
+        #[allow(unused_assignments)]
+        {
+            holder_share = 0;
+        }
     }
 
     holder.reward_debt = curve.reward_index;
-    curve.current_price = spot_price(curve.base_price, eff_k, curve.current_supply)?;
     let price_delta = curve.current_price.abs_diff(old_price);
     curve.price_velocity = ema_update(curve.price_velocity, price_delta, EMA_ALPHA_BPS)?;
     curve.last_price = curve.current_price;
 
-    let vault_leave = sol_net
-        .checked_add(treasury_pay)
-        .ok_or(VelocityError::MathOverflow)?;
-    let accounting_debit = vault_leave
-        .checked_add(holder_share)
-        .ok_or(VelocityError::MathOverflow)?;
-    require!(
-        curve.sol_reserve >= accounting_debit,
-        VelocityError::InsufficientVault
-    );
-    curve.sol_reserve = curve
-        .sol_reserve
-        .checked_sub(accounting_debit)
-        .ok_or(VelocityError::MathOverflow)?;
-
+    // real_sol already reduced by sol_gross; pay sol_net + treasury_pay from vault.
+    // holder_share remains in vault (holder_rewards_pool).
     let supply_now = curve.current_supply;
     let price_now = curve.current_price;
 

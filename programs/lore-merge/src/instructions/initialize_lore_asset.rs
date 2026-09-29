@@ -44,7 +44,7 @@ pub fn initialize_lore_asset_handler(
     require!(!curve.is_merged, LoreError::CurveMerged);
 
     let clock = Clock::get()?;
-    let lore_value = curve.sol_reserve.max(curve.seed_liquidity);
+    let lore_value = curve.real_sol.max(curve.seed_liquidity);
 
     let lore = &mut ctx.accounts.lore_asset;
     lore.origin_story = curve.story_id;

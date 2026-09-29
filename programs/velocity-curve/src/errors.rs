@@ -20,10 +20,14 @@ pub enum VelocityError {
     InsufficientVault,
     #[msg("Nothing claimable")]
     NothingToClaim,
-    #[msg("Invalid curve parameters (base_price / curve_k)")]
+    #[msg("Invalid curve parameters (virtual reserves)")]
     InvalidParams,
     #[msg("Curve is merged / trading paused")]
     TradingPaused,
+    #[msg("Bonding curve complete — trading moved to AMM migrate")]
+    CurveComplete,
+    #[msg("Real SOL below bonding-curve graduation threshold")]
+    GraduationThresholdNotMet,
     #[msg("Oracle weights must sum to 10000 bps")]
     InvalidOracleWeights,
     #[msg("Too many authorized oracles")]
@@ -55,5 +59,3 @@ pub enum VelocityError {
     #[msg("Airdrop amount exceeds notional total supply")]
     AirdropTooLarge,
 }
-
-

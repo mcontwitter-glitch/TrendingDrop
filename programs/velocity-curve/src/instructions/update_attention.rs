@@ -101,7 +101,7 @@ pub fn update_attention_handler(
     curve.last_price = curve.current_price;
 
     let (eff_k, tax) = velocity_params(
-        curve.curve_k,
+        curve.virtual_token,
         curve.attention_score,
         curve.price_velocity,
     )?;

@@ -189,8 +189,29 @@ export function TradeDesk() {
           <div className="bcc-card rounded-2xl p-5 text-sm">
             <h2 className="mb-3 font-display text-lg font-bold">Curve stats</h2>
             <dl className="grid gap-2 sm:grid-cols-2">
-              <Row label="Base price" value={formatPriceUsd(curve.basePriceLamports, solUsd)} />
-              <Row label="Curve k" value={String(curve.curveK)} />
+              <Row
+                label="Virtual SOL"
+                value={`${formatSol((curve.virtualSolLamports || curve.basePriceLamports) / 1e9)} SOL`}
+              />
+              <Row
+                label="Virtual tokens"
+                value={
+                  (curve.virtualToken || curve.curveK) >= 1_000_000
+                    ? `${((curve.virtualToken || curve.curveK) / 1_000_000).toFixed(1)}M`
+                    : String(curve.virtualToken || curve.curveK)
+                }
+              />
+              <Row
+                label="Real tokens left"
+                value={
+                  curve.realToken != null
+                    ? curve.realToken >= 1_000_000
+                      ? `${(curve.realToken / 1_000_000).toFixed(1)}M`
+                      : String(curve.realToken)
+                    : '—'
+                }
+              />
+              <Row label="Curve status" value={curve.complete ? 'Complete (migrate)' : 'Bonding'} />
               <Row label="Attention" value={String(curve.attentionScore)} />
               <Row label="Price velocity" value={String(curve.priceVelocity)} />
               <Row

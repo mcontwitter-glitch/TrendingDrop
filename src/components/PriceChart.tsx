@@ -7,7 +7,7 @@ import {
 } from '../lib/format'
 import { launchpadDisplayMetrics } from '../lib/solana/tokenEconomics'
 import { useSolUsdPrice } from '../hooks/useSolUsdPrice'
-import { spotPrice, velocityParams } from '../lib/solana/velocityMath'
+import { spotPrice } from '../lib/solana/velocityMath'
 
 interface PriceChartProps {
   curve: CurveToken
@@ -54,21 +54,22 @@ function mapPoints(
   })
 }
 
-function bondingShape(curve: CurveToken, basePrice: number): number[] {
-  const { effectiveK } = velocityParams(
-    curve.curveK,
-    curve.attentionScore,
-    curve.priceVelocity,
-  )
-  const supply = Math.max(curve.currentSupply, 1)
-  const lo = Math.max(0, Math.floor(supply * 0.15))
-  const hi = Math.floor(supply * 1.85)
+/** Synthetic CPMM price path from current virtual reserves (for empty history). */
+function bondingShape(curve: CurveToken, _ignored?: number): number[] {
+  let vs = BigInt(Math.max(1, curve.virtualSolLamports || curve.basePriceLamports || 30_000_000_000))
+  let vt = BigInt(Math.max(1, curve.virtualToken || curve.curveK || 1_073_000_000))
   const steps = 48
   const prices: number[] = []
+  // Walk a fictional buy path: accumulate SOL and show spot after each step
+  const stepSol = vs / BigInt(steps * 4) || 1n
   for (let i = 0; i <= steps; i++) {
-    const s = lo + ((hi - lo) * i) / steps
-    prices.push(Number(spotPrice(basePrice, effectiveK, Math.floor(s))))
+    prices.push(Number(spotPrice(vs, vt)))
+    const dy = (vt * stepSol) / (vs + stepSol)
+    if (dy <= 0n || dy >= vt) break
+    vs += stepSol
+    vt -= dy
   }
+  while (prices.length <= steps) prices.push(prices[prices.length - 1] ?? 1)
   return prices
 }
 

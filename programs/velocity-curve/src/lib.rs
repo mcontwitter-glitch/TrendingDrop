@@ -1,41 +1,28 @@
-//! # VelocityCurve — Phase 2 Dual-Curve Engine
+//! # VelocityCurve — Pump.fun–style Constant-Product Bonding Curve
 //!
-//! Token launches with a **dual-curve system**: price follows a bonding curve,
-//! while a parallel "attention curve" tracks social velocity.
+//! Fair-launch AMM integrated with TrendingDrop narrative graduation.
 //!
-//! ## Mathematical model
-//!
-//! Architecture (PDF): `Price = Base_Price * e^(k * Supply)`.
-//! On-chain implementation uses the linearized form (see `math` module):
+//! ## Mathematical model (Pump.fun CPMM)
 //! ```text
-//! P(s) = base_price + (effective_k * s) / PRICE_SCALE
-//! (`PRICE_SCALE = 1e9`; `s` = whole tokens; launch base≈27, k≈365 → ~$4k→~$15k FDV)
-//! ```
-//! Buy/sell use closed-form integrals of P(s) with u128 checked arithmetic.
+//! k = virtual_sol * virtual_token
+//! spot (lamports / whole token) = virtual_sol / virtual_token
 //!
-//! Velocity modifier:
-//! ```text
-//! Attention_Score = Twitter*0.4 + Telegram*0.3 + New_Holders*0.3
-//!
-//! if Attention > Price_Velocity:
-//!     Effective_k = k * (1 + (A - P)/100)   // Steepen; sell tax 15%
-//! else:
-//!     Effective_k = k * (1 - (P - A)/200)   // Flatten; sell tax 5%
+//! Buy  Δx SOL:     Δy = y − k/(x+Δx)
+//! Sell Δy tokens:  Δx = x − k/(y+Δy)
 //! ```
-//! Modifiers clamped ±25%. Sell tax: 50% holders / 50% treasury.
+//! Defaults: virtual_sol ≈ 30 SOL, virtual_token ≈ 1.073B whole tokens.
+//! Launch FDV ≈ $4.2k @ $150/SOL. Graduate / complete when real_sol ≈ 85 SOL
+//! (~$62–69k mcap); ~200M tokens remain on the curve side for Raydium migrate.
+//!
+//! Attention score drives **sell tax only** (steepen 15% / flatten 5%) — it does
+//! not alter the constant-product invariant.
+//!
 //! Protocol fee on curve volume: **1.5%** (`CURVE_FEE_BPS = 150`).
-//! `update_attention` EMA alpha = 0.3.
 //!
-//! ## Oracle network (3/5)
-//! Two attestation modes (see `oracle_proof` + ARCHITECTURE.md):
-//! 1. Tx-signer quorum — `proof` empty; cranker + remaining signers ≥ quorum
-//! 2. Ed25519 offline — `proof` = timestamp i64 LE; prior Ed25519Program ixs
-//!    sign canonical message; Instructions sysvar introspection
-//!
-//! ## SPL
-//! `initialize_token` creates mint (authority = curve PDA) + curve ATA.
-//! `buy` mints to buyer ATA; `sell` burns from seller ATA. HolderPosition
-//! remains for reward-index / lore_power.
+//! ## Narrative graduation
+//! `initialize_token` sets Pump virtual reserves + 800M real_token (80% of 1B).
+//! Staker seed SOL is applied as a Δx buy in `mint_staker_airdrop` (20% escrowed).
+//! `graduate_curve` flips `complete` at the real-SOL threshold (Raydium stub).
 //!
 //! ## PDA seeds
 //! - `VelocityToken`  = `["curve", story_id]`
@@ -72,33 +59,31 @@ pub mod velocity_curve {
         initialize_oracle_config_handler(ctx, update_interval, authorized_oracles, quorum)
     }
 
-    /// Authority: set required oracle quorum (1..=authorized_oracles.len()).
     pub fn set_oracle_quorum(ctx: Context<SetOracleQuorum>, new_quorum: u8) -> Result<()> {
         set_oracle_quorum_handler(ctx, new_quorum)
     }
 
-    /// Authority: add an authorized oracle (max 5).
     pub fn add_oracle(ctx: Context<AddOracle>, oracle: Pubkey) -> Result<()> {
         add_oracle_handler(ctx, oracle)
     }
 
-    /// Authority: remove an authorized oracle (must not drop below quorum).
     pub fn remove_oracle(ctx: Context<RemoveOracle>, oracle: Pubkey) -> Result<()> {
         remove_oracle_handler(ctx, oracle)
     }
 
     /// Called via CPI from NarrativeAuction::graduate_narrative.
     /// Creates SPL mint (authority = curve) + curve vault + curve ATA.
+    /// `TokenParams.base_price` / `curve_k` → virtual_sol / virtual_token (0 = Pump defaults).
     pub fn initialize_token(ctx: Context<InitializeToken>, params: state::TokenParams) -> Result<()> {
         initialize_token_handler(ctx, params)
     }
 
-    /// Buy tokens along the dual curve with slippage protection (mints SPL).
+    /// Buy tokens on the constant-product AMM (mints SPL).
     pub fn buy(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> Result<()> {
         buy_handler(ctx, sol_amount, min_tokens_out)
     }
 
-    /// Sell tokens with velocity-dependent tax (burns SPL).
+    /// Sell tokens with attention-dependent tax (burns SPL).
     pub fn sell(ctx: Context<Sell>, token_amount: u64, min_sol_out: u64) -> Result<()> {
         sell_handler(ctx, token_amount, min_sol_out)
     }
@@ -114,12 +99,10 @@ pub mod velocity_curve {
         update_attention_handler(ctx, twitter_delta, telegram_delta, new_holders, proof)
     }
 
-    /// Claim pro-rata share of accumulated sell-tax rewards.
     pub fn claim_holder_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         claim_holder_rewards_handler(ctx)
     }
 
-    /// Settle LoreMerge: move fee/liquidity SOL, mark target merged, bump absorber merge_count.
     pub fn settle_merge(
         ctx: Context<SettleMerge>,
         fee_lamports: u64,
@@ -128,22 +111,27 @@ pub mod velocity_curve {
         settle_merge_handler(ctx, fee_lamports, liquidity_lamports)
     }
 
-    /// Repair curve fields corrupted by TokenParams u64 stack-pointer bug (Devnet).
+    /// Repair / migrate curve to Pump CPMM virtual reserves (creator-only).
+    /// `base_price`/`curve_k` args = virtual_sol / virtual_token (0 = defaults).
     pub fn repair_curve(ctx: Context<RepairCurve>, base_price: u64, curve_k: u64) -> Result<()> {
         repair_curve_handler(ctx, base_price, curve_k)
     }
 
-    /// Mint reserved staker-airdrop into escrow ATA (CPI from graduate).
-    /// Sets `current_supply` to the seed-SOL buy size (not the notional mint amount).
+    /// Mint reserved staker-airdrop into escrow ATA + apply seed SOL as AMM buy.
     pub fn mint_staker_airdrop(ctx: Context<MintStakerAirdrop>, amount: u64) -> Result<()> {
         mint_staker_airdrop_handler(ctx, amount)
     }
 
-    /// Creator-only: reset `current_supply` when notional airdrop inflated spot.
     pub fn repair_curve_supply(
         ctx: Context<RepairCurve>,
         current_supply: u64,
     ) -> Result<()> {
         repair_curve_supply_handler(ctx, current_supply)
+    }
+
+    /// Permissionless: mark curve complete when real_sol ≥ GRADUATE_REAL_SOL.
+    /// Raydium migration is a stub — vault accounting remains on-chain.
+    pub fn graduate_curve(ctx: Context<GraduateCurve>) -> Result<()> {
+        graduate_curve_handler(ctx)
     }
 }

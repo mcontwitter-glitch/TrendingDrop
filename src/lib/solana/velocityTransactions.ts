@@ -59,9 +59,8 @@ export async function buyOnCurve(
   const lamports = Math.round(solAmount * LAMPORTS_PER_SOL)
   if (lamports <= 0) throw new SolanaClientError('Buy amount must be positive')
 
-  let supply = params.supply ?? 0
-  let basePrice = params.basePrice ?? 1
-  let curveK = params.curveK ?? 1
+  let virtualSol = params.basePrice ?? 30_000_000_000
+  let virtualToken = params.curveK ?? 1_073_000_000
   let attention = params.attention ?? 0
   let priceVelocity = params.priceVelocity ?? 0
   let creator = params.creatorPubkey
@@ -69,9 +68,8 @@ export async function buyOnCurve(
 
   try {
     const curve = await program.account.velocityToken.fetch(curvePubkey)
-    supply = Number(curve.currentSupply)
-    basePrice = Number(curve.basePrice)
-    curveK = Number(curve.curveK)
+    virtualSol = Number(curve.virtualSol)
+    virtualToken = Number(curve.virtualToken)
     attention = Number(curve.attentionScore)
     priceVelocity = Number(curve.priceVelocity)
     creator = curve.creator
@@ -80,7 +78,7 @@ export async function buyOnCurve(
     throw new SolanaClientError('Curve account not found on this cluster')
   }
 
-  const quote = estimateBuy(lamports, supply, basePrice, curveK, attention, priceVelocity)
+  const quote = estimateBuy(lamports, virtualSol, virtualToken, attention, priceVelocity)
   const minOut =
     (quote.tokensOut * BigInt(10_000 - slippageBps)) / 10_000n
 
@@ -130,9 +128,8 @@ export async function sellOnCurve(
   const amount = Math.floor(tokenAmount)
   if (amount <= 0) throw new SolanaClientError('Sell amount must be positive')
 
-  let supply = 0
-  let basePrice = 1
-  let curveK = 1
+  let virtualSol = 30_000_000_000
+  let virtualToken = 1_073_000_000
   let attention = 0
   let priceVelocity = 0
   let creator: PublicKey = seller
@@ -140,9 +137,8 @@ export async function sellOnCurve(
 
   try {
     const curve = await program.account.velocityToken.fetch(curvePubkey)
-    supply = Number(curve.currentSupply)
-    basePrice = Number(curve.basePrice)
-    curveK = Number(curve.curveK)
+    virtualSol = Number(curve.virtualSol)
+    virtualToken = Number(curve.virtualToken)
     attention = Number(curve.attentionScore)
     priceVelocity = Number(curve.priceVelocity)
     creator = curve.creator
@@ -151,7 +147,7 @@ export async function sellOnCurve(
     throw new SolanaClientError('Curve account not found on this cluster')
   }
 
-  const quote = estimateSell(amount, supply, basePrice, curveK, attention, priceVelocity)
+  const quote = estimateSell(amount, virtualSol, virtualToken, attention, priceVelocity)
   const minOut =
     (quote.solNetLamports * BigInt(10_000 - slippageBps)) / 10_000n
 

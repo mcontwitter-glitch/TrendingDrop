@@ -46,17 +46,21 @@ export interface OnChainVelocityToken {
   mint: { toBase58(): string }
   storyId: { toBase58(): string }
   creator: { toBase58(): string }
-  basePrice: { toNumber(): number } | number
+  /** Pump CPMM virtual SOL (lamports). Legacy IDL may still name this basePrice. */
+  virtualSol?: { toNumber(): number } | number
+  basePrice?: { toNumber(): number } | number
   currentSupply: { toNumber(): number } | number
   currentPrice: { toNumber(): number } | number
   attentionScore: { toNumber(): number } | number
   priceVelocity: { toNumber(): number } | number
-  curveK: { toNumber(): number } | number
+  virtualToken?: { toNumber(): number } | number
+  curveK?: { toNumber(): number } | number
   sellTaxBps: number
   lastOracleUpdate: { toNumber(): number } | number
   mergeCount: number
   isMerged: boolean
-  solReserve: { toNumber(): number } | number
+  realSol?: { toNumber(): number } | number
+  solReserve?: { toNumber(): number } | number
   protocolFees: { toNumber(): number } | number
   holderRewardsPool: { toNumber(): number } | number
   rewardIndex: { toString(): string } | number | bigint
@@ -64,6 +68,8 @@ export interface OnChainVelocityToken {
   seedLiquidity: { toNumber(): number } | number
   bump: number
   vaultBump: number
+  realToken?: { toNumber(): number } | number
+  complete?: boolean
 }
 
 export interface OnChainHolderPosition {
@@ -86,12 +92,14 @@ export function mapVelocityTokenToCurve(
   const meta = getMetadataByPubkey(storyId) ?? getMetadataByPubkey(pubkey)
   const attention = bnToNumber(account.attentionScore)
   const priceVel = bnToNumber(account.priceVelocity)
-  const { sellTaxBps } = velocityParams(bnToNumber(account.curveK), attention, priceVel)
+  const virtualSol = bnToNumber(account.virtualSol ?? account.basePrice ?? 0)
+  const virtualToken = bnToNumber(account.virtualToken ?? account.curveK ?? 0)
+  const { sellTaxBps } = velocityParams(virtualToken, attention, priceVel)
   const mode = modeFromScores(attention, priceVel) as VelocityMode
   const seed = meta?.title || meta?.ticker || pubkey
   const supply = bnToNumber(account.currentSupply)
   const priceLamports = bnToNumber(account.currentPrice)
-  const reserveLamports = bnToNumber(account.solReserve)
+  const reserveLamports = bnToNumber(account.realSol ?? account.solReserve ?? 0)
 
   return {
     id: pubkey,
@@ -109,12 +117,16 @@ export function mapVelocityTokenToCurve(
     gradient: hashPick(seed + 'g', GRADIENTS),
     creator: truncateAddress(account.creator.toBase58()),
     creatorPubkey: account.creator.toBase58(),
-    basePriceLamports: bnToNumber(account.basePrice),
+    virtualSolLamports: virtualSol,
+    basePriceLamports: virtualSol,
     currentPriceLamports: priceLamports,
     currentSupply: supply,
     attentionScore: attention,
     priceVelocity: priceVel,
-    curveK: bnToNumber(account.curveK),
+    virtualToken,
+    curveK: virtualToken,
+    realToken: account.realToken !== undefined ? bnToNumber(account.realToken) : undefined,
+    complete: Boolean(account.complete),
     sellTaxBps: account.sellTaxBps || sellTaxBps,
     mode,
     solReserveSol: reserveLamports / LAMPORTS_PER_SOL,

@@ -2,7 +2,7 @@
 
 Founder overview of the Solana / Anchor programs that back the Story Markets UI.
 
-> **Product insight:** traders bet on *narrative velocity* before tokens exist. Phase 1 is a prediction market on stories; Phase 2 tokenizes winners on a dual bonding curve; Phase 3 lets winners absorb failed lore.
+> **Product insight:** traders bet on *narrative velocity* before tokens exist. Phase 1 is a prediction market on stories; Phase 2 tokenizes winners on a Pump.fun–style constant-product bonding curve; Phase 3 lets winners absorb failed lore.
 >
 > **Staker airdrop:** on graduate, staker SOL **seeds the bonding curve** as the buy that backs a **20%** pro-rata token airdrop (no principal reclaim) — see [`docs/STAKE_AIRDROP.md`](docs/STAKE_AIRDROP.md).
 
@@ -13,7 +13,7 @@ Founder overview of the Solana / Anchor programs that back the Story Markets UI.
 | Phase | Program | Role |
 |-------|---------|------|
 | **1 — Narrative Auction** | `narrative-auction` | Creators submit stories; users stake SOL; top narratives graduate (or fail) |
-| **2 — Velocity Bonding Curve** | `velocity-curve` | Dual-curve AMM (price × attention); oracle-driven sell tax |
+| **2 — Velocity Bonding Curve** | `velocity-curve` | Pump CPMM (`x*y=k`) + attention-driven sell tax; graduate at ~85 real SOL |
 | **3 — Lore Merge** | `lore-merge` | Strong tokens absorb failed narratives via community vote |
 | **Reputation** | `reputation-nft` | Dynamic trader profiles / tiers from prediction accuracy |
 
@@ -168,17 +168,17 @@ NarrativeAuction critical checks encoded:
 - Resolve marks claimable: Graduated = pro-rata winner_bonus only (principal=0); Failed = principal; Forfeited = 0
 - Claim on Graduated: token airdrop (+ optional bonus SOL); Failed: SOL reclaim; rent-exempt preserved
 - **VelocityCurve CPI is invoked** on graduate (`initialize_token` + `mint_staker_airdrop`)
-- Seed SOL = `total_staked` + 80% losing → curve vault; `sol_reserve` / `current_supply` reflect the seed buy
+- Seed SOL = `total_staked` + 80% losing → curve vault; applied as CPMM Δx buy in `mint_staker_airdrop`
 
-VelocityCurve critical logic:
+VelocityCurve critical logic (Pump.fun CPMM):
 
-- Spot price linearized exponential: `P(s) = base + (effective_k * s) / 1e6`; buy/sell via u128 integrals
-- Attention = twitter×0.4 + telegram×0.3 + holders×0.3 (oracle passes components; program weights)
-- Effective_k steepen/flatten per PDF (±25% clamp); sell tax 15% / 5%; tax 50/50 holders/treasury
-- Protocol fee `CURVE_FEE_BPS = 150` (1.5%) on buy SOL in and sell SOL out
-- `update_attention` EMA α=0.3; **two oracle modes** (see §9): tx-signer quorum **or** ed25519 Instructions-sysvar proof; authority can `set_oracle_quorum` / `add_oracle` / `remove_oracle`
-- SPL mint created on `initialize_token` (authority = curve PDA); `buy` mints to buyer ATA; `sell` burns from seller ATA; `HolderPosition` kept for reward-index / lore_power
-- `seed_liquidity` / `sol_reserve` = staker principal + 80% losing at graduate; `mint_staker_airdrop` sets `current_supply` to seed-SOL buy size
+- Invariant `k = virtual_sol * virtual_token`; spot = `virtual_sol / virtual_token` (lamports/whole)
+- Buy: `Δy = y·Δx/(x+Δx)` · Sell: `Δx = x·Δy/(y+Δy)` (u128); defaults virtual 30 SOL × 1.073B tokens
+- Attention = twitter×0.4 + telegram×0.3 + holders×0.3 — drives **sell tax only** (15% steepen / 5% flatten), not the invariant
+- Protocol fee `CURVE_FEE_BPS = 150` (1.5%) on buy SOL in and sell SOL out; tax 50/50 holders/treasury
+- `update_attention` EMA α=0.3; **two oracle modes** (see §9): tx-signer quorum **or** ed25519 proof
+- SPL mint on `initialize_token` (authority = curve); `real_token` starts at 800M (20% airdrop reserved)
+- Seed SOL → `real_sol` via AMM buy at graduate; `graduate_curve` sets `complete` at ≥85 real SOL (Raydium stub)
 - `settle_merge(fee, liquidity)`: PDA-signed vault transfers + `target.is_merged` + absorber `merge_count++`
 
 LoreMerge critical logic:
@@ -258,7 +258,7 @@ trendingdrop/
   scripts/localnet-smoke.mjs
   programs/
     narrative-auction/     ← Phase 1 (full scaffold)
-    velocity-curve/        ← Phase 2 (dual-curve + oracle 3/5)
+    velocity-curve/        ← Phase 2 (Pump CPMM + oracle 3/5)
     lore-merge/            ← Phase 3 (propose/vote/execute)
     reputation-nft/        ← Phase 4 profiles + Metaplex mint CPI
   indexer/                 ← SQLite RPC-poll indexer (+ Geyser scaffold)
@@ -310,9 +310,11 @@ curve_pubkey (32)
 
 ### Graduate → curve seed (A)
 
-1. CPI `VelocityCurve::initialize_token` (creates curve PDA, SPL mint authority=curve, curve SOL vault, curve ATA).
-2. `invoke_signed` transfer `liquidity_reserve` from story vault → curve vault.
-3. Zero `StoryMarket.liquidity_reserve` so `claim_stake` rent math stays correct.
+1. CPI `VelocityCurve::initialize_token` with Pump virtual reserves (30 SOL / 1.073B tokens) + `seed_liquidity`.
+2. `invoke_signed` transfer seed SOL from story vault → curve vault.
+3. CPI `mint_staker_airdrop` — mint 20% to escrow + apply seed as CPMM buy.
+4. Zero `StoryMarket.liquidity_reserve` so `claim_stake` rent math stays correct.
+5. Later: permissionless `graduate_curve` when `real_sol ≥ 85 SOL` (Raydium migrate stub).
 
 ### SPL surface (B)
 

@@ -1,6 +1,12 @@
 /**
- * Client-side dual-curve math mirroring programs/velocity-curve/src/math.rs.
+ * Client-side Pump.fun–style constant-product AMM math
+ * mirroring programs/velocity-curve/src/math.rs.
  * Quotes are estimates — label as such in the UI.
+ *
+ * k = virtualSol * virtualToken
+ * spot (lamports / whole token) = virtualSol / virtualToken
+ * Buy  Δx: Δy = y·Δx / (x+Δx)
+ * Sell Δy: Δx = x·Δy / (y+Δy)
  */
 
 import {
@@ -10,10 +16,15 @@ import {
 } from './constants'
 
 export const BPS = 10_000n
-export const PRICE_SCALE = 1_000_000_000n
 export const REWARD_SCALE = 1_000_000_000_000n
 export const MAX_K_ADJUST_BPS = 2_500n
 export const EMA_ALPHA_BPS = 3_000n
+
+/** Pump defaults (lamports / whole tokens). */
+export const INITIAL_VIRTUAL_SOL = 30_000_000_000n
+export const INITIAL_VIRTUAL_TOKEN = 1_073_000_000n
+export const GRADUATE_REAL_SOL = 85_000_000_000n
+export const CURVE_REAL_TOKEN = 800_000_000n
 
 function toBig(n: number | bigint): bigint {
   return typeof n === 'bigint' ? n : BigInt(Math.max(0, Math.floor(n)))
@@ -28,90 +39,56 @@ export function curveFee(solAmount: number | bigint, feeBps: number = CURVE_FEE_
   return { fee, net: sol - fee }
 }
 
+/** Sell-tax only — attention does not alter the CPMM invariant. */
 export function velocityParams(
-  curveK: number | bigint,
+  _virtualToken: number | bigint,
   attention: number | bigint,
   priceVelocity: number | bigint,
 ): { effectiveK: bigint; sellTaxBps: number } {
-  const k = toBig(curveK)
   const a = toBig(attention)
   const p = toBig(priceVelocity)
-
+  const vt = toBig(_virtualToken)
   if (a > p) {
-    const diff = a - p
-    const addBps = minBig(diff * 100n, MAX_K_ADJUST_BPS)
-    const eff = (k * (BPS + addBps)) / BPS
-    return { effectiveK: maxBig(eff, 1n), sellTaxBps: STEEPEN_TAX_BPS }
+    return { effectiveK: maxBig(vt, 1n), sellTaxBps: STEEPEN_TAX_BPS }
   }
-  const diff = p - a
-  const subBps = minBig(diff * 50n, MAX_K_ADJUST_BPS)
-  const factor = maxBig(BPS - subBps, 1n)
-  const eff = (k * factor) / BPS
-  return { effectiveK: maxBig(eff, 1n), sellTaxBps: FLATTEN_TAX_BPS }
+  return { effectiveK: maxBig(vt, 1n), sellTaxBps: FLATTEN_TAX_BPS }
 }
 
+/** Spot in lamports per whole token: x / y. */
 export function spotPrice(
-  basePrice: number | bigint,
-  effectiveK: number | bigint,
-  supply: number | bigint,
+  virtualSol: number | bigint,
+  virtualToken: number | bigint,
 ): bigint {
-  const extra = (toBig(effectiveK) * toBig(supply)) / PRICE_SCALE
-  return toBig(basePrice) + extra
+  const y = toBig(virtualToken)
+  if (y <= 0n) return 1n
+  const p = toBig(virtualSol) / y
+  return p > 0n ? p : 1n
 }
 
-function isqrt(n: bigint): bigint {
-  if (n === 0n) return 0n
-  let x = n
-  let y = (x + 1n) / 2n
-  while (y < x) {
-    x = y
-    y = (x + n / x) / 2n
-  }
-  return x
-}
-
-/** Tokens out for net SOL (post fee) along the integral curve. */
+/** Tokens out for net SOL (post fee). */
 export function tokensOutForSol(
   solNet: number | bigint,
-  supply: number | bigint,
-  basePrice: number | bigint,
-  effectiveK: number | bigint,
+  virtualSol: number | bigint,
+  virtualToken: number | bigint,
 ): bigint {
-  const sol = toBig(solNet)
-  const base = toBig(basePrice)
-  const k = toBig(effectiveK)
-  const s = toBig(supply)
-  if (sol <= 0n || base <= 0n) return 0n
-  if (k === 0n) return sol / base
-
-  const b = base + (k * s) / PRICE_SCALE
-  const twoScale = PRICE_SCALE * 2n
-  const bTerm = b * twoScale
-  const cTerm = sol * twoScale
-  const disc = bTerm * bTerm + k * 4n * cTerm
-  const root = isqrt(disc)
-  const numer = root > bTerm ? root - bTerm : 0n
-  const denom = k * 2n
-  if (denom === 0n) return sol / base
-  return numer / denom
+  const dx = toBig(solNet)
+  const x = toBig(virtualSol)
+  const y = toBig(virtualToken)
+  if (dx <= 0n || x <= 0n || y <= 0n) return 0n
+  return (y * dx) / (x + dx)
 }
 
-/** Gross SOL out (pre-tax, pre-fee) for burning tokens. */
+/** Gross SOL out (pre-tax, pre-fee) for selling whole tokens. */
 export function solOutForTokens(
   tokenAmount: number | bigint,
-  supply: number | bigint,
-  basePrice: number | bigint,
-  effectiveK: number | bigint,
+  virtualSol: number | bigint,
+  virtualToken: number | bigint,
 ): bigint {
-  const d = toBig(tokenAmount)
-  const s = toBig(supply)
-  const base = toBig(basePrice)
-  const k = toBig(effectiveK)
-  if (d <= 0n || d > s || base <= 0n) return 0n
-  const linear = d * base
-  const inner = s * 2n * d - d * d
-  const quad = (k * inner) / (PRICE_SCALE * 2n)
-  return linear + quad
+  const dy = toBig(tokenAmount)
+  const x = toBig(virtualSol)
+  const y = toBig(virtualToken)
+  if (dy <= 0n || x <= 0n || y <= 0n) return 0n
+  return (x * dy) / (y + dy)
 }
 
 export function applyBps(amount: number | bigint, bps: number): bigint {
@@ -148,7 +125,6 @@ export interface BuyQuote {
   effectiveK: bigint
   sellTaxBps: number
   mode: QuoteMode
-  /** Spot after buy (estimate). */
   estimatedPrice: bigint
 }
 
@@ -163,43 +139,103 @@ export interface SellQuote {
   estimatedPrice: bigint
 }
 
+/**
+ * Estimate a buy. Pass virtual SOL/token reserves (not legacy base/k/supply).
+ * Back-compat: if callers still pass (sol, supply, basePrice, curveK, ...),
+ * treat basePrice as virtualSol and curveK as virtualToken when supply is unused.
+ */
 export function estimateBuy(
   solLamports: number | bigint,
-  supply: number | bigint,
-  basePrice: number | bigint,
-  curveK: number | bigint,
-  attention: number | bigint,
-  priceVelocity: number | bigint,
+  virtualSolOrSupply: number | bigint,
+  virtualTokenOrBase: number | bigint,
+  _curveKOrVirtualToken?: number | bigint,
+  attention: number | bigint = 0,
+  priceVelocity: number | bigint = 0,
 ): BuyQuote {
-  const { effectiveK, sellTaxBps } = velocityParams(curveK, attention, priceVelocity)
+  // New signature: estimateBuy(sol, virtualSol, virtualToken, attention?, priceVelocity?)
+  // Old signature: estimateBuy(sol, supply, basePrice, curveK, attention, priceVelocity)
+  // Heuristic: if 6 args or virtualTokenOrBase is small (< 1e6) treat as legacy base price.
+  let virtualSol: bigint
+  let virtualToken: bigint
+  let att = attention
+  let pvel = priceVelocity
+
+  const a = toBig(virtualSolOrSupply)
+  const b = toBig(virtualTokenOrBase)
+  const c = _curveKOrVirtualToken !== undefined ? toBig(_curveKOrVirtualToken) : null
+
+  if (c !== null && b < 1_000_000n && c > 1_000_000n) {
+    // Legacy: (sol, supply, basePrice≈27, curveK, att, pvel) — use Pump defaults + supply offset
+    virtualSol = INITIAL_VIRTUAL_SOL
+    virtualToken = INITIAL_VIRTUAL_TOKEN > a ? INITIAL_VIRTUAL_TOKEN - a : INITIAL_VIRTUAL_TOKEN / 2n
+  } else if (c !== null && a > 1_000_000_000n) {
+    // New-ish: (sol, virtualSol, virtualToken, ignoredK, att, pvel) OR (sol, vs, vt, att, pvel) misaligned
+    virtualSol = a
+    virtualToken = b > 0n ? b : c
+  } else {
+    // Preferred: (sol, virtualSol, virtualToken, attention?, priceVelocity?)
+    virtualSol = a > 0n ? a : INITIAL_VIRTUAL_SOL
+    virtualToken = b > 0n ? b : INITIAL_VIRTUAL_TOKEN
+    if (_curveKOrVirtualToken !== undefined && attention === 0 && priceVelocity === 0) {
+      // 4th arg may be attention when using (sol, vs, vt, att, pvel)
+      att = _curveKOrVirtualToken
+    }
+  }
+
+  const { effectiveK, sellTaxBps } = velocityParams(virtualToken, att, pvel)
   const { fee, net } = curveFee(solLamports)
-  const tokensOut = tokensOutForSol(net, supply, basePrice, effectiveK)
-  const newSupply = toBig(supply) + tokensOut
+  const tokensOut = tokensOutForSol(net, virtualSol, virtualToken)
+  const newVs = virtualSol + net
+  const newVt = virtualToken > tokensOut ? virtualToken - tokensOut : 1n
   return {
     feeLamports: fee,
     solNetLamports: net,
     tokensOut,
     effectiveK,
     sellTaxBps,
-    mode: modeFromScores(Number(attention), Number(priceVelocity)),
-    estimatedPrice: spotPrice(basePrice, effectiveK, newSupply),
+    mode: modeFromScores(Number(att), Number(pvel)),
+    estimatedPrice: spotPrice(newVs, newVt),
   }
 }
 
 export function estimateSell(
   tokenAmount: number | bigint,
-  supply: number | bigint,
-  basePrice: number | bigint,
-  curveK: number | bigint,
-  attention: number | bigint,
-  priceVelocity: number | bigint,
+  virtualSolOrSupply: number | bigint,
+  virtualTokenOrBase: number | bigint,
+  _curveKOrVirtualToken?: number | bigint,
+  attention: number | bigint = 0,
+  priceVelocity: number | bigint = 0,
 ): SellQuote {
-  const { effectiveK, sellTaxBps } = velocityParams(curveK, attention, priceVelocity)
-  const solGross = solOutForTokens(tokenAmount, supply, basePrice, effectiveK)
+  let virtualSol: bigint
+  let virtualToken: bigint
+  let att = attention
+  let pvel = priceVelocity
+
+  const a = toBig(virtualSolOrSupply)
+  const b = toBig(virtualTokenOrBase)
+  const c = _curveKOrVirtualToken !== undefined ? toBig(_curveKOrVirtualToken) : null
+
+  if (c !== null && b < 1_000_000n && c > 1_000_000n) {
+    virtualSol = INITIAL_VIRTUAL_SOL
+    virtualToken = INITIAL_VIRTUAL_TOKEN > a ? INITIAL_VIRTUAL_TOKEN - a : INITIAL_VIRTUAL_TOKEN / 2n
+  } else if (c !== null && a > 1_000_000_000n) {
+    virtualSol = a
+    virtualToken = b > 0n ? b : c
+  } else {
+    virtualSol = a > 0n ? a : INITIAL_VIRTUAL_SOL
+    virtualToken = b > 0n ? b : INITIAL_VIRTUAL_TOKEN
+    if (_curveKOrVirtualToken !== undefined && attention === 0 && priceVelocity === 0) {
+      att = _curveKOrVirtualToken
+    }
+  }
+
+  const { effectiveK, sellTaxBps } = velocityParams(virtualToken, att, pvel)
+  const solGross = solOutForTokens(tokenAmount, virtualSol, virtualToken)
   const tax = applyBps(solGross, sellTaxBps)
   const afterTax = solGross - tax
   const { fee, net } = curveFee(afterTax)
-  const newSupply = toBig(supply) - toBig(tokenAmount)
+  const newVs = virtualSol > solGross ? virtualSol - solGross : 1n
+  const newVt = virtualToken + toBig(tokenAmount)
   return {
     solGrossLamports: solGross,
     taxLamports: tax,
@@ -207,14 +243,11 @@ export function estimateSell(
     solNetLamports: net,
     effectiveK,
     sellTaxBps,
-    mode: modeFromScores(Number(attention), Number(priceVelocity)),
-    estimatedPrice: spotPrice(basePrice, effectiveK, newSupply < 0n ? 0n : newSupply),
+    mode: modeFromScores(Number(att), Number(pvel)),
+    estimatedPrice: spotPrice(newVs, newVt),
   }
 }
 
-function minBig(a: bigint, b: bigint): bigint {
-  return a < b ? a : b
-}
 function maxBig(a: bigint, b: bigint): bigint {
   return a > b ? a : b
 }

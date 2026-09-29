@@ -42,9 +42,8 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
     if (tab !== 'buy' || num <= 0) return null
     return estimateBuy(
       Math.round(num * LAMPORTS_PER_SOL),
-      curve.currentSupply,
-      curve.basePriceLamports,
-      curve.curveK,
+      curve.virtualSolLamports || curve.basePriceLamports,
+      curve.virtualToken || curve.curveK,
       curve.attentionScore,
       curve.priceVelocity,
     )
@@ -54,9 +53,8 @@ export function TradePanel({ curve, holderBalance = 0, onTraded }: TradePanelPro
     if (tab !== 'sell' || num <= 0) return null
     return estimateSell(
       Math.floor(num),
-      curve.currentSupply,
-      curve.basePriceLamports,
-      curve.curveK,
+      curve.virtualSolLamports || curve.basePriceLamports,
+      curve.virtualToken || curve.curveK,
       curve.attentionScore,
       curve.priceVelocity,
     )

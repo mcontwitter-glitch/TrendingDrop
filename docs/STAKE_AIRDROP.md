@@ -18,9 +18,10 @@ airdrop** — not a SOL principal reclaim.
 | Winner SOL bonus | **20% of losing pool** (optional) | Pro-rata via `winner_bonus_pool`; often 0 if no forfeits |
 | Graduated claim | **Tokens + optional bonus SOL** | Principal claimable = **0** (already bought into the curve) |
 | Failed claim | **Full principal reclaim** | No mint / no airdrop |
-| Curve accounting | Airdrop mints escrow ATA; `current_supply` = **seed-SOL buy size in whole tokens** (≈20% of 1B at ~12 SOL) | Sells are reserve-capped |
-| Initial `base_price` | **27** lamports / whole (`LAUNCH_BASE_PRICE`) | Empty curve FDV ≈ $4k at $150/SOL |
-| `curve_k` / `PRICE_SCALE` | **365** / **1e9** | After ~12 SOL seed buy → spot ≈ 100 → FDV ≈ $15k |
+| Curve accounting | Pump CPMM: mint 20% to escrow; seed SOL applied as **Δx AMM buy** (`virtual_sol`↑, `virtual_token`↓, `real_sol`↑) | Sells capped by `real_sol` |
+| Virtual reserves | **30 SOL** × **1.073B** tokens (`INITIAL_VIRTUAL_*`) | Launch spot ≈ 28 lamports/whole → FDV ≈ $4.2k @ $150/SOL |
+| Curve sellable | **800M** whole (`CURVE_REAL_TOKEN`) | 200M reserved for staker airdrop |
+| Bonding complete | `real_sol ≥ 85 SOL` → `complete=true` (`graduate_curve`) | ~$62–69k mcap; ~200M tokens left; Raydium migrate stub |
 
 ### Coherent story
 
@@ -38,11 +39,12 @@ Failed / forfeited stories mint **no** airdrop. Forfeited SOL still feeds winner
 ```
 graduate_narrative
   ├─ CPI VelocityCurve::initialize_token
-  │     initial_liquidity = total_staked + 80% losing  → sol_reserve / seed_liquidity
+  │     virtual_sol=30 SOL, virtual_token=1.073B, real_token=800M
+  │     seed_liquidity = total_staked + 80% losing (real_sol still 0)
   ├─ transfer seed SOL story vault → curve vault
   └─ CPI VelocityCurve::mint_staker_airdrop(amount)
-        ├─ mint reserved raw → StakeAirdrop token vault (ATA)
-        └─ set curve.current_supply = tokens_out(seed SOL); refresh current_price
+        ├─ mint 20% raw → StakeAirdrop token vault (ATA)
+        └─ apply seed SOL as CPMM buy (Δy = y·Δx/(x+Δx)); update reserves + spot
 
 resolve_stakes (Graduated)
   └─ claimable SOL = pro-rata winner_bonus only (principal = 0)
@@ -69,18 +71,21 @@ blow up with unique stakers.
 
 `StoryMarket` / `StakePosition` / `VelocityToken` layouts are **unchanged** (Devnet-safe).
 
-## VelocityCurve
+## VelocityCurve (Pump.fun constant-product)
+
+Invariant: `virtual_sol * virtual_token = k`  
+Spot (lamports / whole token): `virtual_sol / virtual_token`  
+Buy: `Δy = y·Δx / (x+Δx)` · Sell: `Δx = x·Δy / (y+Δy)`
 
 Ix `mint_staker_airdrop(amount)`:
 
-- Curve PDA signs `mint_to`
+- Curve PDA signs `mint_to` for the fixed 20% airdrop escrow
 - Requires `mint.supply == 0` (must run immediately after `initialize_token`, before any buy)
-- **Does** increase `curve.current_supply` (and refreshes `current_price`) so circulating
-  supply and spot reflect the seed buy
-- `sol_reserve` already set from `initialize_token.initial_liquidity` (= seed SOL)
+- Applies `seed_liquidity` as a true AMM buy (deepens `real_sol` / `virtual_sol`, reduces token side)
 - Emits `StakerAirdropMinted`
 
-Sells remain capped by `sol_reserve` (integral refund cannot exceed vault accounting).
+Sells remain capped by `real_sol`. When `real_sol ≥ 85 SOL`, anyone can call
+`graduate_curve` to set `complete` (Raydium migration stub; vault stays on-chain).
 
 ## Migration (Devnet)
 

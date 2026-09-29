@@ -1,43 +1,29 @@
-//! Dual-curve math (integer / u128).
+//! Pump.fun–style constant-product AMM (integer / u128).
 //!
-//! ## Spot price (linearized exponential)
-//! Architecture: `Price = Base_Price * e^(k * Supply)`.
-//! On-chain we use the first-order expansion `e^x ≈ 1 + x` with scale:
+//! ## Invariant
 //! ```text
-//! P(s) = base_price + (effective_k * s) / PRICE_SCALE
+//! k = virtual_sol * virtual_token
+//! spot (lamports / whole token) = virtual_sol / virtual_token
 //! ```
-//! with `PRICE_SCALE = 1_000_000_000`. This is constant-product–adjacent in spirit
-//! (integral cost grows quadratically in supply) while matching the PDF's `k`.
 //!
-//! ## Attention score
+//! ## Buy Δx SOL (net of fee)
 //! ```text
-//! Attention = twitter*w_t/10000 + telegram*w_g/10000 + holders*w_h/10000
+//! Δy = y - k / (x + Δx)
 //! ```
-//! Default weights: 4000 / 3000 / 3000.
 //!
-//! ## Effective k
+//! ## Sell Δy tokens
 //! ```text
-//! if Attention > Price_Velocity:
-//!   Effective_k = k * (1 + (A - P)/100)   // steepen, sell tax 15%
-//! else:
-//!   Effective_k = k * (1 - (P - A)/200)   // flatten, sell tax 5%
+//! Δx = x - k / (y + Δy)
 //! ```
-//! Modifiers clamped to ±25% (`MAX_K_ADJUST_BPS`) so Effective_k never 0 / overflow.
 //!
-//! ## Buy / sell integrals
-//! Cost to mint Δ from supply S:
-//! `cost = Δ*base + effective_k*(2*S*Δ + Δ²)/(2*PRICE_SCALE)`
-//! Refund to burn Δ from supply S:
-//! `refund = Δ*base + effective_k*(2*S*Δ - Δ²)/(2*PRICE_SCALE)`
+//! Attention score still drives **sell tax** (steepen 15% / flatten 5%), but does
+//! not alter the constant-product invariant (no linear base+k*s pricing).
 
 use crate::errors::VelocityError;
-use crate::state::{
-    FLATTEN_TAX_BPS, MAX_K_ADJUST_BPS, STEEPEN_TAX_BPS,
-};
+use crate::state::{FLATTEN_TAX_BPS, MAX_K_ADJUST_BPS, STEEPEN_TAX_BPS};
 use anchor_lang::prelude::*;
 
 pub const BPS: u128 = 10_000;
-pub const PRICE_SCALE: u128 = 1_000_000_000;
 /// Reward index scale for pro-rata holder claims.
 pub const REWARD_SCALE: u128 = 1_000_000_000_000;
 
@@ -79,7 +65,6 @@ pub fn weighted_attention(
 }
 
 pub fn ema_update(prev: u64, raw: u64, alpha_bps: u64) -> Result<u64> {
-    // new = α*raw + (1-α)*prev
     let a = alpha_bps.min(10_000) as u128;
     let inv = BPS.checked_sub(a).ok_or(VelocityError::MathOverflow)?;
     let v = (raw as u128)
@@ -96,145 +81,159 @@ pub fn ema_update(prev: u64, raw: u64, alpha_bps: u64) -> Result<u64> {
     Ok(v as u64)
 }
 
-/// Effective k + sell-tax bps from attention vs price velocity.
-pub fn velocity_params(curve_k: u64, attention: u64, price_velocity: u64) -> Result<(u64, u16)> {
-    let k = curve_k as u128;
+/// Sell-tax bps from attention vs price velocity (pricing itself is CPMM).
+/// Returns `(unused_eff_k_placeholder, sell_tax_bps)` — first value kept for
+/// event / oracle compatibility (echoes curve virtual_token).
+pub fn velocity_params(virtual_token: u64, attention: u64, price_velocity: u64) -> Result<(u64, u16)> {
     if attention > price_velocity {
         let diff = (attention - price_velocity) as u128;
-        // (diff/100) → add_bps = diff * 100, capped at MAX_K_ADJUST_BPS
-        let add_bps = diff.saturating_mul(100).min(MAX_K_ADJUST_BPS as u128);
-        let eff = k
-            .checked_mul(BPS.checked_add(add_bps).ok_or(VelocityError::MathOverflow)?)
-            .ok_or(VelocityError::MathOverflow)?
-            .checked_div(BPS)
-            .ok_or(VelocityError::MathOverflow)?;
-        Ok((eff.max(1) as u64, STEEPEN_TAX_BPS))
+        let _add_bps = diff.saturating_mul(100).min(MAX_K_ADJUST_BPS as u128);
+        Ok((virtual_token.max(1), STEEPEN_TAX_BPS))
     } else {
         let diff = (price_velocity - attention) as u128;
-        // (diff/200) → sub_bps = diff * 50
-        let sub_bps = diff.saturating_mul(50).min(MAX_K_ADJUST_BPS as u128);
-        let factor = BPS.saturating_sub(sub_bps).max(1);
-        let eff = k
-            .checked_mul(factor)
-            .ok_or(VelocityError::MathOverflow)?
-            .checked_div(BPS)
-            .ok_or(VelocityError::MathOverflow)?;
-        Ok((eff.max(1) as u64, FLATTEN_TAX_BPS))
+        let _sub_bps = diff.saturating_mul(50).min(MAX_K_ADJUST_BPS as u128);
+        Ok((virtual_token.max(1), FLATTEN_TAX_BPS))
     }
 }
 
-pub fn spot_price(base_price: u64, effective_k: u64, supply: u64) -> Result<u64> {
-    let extra = (effective_k as u128)
-        .checked_mul(supply as u128)
+/// Spot price in lamports per whole token: x / y.
+pub fn spot_price(virtual_sol: u64, virtual_token: u64) -> Result<u64> {
+    require!(virtual_token > 0, VelocityError::InvalidParams);
+    Ok(virtual_sol
+        .checked_div(virtual_token)
         .ok_or(VelocityError::MathOverflow)?
-        .checked_div(PRICE_SCALE)
-        .ok_or(VelocityError::MathOverflow)?;
-    Ok((base_price as u128)
-        .checked_add(extra)
-        .ok_or(VelocityError::MathOverflow)? as u64)
+        .max(1))
 }
 
-/// Tokens out for `sol_net` lamports along the integral curve.
+/// Invariant k = x * y (u128).
+pub fn invariant_k(virtual_sol: u64, virtual_token: u64) -> Result<u128> {
+    (virtual_sol as u128)
+        .checked_mul(virtual_token as u128)
+        .ok_or(VelocityError::MathOverflow.into())
+}
+
+/// Tokens out (whole) for `sol_net` lamports.
+/// UniV2 form: Δy = y·Δx / (x+Δx)  (= y − k/(x+Δx) with floor).
 pub fn tokens_out_for_sol(
     sol_net: u64,
-    supply: u64,
-    base_price: u64,
-    effective_k: u64,
+    virtual_sol: u64,
+    virtual_token: u64,
 ) -> Result<u64> {
     require!(sol_net > 0, VelocityError::ZeroAmount);
-    require!(base_price > 0, VelocityError::InvalidParams);
+    require!(virtual_sol > 0 && virtual_token > 0, VelocityError::InvalidParams);
 
-    if effective_k == 0 {
-        return Ok(sol_net
-            .checked_div(base_price)
-            .ok_or(VelocityError::MathOverflow)?
-            .max(0));
-    }
-
-    // a = k/(2*SCALE), b = base + k*S/SCALE, solve aΔ² + bΔ - sol = 0
-    // Δ = (-b + sqrt(b² + 4*a*sol)) / (2a)
-    let k = effective_k as u128;
-    let s = supply as u128;
-    let base = base_price as u128;
-    let sol = sol_net as u128;
-
-    let b = base
-        .checked_add(
-            k.checked_mul(s)
-                .ok_or(VelocityError::MathOverflow)?
-                .checked_div(PRICE_SCALE)
-                .ok_or(VelocityError::MathOverflow)?,
-        )
-        .ok_or(VelocityError::MathOverflow)?;
-
-    // Work in (2*SCALE) units:  (k) Δ² + (2*SCALE*b) Δ - 2*SCALE*sol = 0
-    // Δ = (-B + sqrt(B² + 4*k*C)) / (2k) where B = 2*SCALE*b, C = 2*SCALE*sol
-    let two_scale = PRICE_SCALE.checked_mul(2).ok_or(VelocityError::MathOverflow)?;
-    let b_term = b
-        .checked_mul(two_scale)
-        .ok_or(VelocityError::MathOverflow)?;
-    let c_term = sol
-        .checked_mul(two_scale)
-        .ok_or(VelocityError::MathOverflow)?;
-
-    let disc = b_term
-        .checked_mul(b_term)
+    let x = virtual_sol as u128;
+    let y = virtual_token as u128;
+    let dx = sol_net as u128;
+    let denom = x.checked_add(dx).ok_or(VelocityError::MathOverflow)?;
+    let dy = y
+        .checked_mul(dx)
         .ok_or(VelocityError::MathOverflow)?
-        .checked_add(
-            (k.checked_mul(4).ok_or(VelocityError::MathOverflow)?)
-                .checked_mul(c_term)
-                .ok_or(VelocityError::MathOverflow)?,
-        )
+        .checked_div(denom)
         .ok_or(VelocityError::MathOverflow)?;
-
-    let root = isqrt(disc);
-    let numer = root.saturating_sub(b_term);
-    let denom = k.checked_mul(2).ok_or(VelocityError::MathOverflow)?;
-    if denom == 0 {
-        return Ok((sol / base) as u64);
-    }
-    let delta = numer.checked_div(denom).ok_or(VelocityError::MathOverflow)?;
-    require!(delta > 0, VelocityError::ZeroAmount);
-    Ok(delta as u64)
+    require!(dy > 0, VelocityError::ZeroAmount);
+    require!(dy < y, VelocityError::InsufficientBalance);
+    Ok(dy as u64)
 }
 
-/// SOL out (pre-tax, pre-fee) for burning `token_amount` from supply.
+/// SOL out (lamports, pre-tax, pre-fee) for selling `token_amount` whole tokens.
+/// UniV2 form: Δx = x·Δy / (y+Δy)  (= x − k/(y+Δy) with floor).
 pub fn sol_out_for_tokens(
     token_amount: u64,
-    supply: u64,
-    base_price: u64,
-    effective_k: u64,
+    virtual_sol: u64,
+    virtual_token: u64,
 ) -> Result<u64> {
     require!(token_amount > 0, VelocityError::ZeroAmount);
-    require!(token_amount <= supply, VelocityError::InsufficientBalance);
-    require!(base_price > 0, VelocityError::InvalidParams);
+    require!(virtual_sol > 0 && virtual_token > 0, VelocityError::InvalidParams);
 
-    let d = token_amount as u128;
-    let s = supply as u128;
-    let base = base_price as u128;
-    let k = effective_k as u128;
-
-    // refund = Δ*base + k*(2*S*Δ - Δ²)/(2*SCALE)
-    let linear = d.checked_mul(base).ok_or(VelocityError::MathOverflow)?;
-    let quad_num = k
-        .checked_mul(
-            s.checked_mul(2)
-                .ok_or(VelocityError::MathOverflow)?
-                .checked_mul(d)
-                .ok_or(VelocityError::MathOverflow)?
-                .checked_sub(d.checked_mul(d).ok_or(VelocityError::MathOverflow)?)
-                .ok_or(VelocityError::MathOverflow)?,
-        )
+    let x = virtual_sol as u128;
+    let y = virtual_token as u128;
+    let dy = token_amount as u128;
+    let denom = y.checked_add(dy).ok_or(VelocityError::MathOverflow)?;
+    let dx = x
+        .checked_mul(dy)
+        .ok_or(VelocityError::MathOverflow)?
+        .checked_div(denom)
         .ok_or(VelocityError::MathOverflow)?;
-    let quad = quad_num
-        .checked_div(
-            PRICE_SCALE
-                .checked_mul(2)
-                .ok_or(VelocityError::MathOverflow)?,
-        )
-        .ok_or(VelocityError::MathOverflow)?;
+    require!(dx > 0, VelocityError::ZeroAmount);
+    require!(dx < x, VelocityError::InsufficientVault);
+    Ok(dx as u64)
+}
 
-    Ok(linear.checked_add(quad).ok_or(VelocityError::MathOverflow)? as u64)
+/// Apply a buy to virtual/real reserves. Returns new spot.
+pub fn apply_buy(
+    virtual_sol: u64,
+    virtual_token: u64,
+    real_sol: u64,
+    real_token: u64,
+    current_supply: u64,
+    sol_net: u64,
+    tokens_out: u64,
+) -> Result<(u64, u64, u64, u64, u64, u64)> {
+    require!(real_token >= tokens_out, VelocityError::InsufficientBalance);
+    let new_virtual_sol = virtual_sol
+        .checked_add(sol_net)
+        .ok_or(VelocityError::MathOverflow)?;
+    let new_virtual_token = virtual_token
+        .checked_sub(tokens_out)
+        .ok_or(VelocityError::MathOverflow)?;
+    require!(new_virtual_token > 0, VelocityError::InvalidParams);
+    let new_real_sol = real_sol
+        .checked_add(sol_net)
+        .ok_or(VelocityError::MathOverflow)?;
+    let new_real_token = real_token
+        .checked_sub(tokens_out)
+        .ok_or(VelocityError::MathOverflow)?;
+    let new_supply = current_supply
+        .checked_add(tokens_out)
+        .ok_or(VelocityError::MathOverflow)?;
+    let price = spot_price(new_virtual_sol, new_virtual_token)?;
+    Ok((
+        new_virtual_sol,
+        new_virtual_token,
+        new_real_sol,
+        new_real_token,
+        new_supply,
+        price,
+    ))
+}
+
+/// Apply a sell to virtual/real reserves. Returns new spot.
+pub fn apply_sell(
+    virtual_sol: u64,
+    virtual_token: u64,
+    real_sol: u64,
+    real_token: u64,
+    current_supply: u64,
+    sol_gross: u64,
+    tokens_in: u64,
+) -> Result<(u64, u64, u64, u64, u64, u64)> {
+    require!(current_supply >= tokens_in, VelocityError::InsufficientBalance);
+    let new_virtual_sol = virtual_sol
+        .checked_sub(sol_gross)
+        .ok_or(VelocityError::MathOverflow)?;
+    let new_virtual_token = virtual_token
+        .checked_add(tokens_in)
+        .ok_or(VelocityError::MathOverflow)?;
+    require!(new_virtual_sol > 0, VelocityError::InsufficientVault);
+    let new_real_sol = real_sol
+        .checked_sub(sol_gross)
+        .ok_or(VelocityError::MathOverflow)?;
+    let new_real_token = real_token
+        .checked_add(tokens_in)
+        .ok_or(VelocityError::MathOverflow)?;
+    let new_supply = current_supply
+        .checked_sub(tokens_in)
+        .ok_or(VelocityError::MathOverflow)?;
+    let price = spot_price(new_virtual_sol, new_virtual_token)?;
+    Ok((
+        new_virtual_sol,
+        new_virtual_token,
+        new_real_sol,
+        new_real_token,
+        new_supply,
+        price,
+    ))
 }
 
 pub fn apply_bps(amount: u64, bps: u16) -> Result<u64> {
@@ -285,46 +284,43 @@ pub fn accrue_holder_rewards(
         .ok_or(VelocityError::MathOverflow)?)
 }
 
-/// Integer square root (Newton).
-fn isqrt(n: u128) -> u128 {
-    if n == 0 {
-        return 0;
-    }
-    let mut x = n;
-    let mut y = (x + 1) / 2;
-    while y < x {
-        x = y;
-        y = (x + n / x) / 2;
-    }
-    x
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state::{INITIAL_VIRTUAL_SOL, INITIAL_VIRTUAL_TOKEN};
 
     #[test]
-    fn effective_k_steepen() {
-        let (eff, tax) = velocity_params(1_000, 120, 100).unwrap();
-        assert!(eff > 1_000);
-        assert_eq!(tax, STEEPEN_TAX_BPS);
-    }
-
-    #[test]
-    fn effective_k_flatten() {
-        let (eff, tax) = velocity_params(1_000, 100, 120).unwrap();
-        assert!(eff < 1_000);
-        assert_eq!(tax, FLATTEN_TAX_BPS);
+    fn launch_spot_near_28() {
+        let p = spot_price(INITIAL_VIRTUAL_SOL, INITIAL_VIRTUAL_TOKEN).unwrap();
+        // 30e9 / 1.073e9 ≈ 27
+        assert!(p >= 27 && p <= 28, "spot={p}");
     }
 
     #[test]
     fn buy_sell_roundtrip_smoke() {
-        let base = 1_000;
-        let k = 1_000;
-        let (eff, _) = velocity_params(k, 50, 50).unwrap();
-        let tokens = tokens_out_for_sol(1_000_000, 0, base, eff).unwrap();
+        let x = INITIAL_VIRTUAL_SOL;
+        let y = INITIAL_VIRTUAL_TOKEN;
+        let sol_in = 1_000_000_000u64; // 1 SOL
+        let tokens = tokens_out_for_sol(sol_in, x, y).unwrap();
         assert!(tokens > 0);
-        let sol = sol_out_for_tokens(tokens, tokens, base, eff).unwrap();
-        assert!(sol > 0 && sol <= 1_000_000);
+        let (nx, ny, _, _, _, _) =
+            apply_buy(x, y, 0, 800_000_000, 0, sol_in, tokens).unwrap();
+        let sol_back = sol_out_for_tokens(tokens, nx, ny).unwrap();
+        assert!(sol_back > 0, "sol_back={sol_back}");
+        assert!(sol_back <= sol_in, "sol_back={sol_back} sol_in={sol_in}");
+        assert!(sol_back * 1000 >= sol_in * 999, "too much slippage sol_back={sol_back}");
+    }
+
+    #[test]
+    fn graduate_real_sol_leaves_about_200m_virtual() {
+        // After +85 SOL real: x=115 SOL, y = k/x ≈ 280M virtual; sold ≈ 793M.
+        let x0 = INITIAL_VIRTUAL_SOL as u128;
+        let y0 = INITIAL_VIRTUAL_TOKEN as u128;
+        let k = x0 * y0;
+        let x1 = x0 + 85_000_000_000u128;
+        let y1 = k / x1;
+        let sold = y0 - y1;
+        assert!(sold > 700_000_000 && sold < 850_000_000, "sold={sold}");
+        assert!(y1 > 200_000_000 && y1 < 350_000_000, "y1={y1}");
     }
 }

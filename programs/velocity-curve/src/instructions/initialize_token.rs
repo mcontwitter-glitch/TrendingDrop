@@ -5,8 +5,11 @@ use anchor_spl::token::{self, InitializeMint2, Mint, Token};
 
 use crate::errors::VelocityError;
 use crate::events::TokenInitialized;
-use crate::math::{spot_price, velocity_params};
-use crate::state::{TokenParams, VelocityToken, FLATTEN_TAX_BPS, TOKEN_DECIMALS};
+use crate::math::spot_price;
+use crate::state::{
+    TokenParams, VelocityToken, CURVE_REAL_TOKEN, FLATTEN_TAX_BPS, INITIAL_VIRTUAL_SOL,
+    INITIAL_VIRTUAL_TOKEN, TOKEN_DECIMALS,
+};
 
 /// Account metas **must** match NarrativeAuction graduate CPI wire:
 ///   0. curve (mut, init PDA seeds=[b"curve", story_id])
@@ -19,10 +22,6 @@ use crate::state::{TokenParams, VelocityToken, FLATTEN_TAX_BPS, TOKEN_DECIMALS};
 ///   7. token_program
 ///   8. associated_token_program
 ///   9. rent
-///
-/// Mint / token_vault are UncheckedAccount so try_accounts stays under the 4KiB
-/// BPF stack limit (typed `init` for Mint+ATA was overflowing and clobbering
-/// TokenParams — Devnet bug writing SBPF stack pointers into u64 fields).
 #[derive(Accounts)]
 pub struct InitializeToken<'info> {
     #[account(
@@ -64,18 +63,28 @@ pub struct InitializeToken<'info> {
 
 pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenParams) -> Result<()> {
     // Snapshot params BEFORE any handler CPIs (mint/ATA/vault) can clobber stack.
-    let base_price = params.base_price;
+    let virtual_sol = if params.base_price > 0 {
+        params.base_price
+    } else {
+        INITIAL_VIRTUAL_SOL
+    };
+    let virtual_token = if params.curve_k > 0 {
+        params.curve_k
+    } else {
+        INITIAL_VIRTUAL_TOKEN
+    };
     let initial_liquidity = params.initial_liquidity;
-    let curve_k = params.curve_k;
     let creator = params.creator;
     let params_story = params.story_id;
     let story_id = ctx.accounts.story_id.key();
     require_keys_eq!(story_id, params_story, VelocityError::StoryMismatch);
-    require!(base_price > 0 && curve_k > 0, VelocityError::InvalidParams);
+    require!(
+        virtual_sol > 0 && virtual_token > 0,
+        VelocityError::InvalidParams
+    );
 
     let clock = Clock::get()?;
-    let (eff_k, _) = velocity_params(curve_k, 0, 0)?;
-    let price = spot_price(base_price, eff_k, 0)?;
+    let price = spot_price(virtual_sol, virtual_token)?;
 
     let curve_key = ctx.accounts.curve.key();
     let vault_bump = ctx.bumps.vault;
@@ -89,7 +98,6 @@ pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenPara
         vault_bump,
     )?;
 
-    // Create mint account (space for Mint) + initialize_mint2 (authority = curve PDA).
     {
         let mint_ai = ctx.accounts.mint.to_account_info();
         let rent = Rent::get()?;
@@ -109,9 +117,7 @@ pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenPara
         token::initialize_mint2(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
-                InitializeMint2 {
-                    mint: mint_ai,
-                },
+                InitializeMint2 { mint: mint_ai },
             ),
             TOKEN_DECIMALS,
             &curve_key,
@@ -119,7 +125,6 @@ pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenPara
         )?;
     }
 
-    // Create curve ATA if needed.
     if ctx.accounts.token_vault.data_is_empty() {
         associated_token::create(CpiContext::new(
             ctx.accounts.associated_token_program.to_account_info(),
@@ -138,17 +143,18 @@ pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenPara
     curve.mint = ctx.accounts.mint.key();
     curve.story_id = story_id;
     curve.creator = creator;
-    curve.base_price = base_price;
+    curve.virtual_sol = virtual_sol;
     curve.current_supply = 0;
     curve.current_price = price;
     curve.attention_score = 0;
     curve.price_velocity = 0;
-    curve.curve_k = curve_k;
+    curve.virtual_token = virtual_token;
     curve.sell_tax_bps = FLATTEN_TAX_BPS;
     curve.last_oracle_update = clock.unix_timestamp;
     curve.merge_count = 0;
     curve.is_merged = false;
-    curve.sol_reserve = initial_liquidity;
+    // Seed SOL is applied as an AMM buy in mint_staker_airdrop (after vault transfer).
+    curve.real_sol = 0;
     curve.protocol_fees = 0;
     curve.holder_rewards_pool = 0;
     curve.reward_index = 0;
@@ -156,14 +162,16 @@ pub fn initialize_token_handler(ctx: Context<InitializeToken>, params: TokenPara
     curve.seed_liquidity = initial_liquidity;
     curve.bump = curve_bump;
     curve.vault_bump = vault_bump;
+    curve.real_token = CURVE_REAL_TOKEN;
+    curve.complete = false;
 
     emit!(TokenInitialized {
         curve: curve.key(),
         mint: curve.mint,
         story_id: curve.story_id,
         creator: curve.creator,
-        base_price: curve.base_price,
-        curve_k: curve.curve_k,
+        base_price: curve.virtual_sol,
+        curve_k: curve.virtual_token,
         seed_liquidity: curve.seed_liquidity,
         timestamp: clock.unix_timestamp,
     });

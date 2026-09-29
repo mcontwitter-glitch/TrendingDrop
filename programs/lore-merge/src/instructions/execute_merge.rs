@@ -130,8 +130,8 @@ pub fn execute_merge_handler(ctx: Context<ExecuteMerge>) -> Result<()> {
 
     // Prefer live sol_reserve (seeded on graduate + updated by buy/sell).
     // Fall back to seed_liquidity only if reserve accounting is still zero.
-    let reserve = if target.sol_reserve > 0 {
-        target.sol_reserve
+    let reserve = if target.real_sol > 0 {
+        target.real_sol
     } else {
         target.seed_liquidity
     };

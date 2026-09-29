@@ -4,14 +4,14 @@ use anchor_spl::token::{self, Mint, MintTo, Token};
 
 use crate::errors::VelocityError;
 use crate::events::StakerAirdropMinted;
-use crate::math::{spot_price, tokens_out_for_sol, velocity_params};
-use crate::state::{VelocityToken, TOTAL_SUPPLY_RAW};
+use crate::math::{apply_buy, tokens_out_for_sol};
+use crate::state::{VelocityToken, GRADUATE_REAL_SOL, TOTAL_SUPPLY_RAW};
 
-/// Mint reserved staker-airdrop supply into an escrow ATA and count it as sold
-/// curve supply so spot / FDV stay honest with the seed SOL buy.
+/// Mint reserved staker-airdrop supply into an escrow ATA and apply seed SOL
+/// as a constant-product AMM buy (deepens real/virtual SOL, reduces token side).
 ///
 /// Called via CPI from NarrativeAuction::graduate_narrative immediately after
-/// `initialize_token` (and after seed SOL is recorded on `sol_reserve`).
+/// `initialize_token` (seed SOL already transferred to the curve vault).
 /// Requires `mint.supply == 0` so this runs before any public buy.
 #[derive(Accounts)]
 pub struct MintStakerAirdrop<'info> {
@@ -36,7 +36,6 @@ pub struct MintStakerAirdrop<'info> {
     pub story_id: UncheckedAccount<'info>,
 
     /// Destination ATA (typically owned by NarrativeAuction StakeAirdrop PDA).
-    /// Created if empty.
     /// CHECK: validated as ATA in handler / token program.
     #[account(mut)]
     pub airdrop_vault: UncheckedAccount<'info>,
@@ -57,7 +56,6 @@ pub fn mint_staker_airdrop_handler(ctx: Context<MintStakerAirdrop>, amount: u64)
     require!(amount > 0, VelocityError::ZeroAmount);
     require!(amount <= TOTAL_SUPPLY_RAW, VelocityError::AirdropTooLarge);
 
-    // Create destination ATA if needed (owner = airdrop_authority).
     if ctx.accounts.airdrop_vault.data_is_empty() {
         associated_token::create(CpiContext::new(
             ctx.accounts.associated_token_program.to_account_info(),
@@ -76,6 +74,7 @@ pub fn mint_staker_airdrop_handler(ctx: Context<MintStakerAirdrop>, amount: u64)
     let bump = ctx.accounts.curve.bump;
     let seeds: &[&[u8]] = &[VelocityToken::SEED, story_id.as_ref(), &[bump]];
 
+    // Mint fixed airdrop (typically 20% of 1B) into escrow.
     token::mint_to(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
@@ -89,22 +88,40 @@ pub fn mint_staker_airdrop_handler(ctx: Context<MintStakerAirdrop>, amount: u64)
         amount,
     )?;
 
-    // Pricing supply (whole tokens) = seed-SOL buy from 0 along the calibrated curve.
-    // With LAUNCH_BASE_PRICE=27, DEFAULT_CURVE_K=365, PRICE_SCALE=1e9: ~12 SOL → ~200M (~20%).
-    // Notional airdrop mint (`amount` raw) may differ slightly; sells stay reserve-capped.
-    let (eff_k, _) = velocity_params(
-        ctx.accounts.curve.curve_k,
-        ctx.accounts.curve.attention_score,
-        ctx.accounts.curve.price_velocity,
-    )?;
+    // Apply seed SOL as a true CPMM buy so staker capital deepens the pool and
+    // moves spot along the invariant. Tokens from that buy are the economic
+    // backing for the airdrop (already minted above — do not mint twice).
+    let seed = ctx.accounts.curve.seed_liquidity;
     let curve = &mut ctx.accounts.curve;
-    curve.current_supply = if curve.sol_reserve > 0 && curve.base_price > 0 {
-        tokens_out_for_sol(curve.sol_reserve, 0, curve.base_price, eff_k)?
-    } else {
-        0
-    };
-    curve.current_price = spot_price(curve.base_price, eff_k, curve.current_supply)?;
-    curve.last_price = curve.current_price;
+
+    if seed > 0 {
+        let tokens_from_seed =
+            tokens_out_for_sol(seed, curve.virtual_sol, curve.virtual_token)?;
+        // Cap by remaining real_token on the curve.
+        let dy = tokens_from_seed.min(curve.real_token);
+        require!(dy > 0, VelocityError::ZeroAmount);
+
+        let (vs, vt, rs, rt, supply, price) = apply_buy(
+            curve.virtual_sol,
+            curve.virtual_token,
+            curve.real_sol,
+            curve.real_token,
+            curve.current_supply,
+            seed,
+            dy,
+        )?;
+        curve.virtual_sol = vs;
+        curve.virtual_token = vt;
+        curve.real_sol = rs;
+        curve.real_token = rt;
+        curve.current_supply = supply;
+        curve.current_price = price;
+        curve.last_price = price;
+
+        if curve.real_sol >= GRADUATE_REAL_SOL {
+            curve.complete = true;
+        }
+    }
 
     emit!(StakerAirdropMinted {
         curve: curve.key(),

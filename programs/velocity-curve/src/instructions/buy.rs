@@ -6,9 +6,11 @@ use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount};
 use crate::errors::VelocityError;
 use crate::events::TokensBought;
 use crate::math::{
-    curve_fee, ema_update, settle_holder_rewards, spot_price, tokens_out_for_sol, velocity_params,
+    apply_buy, curve_fee, ema_update, settle_holder_rewards, tokens_out_for_sol, velocity_params,
 };
-use crate::state::{HolderPosition, VelocityToken, CURVE_FEE_BPS, DECIMALS_FACTOR, EMA_ALPHA_BPS};
+use crate::state::{
+    HolderPosition, VelocityToken, CURVE_FEE_BPS, DECIMALS_FACTOR, EMA_ALPHA_BPS, GRADUATE_REAL_SOL,
+};
 
 #[derive(Accounts)]
 pub struct Buy<'info> {
@@ -17,6 +19,7 @@ pub struct Buy<'info> {
         seeds = [VelocityToken::SEED, curve.story_id.as_ref()],
         bump = curve.bump,
         constraint = !curve.is_merged @ VelocityError::TradingPaused,
+        constraint = !curve.complete @ VelocityError::CurveComplete,
     )]
     pub curve: Box<Account<'info, VelocityToken>>,
 
@@ -64,10 +67,9 @@ pub struct Buy<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-/// Buy tokens along the dual curve with slippage protection.
+/// Buy tokens on the constant-product AMM with slippage protection.
 ///
-/// 1.5% fee → treasury; net SOL → vault; mint SPL tokens to buyer ATA;
-/// credit HolderPosition for reward-index math.
+/// 1.5% fee → treasury; net SOL → vault; mint SPL tokens to buyer ATA.
 pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> Result<()> {
     require!(sol_amount > 0, VelocityError::ZeroAmount);
 
@@ -77,21 +79,19 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
     let story_id = ctx.accounts.curve.story_id;
     let curve_bump = ctx.accounts.curve.bump;
 
-    let (eff_k, _) = velocity_params(
-        ctx.accounts.curve.curve_k,
-        ctx.accounts.curve.attention_score,
-        ctx.accounts.curve.price_velocity,
-    )?;
     let (fee, sol_net) = curve_fee(sol_amount, CURVE_FEE_BPS)?;
     require!(sol_net > 0, VelocityError::ZeroAmount);
 
     let tokens_out = tokens_out_for_sol(
         sol_net,
-        ctx.accounts.curve.current_supply,
-        ctx.accounts.curve.base_price,
-        eff_k,
+        ctx.accounts.curve.virtual_sol,
+        ctx.accounts.curve.virtual_token,
     )?;
     require!(tokens_out >= min_tokens_out, VelocityError::SlippageExceeded);
+    require!(
+        ctx.accounts.curve.real_token >= tokens_out,
+        VelocityError::InsufficientBalance
+    );
 
     if fee > 0 {
         transfer(
@@ -126,7 +126,6 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
         sol_net,
     )?;
 
-    // Curve math is whole tokens; SPL uses raw = whole * 10^decimals.
     let raw_out = tokens_out
         .checked_mul(DECIMALS_FACTOR)
         .ok_or(VelocityError::MathOverflow)?;
@@ -171,20 +170,36 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
     holder.reward_debt = curve.reward_index;
 
     let old_price = curve.current_price;
-    curve.current_supply = curve
-        .current_supply
-        .checked_add(tokens_out)
-        .ok_or(VelocityError::MathOverflow)?;
-    curve.sol_reserve = curve
-        .sol_reserve
-        .checked_add(sol_net)
-        .ok_or(VelocityError::MathOverflow)?;
-    curve.current_price = spot_price(curve.base_price, eff_k, curve.current_supply)?;
+    let (vs, vt, rs, rt, supply, price) = apply_buy(
+        curve.virtual_sol,
+        curve.virtual_token,
+        curve.real_sol,
+        curve.real_token,
+        curve.current_supply,
+        sol_net,
+        tokens_out,
+    )?;
+    curve.virtual_sol = vs;
+    curve.virtual_token = vt;
+    curve.real_sol = rs;
+    curve.real_token = rt;
+    curve.current_supply = supply;
+    curve.current_price = price;
+
+    if curve.real_sol >= GRADUATE_REAL_SOL {
+        curve.complete = true;
+    }
 
     let price_delta = curve.current_price.abs_diff(old_price);
     curve.price_velocity = ema_update(curve.price_velocity, price_delta, EMA_ALPHA_BPS)?;
     curve.last_price = curve.current_price;
     holder.lore_power = holder.lore_power.saturating_add(1);
+
+    let (_, _) = velocity_params(
+        curve.virtual_token,
+        curve.attention_score,
+        curve.price_velocity,
+    )?;
 
     emit!(TokensBought {
         curve: curve_key,
@@ -194,7 +209,7 @@ pub fn buy_handler(ctx: Context<Buy>, sol_amount: u64, min_tokens_out: u64) -> R
         tokens_out,
         supply: curve.current_supply,
         price: curve.current_price,
-        effective_k: eff_k,
+        effective_k: curve.virtual_token,
         timestamp: clock.unix_timestamp,
     });
 

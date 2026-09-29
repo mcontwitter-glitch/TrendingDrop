@@ -15,12 +15,15 @@ pub const WINNER_BONUS_BPS: u64 = 2000;
 /// Initial curve liquidity share of the losing-stake pool (80%).
 pub const LIQUIDITY_BPS: u64 = 8000;
 
-/// Launch spot (lamports / whole token). FDV_SOL ≈ this (~$4k at $150/SOL).
-/// Must match velocity_curve::LAUNCH_BASE_PRICE.
-pub const LAUNCH_BASE_PRICE: u64 = 27;
-/// Default curve_k with velocity PRICE_SCALE=1e9: ~12 SOL → ~20% supply → ~$15k FDV.
-/// Must match velocity_curve::DEFAULT_CURVE_K.
-pub const DEFAULT_CURVE_K: u64 = 365;
+/// Pump.fun–style initial virtual SOL (lamports). Passed as TokenParams.base_price.
+/// Must match velocity_curve::INITIAL_VIRTUAL_SOL.
+pub const INITIAL_VIRTUAL_SOL: u64 = 30_000_000_000;
+/// Pump.fun–style initial virtual token reserves (whole). Passed as TokenParams.curve_k.
+/// Must match velocity_curve::INITIAL_VIRTUAL_TOKEN.
+pub const INITIAL_VIRTUAL_TOKEN: u64 = 1_073_000_000;
+/// Legacy aliases kept so older callers compiling against LAUNCH_* still resolve.
+pub const LAUNCH_BASE_PRICE: u64 = INITIAL_VIRTUAL_SOL;
+pub const DEFAULT_CURVE_K: u64 = INITIAL_VIRTUAL_TOKEN;
 
 /// Notional 1B whole tokens × 10^6 decimals (must match velocity_curve::TOTAL_SUPPLY_RAW).
 pub const TOTAL_SUPPLY_RAW: u64 = 1_000_000_000 * 1_000_000;
@@ -208,9 +211,9 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
         .checked_add(liquidity)
         .ok_or(NarrativeError::MathOverflow)?;
 
-    // Product economics: empty curve launches at ~$4k FDV (base_price = LAUNCH_BASE_PRICE).
-    // Seed SOL (~12) then buys ~20% supply along the curve → spot ~$15k FDV (see DEFAULT_CURVE_K).
-    let base_price = LAUNCH_BASE_PRICE;
+    // Pump CPMM: virtual_sol=30 SOL, virtual_token=1.073B → launch FDV ~$4.2k @ $150/SOL.
+    // Seed SOL is applied as a Δx buy in mint_staker_airdrop (deepens pool + backs airdrop).
+    let base_price = INITIAL_VIRTUAL_SOL;
     let creator = ctx.accounts.story.creator;
 
     let mut airdrop_bps = ctx.accounts.config.staker_airdrop_bps;
@@ -247,7 +250,7 @@ pub fn graduate_narrative_handler(ctx: Context<GraduateNarrative>, rank: u8) -> 
             initial_liquidity: seed_sol,
             creator,
             story_id: story_key,
-            curve_k: DEFAULT_CURVE_K,
+            curve_k: INITIAL_VIRTUAL_TOKEN,
         },
     );
 

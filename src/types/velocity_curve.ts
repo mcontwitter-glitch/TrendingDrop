@@ -15,9 +15,6 @@ export type VelocityCurve = {
   "instructions": [
     {
       "name": "addOracle",
-      "docs": [
-        "Authority: add an authorized oracle (max 5)."
-      ],
       "discriminator": [
         185,
         165,
@@ -73,7 +70,7 @@ export type VelocityCurve = {
     {
       "name": "buy",
       "docs": [
-        "Buy tokens along the dual curve with slippage protection (mints SPL)."
+        "Buy tokens on the constant-product AMM (mints SPL)."
       ],
       "discriminator": [
         102,
@@ -296,9 +293,6 @@ export type VelocityCurve = {
     },
     {
       "name": "claimHolderRewards",
-      "docs": [
-        "Claim pro-rata share of accumulated sell-tax rewards."
-      ],
       "discriminator": [
         79,
         182,
@@ -401,6 +395,76 @@ export type VelocityCurve = {
       "args": []
     },
     {
+      "name": "graduateCurve",
+      "docs": [
+        "Permissionless: mark curve complete when real_sol ≥ GRADUATE_REAL_SOL.",
+        "Raydium migration is a stub — vault accounting remains on-chain."
+      ],
+      "discriminator": [
+        42,
+        208,
+        0,
+        219,
+        240,
+        162,
+        25,
+        174
+      ],
+      "accounts": [
+        {
+          "name": "curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "curve.story_id",
+                "account": "velocityToken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "curve"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initializeOracleConfig",
       "docs": [
         "Bootstrap oracle config. Default quorum = 3 (pass `Some(1)` for local mock)."
@@ -479,7 +543,8 @@ export type VelocityCurve = {
       "name": "initializeToken",
       "docs": [
         "Called via CPI from NarrativeAuction::graduate_narrative.",
-        "Creates SPL mint (authority = curve) + curve vault + curve ATA."
+        "Creates SPL mint (authority = curve) + curve vault + curve ATA.",
+        "`TokenParams.base_price` / `curve_k` → virtual_sol / virtual_token (0 = Pump defaults)."
       ],
       "discriminator": [
         38,
@@ -588,10 +653,92 @@ export type VelocityCurve = {
       ]
     },
     {
-      "name": "removeOracle",
+      "name": "mintStakerAirdrop",
       "docs": [
-        "Authority: remove an authorized oracle (must not drop below quorum)."
+        "Mint reserved staker-airdrop into escrow ATA + apply seed SOL as AMM buy."
       ],
+      "discriminator": [
+        241,
+        167,
+        107,
+        99,
+        158,
+        89,
+        12,
+        141
+      ],
+      "accounts": [
+        {
+          "name": "curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "curve.story_id",
+                "account": "velocityToken"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "storyId"
+        },
+        {
+          "name": "airdropVault",
+          "docs": [
+            "Destination ATA (typically owned by NarrativeAuction StakeAirdrop PDA)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "airdropAuthority"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "removeOracle",
       "discriminator": [
         60,
         93,
@@ -647,7 +794,8 @@ export type VelocityCurve = {
     {
       "name": "repairCurve",
       "docs": [
-        "Repair curve fields corrupted by TokenParams u64 stack-pointer bug (Devnet)."
+        "Repair / migrate curve to Pump CPMM virtual reserves (creator-only).",
+        "`base_price`/`curve_k` args = virtual_sol / virtual_token (0 = defaults)."
       ],
       "discriminator": [
         145,
@@ -687,7 +835,12 @@ export type VelocityCurve = {
         },
         {
           "name": "authority",
+          "writable": true,
           "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -702,9 +855,64 @@ export type VelocityCurve = {
       ]
     },
     {
+      "name": "repairCurveSupply",
+      "discriminator": [
+        61,
+        124,
+        161,
+        103,
+        113,
+        49,
+        48,
+        43
+      ],
+      "accounts": [
+        {
+          "name": "curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "storyId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "storyId"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "currentSupply",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "sell",
       "docs": [
-        "Sell tokens with velocity-dependent tax (burns SPL)."
+        "Sell tokens with attention-dependent tax (burns SPL)."
       ],
       "discriminator": [
         51,
@@ -834,9 +1042,6 @@ export type VelocityCurve = {
     },
     {
       "name": "setOracleQuorum",
-      "docs": [
-        "Authority: set required oracle quorum (1..=authorized_oracles.len())."
-      ],
       "discriminator": [
         108,
         213,
@@ -891,9 +1096,6 @@ export type VelocityCurve = {
     },
     {
       "name": "settleMerge",
-      "docs": [
-        "Settle LoreMerge: move fee/liquidity SOL, mark target merged, bump absorber merge_count."
-      ],
       "discriminator": [
         73,
         182,
@@ -1190,6 +1392,19 @@ export type VelocityCurve = {
       ]
     },
     {
+      "name": "curveGraduated",
+      "discriminator": [
+        3,
+        228,
+        116,
+        195,
+        148,
+        182,
+        240,
+        104
+      ]
+    },
+    {
       "name": "holderRewardsClaimed",
       "discriminator": [
         60,
@@ -1265,6 +1480,19 @@ export type VelocityCurve = {
         93,
         194,
         96
+      ]
+    },
+    {
+      "name": "stakerAirdropMinted",
+      "discriminator": [
+        57,
+        12,
+        92,
+        33,
+        57,
+        208,
+        118,
+        177
       ]
     },
     {
@@ -1356,7 +1584,7 @@ export type VelocityCurve = {
     {
       "code": 6009,
       "name": "invalidParams",
-      "msg": "Invalid curve parameters (base_price / curve_k)"
+      "msg": "Invalid curve parameters (virtual reserves)"
     },
     {
       "code": 6010,
@@ -1365,68 +1593,88 @@ export type VelocityCurve = {
     },
     {
       "code": 6011,
+      "name": "curveComplete",
+      "msg": "Bonding curve complete — trading moved to AMM migrate"
+    },
+    {
+      "code": 6012,
+      "name": "graduationThresholdNotMet",
+      "msg": "Real SOL below bonding-curve graduation threshold"
+    },
+    {
+      "code": 6013,
       "name": "invalidOracleWeights",
       "msg": "Oracle weights must sum to 10000 bps"
     },
     {
-      "code": 6012,
+      "code": 6014,
       "name": "tooManyOracles",
       "msg": "Too many authorized oracles"
     },
     {
-      "code": 6013,
+      "code": 6015,
       "name": "storyMismatch",
       "msg": "story_id param mismatch"
     },
     {
-      "code": 6014,
+      "code": 6016,
       "name": "insufficientOracleQuorum",
       "msg": "Insufficient distinct authorized oracle signers for quorum"
     },
     {
-      "code": 6015,
+      "code": 6017,
       "name": "duplicateOracle",
       "msg": "Duplicate oracle signer in attestation set"
     },
     {
-      "code": 6016,
+      "code": 6018,
       "name": "oracleNotSigner",
       "msg": "Oracle remaining account is not a signer"
     },
     {
-      "code": 6017,
+      "code": 6019,
       "name": "unauthorizedOracle",
       "msg": "Oracle not in authorized set"
     },
     {
-      "code": 6018,
+      "code": 6020,
       "name": "oracleAlreadyAuthorized",
       "msg": "Oracle already authorized"
     },
     {
-      "code": 6019,
+      "code": 6021,
       "name": "oracleNotFound",
       "msg": "Oracle not found in authorized set"
     },
     {
-      "code": 6020,
+      "code": 6022,
       "name": "invalidQuorum",
       "msg": "Quorum must be between 1 and authorized oracle count"
     },
     {
-      "code": 6021,
+      "code": 6023,
       "name": "oracleRemovalBreaksQuorum",
       "msg": "Cannot remove oracle: would drop below quorum"
     },
     {
-      "code": 6022,
+      "code": 6024,
       "name": "mintMismatch",
       "msg": "Mint account does not match curve.mint"
     },
     {
-      "code": 6023,
+      "code": 6025,
       "name": "settlementOverflow",
       "msg": "Settlement amounts exceed target reserve / vault"
+    },
+    {
+      "code": 6026,
+      "name": "airdropSupplyNotZero",
+      "msg": "Staker airdrop requires mint.supply == 0 (call right after initialize_token)"
+    },
+    {
+      "code": 6027,
+      "name": "airdropTooLarge",
+      "msg": "Airdrop amount exceeds notional total supply"
     }
   ],
   "types": [
@@ -1481,6 +1729,50 @@ export type VelocityCurve = {
           {
             "name": "quorum",
             "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "curveGraduated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "curve",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "storyId",
+            "type": "pubkey"
+          },
+          {
+            "name": "realSol",
+            "type": "u64"
+          },
+          {
+            "name": "virtualSol",
+            "type": "u64"
+          },
+          {
+            "name": "virtualToken",
+            "type": "u64"
+          },
+          {
+            "name": "realToken",
+            "type": "u64"
+          },
+          {
+            "name": "currentPrice",
+            "type": "u64"
           },
           {
             "name": "timestamp",
@@ -1742,6 +2034,38 @@ export type VelocityCurve = {
       }
     },
     {
+      "name": "stakerAirdropMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "curve",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "storyId",
+            "type": "pubkey"
+          },
+          {
+            "name": "airdropVault",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "tokenInitialized",
       "type": {
         "kind": "struct",
@@ -1785,7 +2109,12 @@ export type VelocityCurve = {
       "name": "tokenParams",
       "docs": [
         "CPI / init params — field order must stay wire-compatible with",
-        "NarrativeAuction `TokenParamsWire`."
+        "NarrativeAuction `TokenParamsWire`.",
+        "",
+        "Semantics (Pump CPMM):",
+        "- `base_price` → initial `virtual_sol` (lamports); 0 = use INITIAL_VIRTUAL_SOL",
+        "- `curve_k` → initial `virtual_token` (whole); 0 = use INITIAL_VIRTUAL_TOKEN",
+        "- `initial_liquidity` → seed SOL from narrative stakes (applied as Δx buy)"
       ],
       "type": {
         "kind": "struct",
@@ -1912,8 +2241,11 @@ export type VelocityCurve = {
     {
       "name": "velocityToken",
       "docs": [
-        "Dual-curve token state.",
-        "Seeds = [b\"curve\", story_id]"
+        "Constant-product bonding curve state (Pump.fun–style).",
+        "Seeds = [b\"curve\", story_id]",
+        "",
+        "Wire layout: first fields keep historical offsets (virtual_sol was base_price,",
+        "virtual_token was curve_k, real_sol was sol_reserve). New fields append."
       ],
       "type": {
         "kind": "struct",
@@ -1934,21 +2266,30 @@ export type VelocityCurve = {
             "type": "pubkey"
           },
           {
-            "name": "basePrice",
+            "name": "virtualSol",
+            "docs": [
+              "Virtual SOL reserves (lamports). Was `base_price`."
+            ],
             "type": "u64"
           },
           {
             "name": "currentSupply",
+            "docs": [
+              "Whole tokens sold / circulating from the curve (airdrop + buys − sells)."
+            ],
             "type": "u64"
           },
           {
             "name": "currentPrice",
+            "docs": [
+              "Spot = virtual_sol / virtual_token (lamports per whole token)."
+            ],
             "type": "u64"
           },
           {
             "name": "attentionScore",
             "docs": [
-              "EMA-smoothed attention score (oracle)."
+              "EMA-smoothed attention score (oracle) — drives sell tax only."
             ],
             "type": "u64"
           },
@@ -1960,16 +2301,16 @@ export type VelocityCurve = {
             "type": "u64"
           },
           {
-            "name": "curveK",
+            "name": "virtualToken",
             "docs": [
-              "Base curve constant `k` (before velocity modifier)."
+              "Virtual token reserves (whole tokens). Was `curve_k`."
             ],
             "type": "u64"
           },
           {
             "name": "sellTaxBps",
             "docs": [
-              "Dynamic 500–1500 bps."
+              "Dynamic 500–1500 bps (attention steepen / flatten)."
             ],
             "type": "u16"
           },
@@ -1989,9 +2330,9 @@ export type VelocityCurve = {
             "type": "bool"
           },
           {
-            "name": "solReserve",
+            "name": "realSol",
             "docs": [
-              "Actual SOL held in the curve vault (lamports)."
+              "Real SOL held from buys / seed (lamports). Was `sol_reserve`."
             ],
             "type": "u64"
           },
@@ -2026,7 +2367,7 @@ export type VelocityCurve = {
           {
             "name": "seedLiquidity",
             "docs": [
-              "Liquidity amount recorded at graduation (SOL moved into curve vault on graduate)."
+              "SOL seeded at narrative graduate (stake principal + 80% losing)."
             ],
             "type": "u64"
           },
@@ -2037,6 +2378,20 @@ export type VelocityCurve = {
           {
             "name": "vaultBump",
             "type": "u8"
+          },
+          {
+            "name": "realToken",
+            "docs": [
+              "Remaining real tokens available to sell on the curve (whole)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "complete",
+            "docs": [
+              "Bonding curve complete (real_sol ≥ GRADUATE_REAL_SOL). Raydium migrate stub."
+            ],
+            "type": "bool"
           }
         ]
       }

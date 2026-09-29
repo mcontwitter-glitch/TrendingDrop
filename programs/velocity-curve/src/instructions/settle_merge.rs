@@ -13,7 +13,7 @@ use crate::state::VelocityToken;
 /// Effects:
 /// - Move `fee_lamports` SOL from target vault → treasury
 /// - Move `liquidity_lamports` SOL from target vault → absorber vault
-/// - Debit target `sol_reserve`; credit absorber `sol_reserve`
+/// - Debit target `real_sol`; credit absorber `real_sol`
 /// - Set target `is_merged = true`; bump absorber `merge_count`
 #[derive(Accounts)]
 pub struct SettleMerge<'info> {
@@ -77,7 +77,7 @@ pub fn settle_merge_handler(
     let absorber_vault_bump = ctx.accounts.absorber_curve.vault_bump;
 
     require!(
-        ctx.accounts.target_curve.sol_reserve >= total,
+        ctx.accounts.target_curve.real_sol >= total,
         VelocityError::InsufficientVault
     );
 
@@ -132,15 +132,15 @@ pub fn settle_merge_handler(
 
     let clock = Clock::get()?;
     let target = &mut ctx.accounts.target_curve;
-    target.sol_reserve = target
-        .sol_reserve
+    target.real_sol = target
+        .real_sol
         .checked_sub(total)
         .ok_or(VelocityError::MathOverflow)?;
     target.is_merged = true;
 
     let absorber = &mut ctx.accounts.absorber_curve;
-    absorber.sol_reserve = absorber
-        .sol_reserve
+    absorber.real_sol = absorber
+        .real_sol
         .checked_add(liquidity_lamports)
         .ok_or(VelocityError::MathOverflow)?;
     absorber.merge_count = absorber.merge_count.saturating_add(1);

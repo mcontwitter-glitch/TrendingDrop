@@ -1,14 +1,15 @@
 /**
- * Launchpad FDV display layer for VelocityCurve tokens.
+ * Launchpad FDV display layer for VelocityCurve tokens (Pump.fun CPMM).
  *
- * On-chain `current_price` / `base_price` are **lamports per whole token**.
+ * On-chain `current_price` is **lamports per whole token** = virtual_sol / virtual_token.
  * FDV_SOL = price × TOTAL_SUPPLY_WHOLE / 1e9 (numerically ≈ price).
  *
- * Product economics (PRICE_SCALE=1e9, base=27, k=365):
- *   empty curve → ~$4k FDV; ~12 SOL seed buy of ~20% supply → ~$15k FDV.
- * `current_supply` is whole tokens (SPL raw = whole × 10^6).
+ * Product economics (virtual_sol=30 SOL, virtual_token=1.073B):
+ *   empty curve → ~$4.2k FDV @ $150/SOL
+ *   graduate at ~85 real SOL → ~$62–69k mcap; ~200M tokens remain
+ * `current_supply` is whole tokens sold (SPL raw = whole × 10^6).
  *
- * Legacy curves (seed/1000 or corrupt stack prices) still fall back to
+ * Legacy linear curves (base+k*s / corrupt stack prices) still fall back to
  * liquidity-backed spot when FDV ≫ reserve.
  */
 
@@ -27,8 +28,7 @@ export function rawToWhole(raw: number | bigint, decimals = TOKEN_DECIMALS): num
 
 /**
  * True when base/current price looks like seed/reserve liquidity written into
- * the price field (TokenParams stack bug). Threshold: within ~1% of seed or
- * reserve and magnitude > 1e8 lamports.
+ * the price field (TokenParams stack bug).
  */
 export function isCorruptCurvePrice(params: {
   basePriceLamports: number
@@ -54,31 +54,22 @@ export function isCorruptCurvePrice(params: {
   )
 }
 
-/**
- * Liquidity-backed spot (lamports / whole token): seed_or_reserve / 1B.
- * Fallback for legacy/corrupt curves only — new graduates use LAUNCH_BASE_PRICE.
- */
+/** Liquidity-backed spot fallback for legacy/corrupt curves only. */
 export function repairedDisplayPriceLamports(seedOrReserveLamports: number): number {
   return Math.max(1, Math.floor(seedOrReserveLamports / TOTAL_SUPPLY_WHOLE))
 }
 
 export interface LaunchpadDisplayMetrics {
-  /** Effective spot used for UI (corruption / legacy-scale guarded). */
   effectivePriceLamports: number
-  /** True when display used liquidity-backed spot instead of raw chain price. */
   priceCorrupt: boolean
-  /** FDV in SOL: effectivePrice × 1B / 1e9 (≈ reserve when liquidity-backed). */
   fdvSol: number
-  /** Circulating supply in whole tokens (raw / 10^decimals). */
   circulatingWhole: number
-  /** Fixed total supply for launchpad label. */
   totalSupplyWhole: number
 }
 
 /**
- * Compute launchpad spot / FDV / supply display metrics.
- * UI FDV treats curve price as lamports/whole token × 1B supply.
- * Falls back to liquidity-backed spot when chain price is corrupt or legacy-scaled.
+ * Prefer CPMM spot = virtualSol / virtualToken when virtual reserves look sane
+ * (≥ 1 SOL virtual and ≥ 1M virtual tokens). UI shows USD via formatPriceUsd.
  */
 export function launchpadDisplayMetrics(curve: {
   currentPriceLamports: number
@@ -86,6 +77,8 @@ export function launchpadDisplayMetrics(curve: {
   currentSupply: number
   solReserveLamports?: number
   seedLiquidityLamports?: number
+  virtualSolLamports?: number
+  virtualToken?: number
 }): LaunchpadDisplayMetrics {
   const seedOrReserve =
     curve.seedLiquidityLamports && curve.seedLiquidityLamports > 0
@@ -93,8 +86,15 @@ export function launchpadDisplayMetrics(curve: {
       : curve.solReserveLamports ?? 0
 
   const reserveSol = seedOrReserve / LAMPORTS_PER_SOL
+
+  const vs = curve.virtualSolLamports ?? 0
+  const vt = curve.virtualToken ?? 0
+  const cpmmSpot =
+    vs >= 1_000_000_000 && vt >= 1_000_000 ? Math.max(1, Math.floor(vs / vt)) : 0
+
   const chainPrice = Math.max(0, Math.floor(curve.currentPriceLamports))
-  const chainFdv = fdvMarketCapSol(chainPrice)
+  const preferred = cpmmSpot > 0 ? cpmmSpot : chainPrice
+  const preferredFdv = fdvMarketCapSol(preferred)
 
   const priceCorrupt = isCorruptCurvePrice({
     basePriceLamports: curve.basePriceLamports,
@@ -103,35 +103,31 @@ export function launchpadDisplayMetrics(curve: {
     solReserveLamports: curve.solReserveLamports,
   })
 
-  // Legacy graduate used seed/1000 → FDV ≈ seed_SOL × 1e6. Prefer liquidity.
   const legacyScale =
-    reserveSol > 0 && Number.isFinite(chainFdv) && chainFdv > reserveSol * LEGACY_FDV_RESERVE_RATIO
+    reserveSol > 0 &&
+    Number.isFinite(preferredFdv) &&
+    preferredFdv > reserveSol * LEGACY_FDV_RESERVE_RATIO
 
-  const useLiquidityBacked = priceCorrupt || legacyScale
+  const useLiquidityBacked = (priceCorrupt || legacyScale) && cpmmSpot === 0
   const effectivePriceLamports = useLiquidityBacked
     ? repairedDisplayPriceLamports(seedOrReserve)
-    : chainPrice
+    : preferred
 
   const fdvSol = useLiquidityBacked
     ? reserveSol > 0
       ? reserveSol
       : fdvMarketCapSol(effectivePriceLamports)
-    : chainFdv
+    : fdvMarketCapSol(effectivePriceLamports)
 
   return {
     effectivePriceLamports,
     priceCorrupt: useLiquidityBacked,
     fdvSol,
-    // On-chain current_supply is whole tokens (not SPL raw).
     circulatingWhole: Math.max(0, curve.currentSupply),
     totalSupplyWhole: TOTAL_SUPPLY_WHOLE,
   }
 }
 
-/**
- * Launchpad FDV in SOL from (effective) price treated as lamports per whole token:
- * (priceLamports * TOTAL_SUPPLY_WHOLE) / LAMPORTS_PER_SOL
- */
 export function fdvMarketCapSol(priceLamports: number | bigint): number {
   const p =
     typeof priceLamports === 'bigint'
@@ -141,7 +137,6 @@ export function fdvMarketCapSol(priceLamports: number | bigint): number {
   return Number(scaled) / 1_000_000
 }
 
-/** Compact circulating label, e.g. `0.000251`, `1.25`. */
 export function formatCirculatingWhole(whole: number): string {
   if (!Number.isFinite(whole) || whole === 0) return '0'
   if (whole < 0.000001) return whole.toExponential(2)
@@ -154,17 +149,14 @@ export function formatCirculatingWhole(whole: number): string {
   return whole.toFixed(0)
 }
 
-/** Primary supply label: always "1B" total. */
 export function formatTotalSupplyLabel(): string {
   return '1B'
 }
 
-/** Combined supply metric: `1B · circ 0.000251` or `1B · circ 0`. */
 export function formatSupplyMetric(circulatingWhole: number): string {
   return `1B · circ ${formatCirculatingWhole(circulatingWhole)}`
 }
 
-/** Circ-only value of tokens in circulation (price × circulating whole). */
 export function circulatingValueSol(
   priceLamports: number | bigint,
   circulatingWhole: number,
@@ -173,7 +165,7 @@ export function circulatingValueSol(
     typeof priceLamports === 'bigint'
       ? priceLamports
       : BigInt(Math.max(0, Math.floor(priceLamports)))
-  const s = BigInt(Math.max(0, Math.floor(circulatingWhole * 1e6))) // micro-whole
+  const s = BigInt(Math.max(0, Math.floor(circulatingWhole * 1e6)))
   const scaled = (p * s) / BigInt(LAMPORTS_PER_SOL)
   return Number(scaled) / 1e6
 }

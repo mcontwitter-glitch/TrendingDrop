@@ -113,3 +113,16 @@ pub struct StakerAirdropMinted {
     pub amount: u64,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct CurveGraduated {
+    pub curve: Pubkey,
+    pub mint: Pubkey,
+    pub story_id: Pubkey,
+    pub real_sol: u64,
+    pub virtual_sol: u64,
+    pub virtual_token: u64,
+    pub real_token: u64,
+    pub current_price: u64,
+    pub timestamp: i64,
+}
