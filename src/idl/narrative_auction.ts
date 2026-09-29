@@ -1320,7 +1320,7 @@ export type NarrativeAuction = {
         {
           "name": "config",
           "docs": [
-            "(staker_airdrop_bps appended after bump). Realloc'd in handler."
+            "(staker_airdrop_bps / post_threshold_secs appended). Realloc'd in handler."
           ],
           "writable": true,
           "pda": {
@@ -1388,6 +1388,12 @@ export type NarrativeAuction = {
           "name": "stakerAirdropBps",
           "type": {
             "option": "u16"
+          }
+        },
+        {
+          "name": "postThresholdSecs",
+          "type": {
+            "option": "i64"
           }
         }
       ]
@@ -1884,6 +1890,10 @@ export type NarrativeAuction = {
           {
             "name": "stakerAirdropBps",
             "type": "u16"
+          },
+          {
+            "name": "postThresholdSecs",
+            "type": "i64"
           }
         ]
       }
@@ -2004,6 +2014,17 @@ export type NarrativeAuction = {
               "realloc + zero-fill yields 0 → update_config applies default."
             ],
             "type": "u16"
+          },
+          {
+            "name": "postThresholdSecs",
+            "docs": [
+              "Final auction window after graduation threshold is met (seconds).",
+              "Default 1800 = 30 minutes. When total_staked crosses the threshold,",
+              "`ends_at` is clamped to `min(ends_at, now + post_threshold_secs)`.",
+              "Never extends a shorter auction (Devnet 60s smoke stays short).",
+              "Appended after staker_airdrop_bps (prefix-compatible); 0 → default on migrate."
+            ],
+            "type": "i64"
           }
         ]
       }
@@ -2080,6 +2101,13 @@ export type NarrativeAuction = {
           {
             "name": "totalStaked",
             "type": "u64"
+          },
+          {
+            "name": "endsAt",
+            "docs": [
+              "Current auction end (may be clamped when threshold is met)."
+            ],
+            "type": "i64"
           }
         ]
       }

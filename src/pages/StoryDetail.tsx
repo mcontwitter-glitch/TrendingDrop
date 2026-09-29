@@ -210,7 +210,9 @@ export function StoryDetail() {
             />
             <p className="mt-3 text-xs text-bcc-muted">
               Threshold: {story.graduationThreshold} SOL ·{' '}
-              {Math.max(0, story.graduationThreshold - story.solStaked).toFixed(1)} SOL remaining
+              {story.solStaked >= story.graduationThreshold
+                ? 'Threshold met — final ~30 min window (TIME LEFT).'
+                : `${Math.max(0, story.graduationThreshold - story.solStaked).toFixed(1)} SOL remaining to unlock the 30 min final window.`}
             </p>
           </div>
 

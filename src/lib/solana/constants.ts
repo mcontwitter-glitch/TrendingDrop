@@ -64,3 +64,6 @@ export function clusterLabel(rpcUrl: string = RPC_URL): 'Localnet' | 'Devnet' | 
 
 /** Default staker airdrop share of notional 1B supply (20%). */
 export const DEFAULT_STAKER_AIRDROP_BPS = 2000
+
+/** Final auction window after graduation threshold is met (30 minutes). */
+export const DEFAULT_POST_THRESHOLD_SECS = 30 * 60

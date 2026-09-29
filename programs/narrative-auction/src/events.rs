@@ -15,6 +15,7 @@ pub struct ConfigUpdated {
     pub treasury: Pubkey,
     pub curve_program: Pubkey,
     pub staker_airdrop_bps: u16,
+    pub post_threshold_secs: i64,
 }
 
 #[event]
@@ -34,6 +35,8 @@ pub struct NarrativeStaked {
     pub fee: u64,
     pub net_amount: u64,
     pub total_staked: u64,
+    /// Current auction end (may be clamped when threshold is met).
+    pub ends_at: i64,
 }
 
 #[event]

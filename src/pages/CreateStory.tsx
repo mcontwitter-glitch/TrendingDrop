@@ -319,6 +319,11 @@ export function CreateStory() {
               </button>
             ))}
           </div>
+          <p className="mt-2 text-xs text-bcc-muted">
+            Max auction length. Once the graduation threshold is met, a{' '}
+            <span className="font-semibold text-bcc-cyan">30-minute</span> final
+            window starts (TIME LEFT counts down from there).
+          </p>
         </Field>
 
         <div className="flex items-center justify-between rounded-xl border border-bcc-border bg-bcc-bg px-4 py-3 text-sm">

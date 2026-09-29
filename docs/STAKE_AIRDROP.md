@@ -95,6 +95,16 @@ Until migrated, other ixs that decode `NarrativeConfig` via typed `Account` fail
 
 Auction `initialize_story` duration floor is **60s** (was 1h) so Devnet smoke can run end-to-end.
 
+**Post-threshold final window:** once `total_staked >= graduation_threshold`,
+`stake_on_narrative` clamps `ends_at = min(ends_at, now + post_threshold_secs)`.
+Default `post_threshold_secs = 1800` (30 minutes) on `NarrativeConfig`. Never extends
+a shorter auction (60s smoke stays short). Migrate after upgrade:
+
+```bash
+node scripts/devnet-migrate-post-threshold.mjs
+# reallocs config (+8 bytes) and sets post_threshold_secs = 1800
+```
+
 Smoke: `node scripts/devnet-smoke-stake-airdrop.mjs` (set `SMOKE_VANITY=1` for …drop mint grind).
 
 Asserts: staker ATA > 0, `curve.sol_reserve ≈` net stake (+ 80% losing if any),

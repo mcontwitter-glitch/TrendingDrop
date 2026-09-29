@@ -68,7 +68,8 @@ function phaseToStatus(
     // On-chain phase stays active until graduate/fail ix; treat expired as failed
     // so cards leave the Active tab (Failed tab) and don't show ACTIVE + Ended.
     if (endsAtMs <= now) return 'failed'
-    if (totalStakedSol >= thresholdSol * 0.75) return 'graduating'
+    // Threshold met → "graduating soon" (on-chain clamps ends_at to ~30m).
+    if (totalStakedSol >= thresholdSol) return 'graduating'
     return 'active'
   }
   return 'active'

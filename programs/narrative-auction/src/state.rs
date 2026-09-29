@@ -35,6 +35,12 @@ pub struct NarrativeConfig {
     /// Appended after bump so existing Devnet configs deserialize (prefix-compatible);
     /// realloc + zero-fill yields 0 → update_config applies default.
     pub staker_airdrop_bps: u16,
+    /// Final auction window after graduation threshold is met (seconds).
+    /// Default 1800 = 30 minutes. When total_staked crosses the threshold,
+    /// `ends_at` is clamped to `min(ends_at, now + post_threshold_secs)`.
+    /// Never extends a shorter auction (Devnet 60s smoke stays short).
+    /// Appended after staker_airdrop_bps (prefix-compatible); 0 → default on migrate.
+    pub post_threshold_secs: i64,
 }
 
 impl NarrativeConfig {

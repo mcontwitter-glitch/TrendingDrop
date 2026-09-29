@@ -49,8 +49,17 @@ pub mod narrative_auction {
         treasury: Option<Pubkey>,
         curve_program: Option<Pubkey>,
         staker_airdrop_bps: Option<u16>,
+        post_threshold_secs: Option<i64>,
     ) -> Result<()> {
-        update_config_handler(ctx, fee_bps, min_stake, treasury, curve_program, staker_airdrop_bps)
+        update_config_handler(
+            ctx,
+            fee_bps,
+            min_stake,
+            treasury,
+            curve_program,
+            staker_airdrop_bps,
+            post_threshold_secs,
+        )
     }
 
     pub fn initialize_story(

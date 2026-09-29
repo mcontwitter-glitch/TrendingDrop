@@ -3,13 +3,15 @@ use anchor_lang::system_program::{transfer, Transfer};
 
 use crate::errors::NarrativeError;
 use crate::events::ConfigUpdated;
-use crate::instructions::initialize_config::{DEFAULT_STAKER_AIRDROP_BPS, MAX_STAKER_AIRDROP_BPS};
+use crate::instructions::initialize_config::{
+    DEFAULT_POST_THRESHOLD_SECS, DEFAULT_STAKER_AIRDROP_BPS, MAX_STAKER_AIRDROP_BPS,
+};
 use crate::state::NarrativeConfig;
 
 #[derive(Accounts)]
 pub struct UpdateConfig<'info> {
-    /// CHECK: Manually deserialized — may be short by 2 bytes pre-migration
-    /// (staker_airdrop_bps appended after bump). Realloc'd in handler.
+    /// CHECK: Manually deserialized — may be short pre-migration
+    /// (staker_airdrop_bps / post_threshold_secs appended). Realloc'd in handler.
     #[account(
         mut,
         seeds = [NarrativeConfig::SEED],
@@ -39,8 +41,9 @@ fn load_config(data: &[u8]) -> Result<(u8, NarrativeConfig)> {
     Ok((cfg.bump, cfg))
 }
 
-/// Authority-only: update fee, min stake, treasury, curve program, and/or staker airdrop bps.
-/// Also reallocs NarrativeConfig after upgrades that append `staker_airdrop_bps`.
+/// Authority-only: update fee, min stake, treasury, curve program, staker airdrop bps,
+/// and/or post-threshold final window. Also reallocs NarrativeConfig after upgrades that
+/// append fields (`staker_airdrop_bps`, `post_threshold_secs`).
 pub fn update_config_handler(
     ctx: Context<UpdateConfig>,
     fee_bps: Option<u16>,
@@ -48,6 +51,7 @@ pub fn update_config_handler(
     treasury: Option<Pubkey>,
     curve_program: Option<Pubkey>,
     staker_airdrop_bps: Option<u16>,
+    post_threshold_secs: Option<i64>,
 ) -> Result<()> {
     let info = ctx.accounts.config.to_account_info();
     let data = info.try_borrow_data()?;
@@ -101,6 +105,13 @@ pub fn update_config_handler(
     } else if config.staker_airdrop_bps == 0 {
         config.staker_airdrop_bps = DEFAULT_STAKER_AIRDROP_BPS;
     }
+    if let Some(secs) = post_threshold_secs {
+        // Allow short values for Devnet smoke; product default is 30m.
+        require!(secs >= 1 && secs <= config.graduation_window, NarrativeError::InvalidDuration);
+        config.post_threshold_secs = secs;
+    } else if config.post_threshold_secs == 0 {
+        config.post_threshold_secs = DEFAULT_POST_THRESHOLD_SECS;
+    }
 
     // Preserve bump from seeds if deserialize left it intact.
     if config.bump == 0 {
@@ -127,6 +138,7 @@ pub fn update_config_handler(
         treasury: config.treasury,
         curve_program: config.curve_program,
         staker_airdrop_bps: config.staker_airdrop_bps,
+        post_threshold_secs: config.post_threshold_secs,
     });
 
     Ok(())

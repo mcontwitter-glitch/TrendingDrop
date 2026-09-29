@@ -43,7 +43,8 @@ pub fn initialize_story_handler(
     );
 
     let config = &ctx.accounts.config;
-    // Allow 60s .. graduation_window (default 48h). Short floor enables Devnet smoke.
+    // Allow 60s .. graduation_window (default 48h max auction). Short floor = Devnet smoke.
+    // After threshold, stake_on_narrative clamps remaining time to post_threshold_secs (30m).
     require!(
         duration >= 60 && duration <= config.graduation_window,
         NarrativeError::InvalidDuration

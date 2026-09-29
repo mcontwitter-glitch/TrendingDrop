@@ -103,7 +103,7 @@ export async function ensureConfig(
 
 export interface InitializeStoryParams {
   meta: NarrativeMetadata
-  /** Auction duration in seconds (3600 .. graduation_window). */
+  /** Auction duration in seconds (60 .. graduation_window). */
   durationSeconds: number
   /** Optional graduation threshold in SOL. Omit for on-chain default (10 SOL). */
   graduationThresholdSol?: number
@@ -430,7 +430,7 @@ export async function updateConfigAirdropBps(
   const [configPda] = findConfigPda(program.programId)
   try {
     const signature = await program.methods
-      .updateConfig(null, null, null, null, stakerAirdropBps)
+      .updateConfig(null, null, null, null, stakerAirdropBps, null)
       .accountsStrict({
         config: configPda,
         authority,

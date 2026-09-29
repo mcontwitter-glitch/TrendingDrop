@@ -162,7 +162,7 @@ NarrativeAuction::stake_on_narrative
 
 NarrativeAuction critical checks encoded:
 
-- Stake only while `Active` and `now < ends_at`; 2% (`fee_bps`) → treasury, net → vault; new positions enforce `max_stakes_per_user` via `UserStakeIndex`
+- Stake only while `Active` and `now < ends_at`; 2% (`fee_bps`) → treasury, net → vault; new positions enforce `max_stakes_per_user` via `UserStakeIndex`; at/above graduation threshold, clamp `ends_at` to `now + post_threshold_secs` (default **30m**, never extends shorter windows)
 - Graduate requires `ends_at` passed + threshold + `rank ∈ 1..=5` + unique `RankingBoard` slot
 - Below threshold → `fail_story` (reclaim); at/above threshold but not top-ranked → `forfeit_story` + `contribute_losing_pool` (20/80)
 - Resolve marks claimable: Graduated = pro-rata winner_bonus only (principal=0); Failed = principal; Forfeited = 0

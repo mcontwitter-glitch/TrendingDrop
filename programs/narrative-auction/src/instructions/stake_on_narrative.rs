@@ -3,6 +3,7 @@ use anchor_lang::system_program::{transfer, Transfer};
 
 use crate::errors::NarrativeError;
 use crate::events::{NarrativeStaked, UserStakeIndexUpdated};
+use crate::instructions::initialize_config::DEFAULT_POST_THRESHOLD_SECS;
 use crate::state::{MarketPhase, NarrativeConfig, StakePosition, StoryMarket, UserStakeIndex};
 
 #[derive(Accounts)]
@@ -192,6 +193,24 @@ pub fn stake_on_narrative_handler(ctx: Context<StakeOnNarrative>, amount: u64) -
         .checked_add(net)
         .ok_or(NarrativeError::MathOverflow)?;
 
+    // Once graduation threshold is met ("graduating soon"), clamp remaining
+    // auction time to post_threshold_secs (default 30m). Never extends a
+    // shorter window — Devnet 60s smoke stays intact.
+    if story.total_staked >= story.graduation_threshold {
+        let window = if config.post_threshold_secs > 0 {
+            config.post_threshold_secs
+        } else {
+            DEFAULT_POST_THRESHOLD_SECS
+        };
+        let capped = clock
+            .unix_timestamp
+            .checked_add(window)
+            .ok_or(NarrativeError::MathOverflow)?;
+        if capped < story.ends_at {
+            story.ends_at = capped;
+        }
+    }
+
     emit!(NarrativeStaked {
         story: story_key,
         staker: ctx.accounts.staker.key(),
@@ -199,6 +218,7 @@ pub fn stake_on_narrative_handler(ctx: Context<StakeOnNarrative>, amount: u64) -
         fee,
         net_amount: net,
         total_staked: story.total_staked,
+        ends_at: story.ends_at,
     });
 
     Ok(())

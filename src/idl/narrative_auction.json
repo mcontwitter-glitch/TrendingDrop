@@ -1314,7 +1314,7 @@
         {
           "name": "config",
           "docs": [
-            "(staker_airdrop_bps appended after bump). Realloc'd in handler."
+            "(staker_airdrop_bps / post_threshold_secs appended). Realloc'd in handler."
           ],
           "writable": true,
           "pda": {
@@ -1382,6 +1382,12 @@
           "name": "staker_airdrop_bps",
           "type": {
             "option": "u16"
+          }
+        },
+        {
+          "name": "post_threshold_secs",
+          "type": {
+            "option": "i64"
           }
         }
       ]
@@ -1878,6 +1884,10 @@
           {
             "name": "staker_airdrop_bps",
             "type": "u16"
+          },
+          {
+            "name": "post_threshold_secs",
+            "type": "i64"
           }
         ]
       }
@@ -1998,6 +2008,17 @@
               "realloc + zero-fill yields 0 → update_config applies default."
             ],
             "type": "u16"
+          },
+          {
+            "name": "post_threshold_secs",
+            "docs": [
+              "Final auction window after graduation threshold is met (seconds).",
+              "Default 1800 = 30 minutes. When total_staked crosses the threshold,",
+              "`ends_at` is clamped to `min(ends_at, now + post_threshold_secs)`.",
+              "Never extends a shorter auction (Devnet 60s smoke stays short).",
+              "Appended after staker_airdrop_bps (prefix-compatible); 0 → default on migrate."
+            ],
+            "type": "i64"
           }
         ]
       }
@@ -2074,6 +2095,13 @@
           {
             "name": "total_staked",
             "type": "u64"
+          },
+          {
+            "name": "ends_at",
+            "docs": [
+              "Current auction end (may be clamped when threshold is met)."
+            ],
+            "type": "i64"
           }
         ]
       }
